@@ -1,764 +1,225 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" class="scroll-smooth">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>動力系微積分(II)重補修班</title>
-    <script type="text/javascript">
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']]
-            }
-        };
-    </script>
-    <script type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>微積分教學課程</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Calm Harmony (Warm neutrals with a muted teal accent) -->
-    <!-- Application Structure Plan: The application uses a single-page, smooth-scrolling layout with a sticky top navigation for easy access to all sections. This structure was chosen to guide students through a logical learning path: from core concepts to interactive, step-by-step examples. The new "Hands-on Practice" section introduces a challenge-and-reveal dynamic. Interactive tabs allow users to select problems, while accordions hide the solutions. This new section adds an extra layer of active engagement by requiring a hint button click for analysis and a password for solution steps, transforming the document from a reference into a tool for self-assessment. -->
-    <!-- Visualization & Content Choices: The source material is a text-based calculus tutorial. Key information has been translated into interactive components. Content: 'Concepts/Objectives/Applications' -> Goal: Inform -> Presentation: Grouped into styled cards for clarity. Interaction: Minimal hover effects. Content: 5 Example Problems -> Goal: Teach/Guide -> Presentation: Organized into a tabbed interface, with each solution broken down into a multi-step accordion. Interaction: Users click tabs to select a problem type and expand accordion items to reveal steps sequentially. This prevents information overload and encourages active learning. Content: 5 Practice Problems -> Goal: Assess/Practice -> Presentation: Tabbed interface, with content for "Analysis" and "Steps" initially hidden. Interaction: A "Hint" button reveals analysis. A password-protected field reveals the solution steps. Justification: These choices transform a static guide into an interactive learning tool, enhancing user engagement and comprehension. Library/Method: Vanilla JS for all interactions. MathJax for rendering formulas. CONFIRMING NO SVG/Mermaid. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #fdfcfb;
-            color: #44403c;
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background-color: #f8fafc;
         }
-        .math-display {
-            overflow-x: auto;
-            overflow-y: hidden;
-            padding: 0.5rem 0;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .container {
+            max-width: 800px;
         }
-        .math-display::-webkit-scrollbar {
-            display: none;
+        .card {
+            background-color: white;
         }
-        .active-tab {
-            background-color: #0d9488;
-            color: #ffffff;
-            font-weight: 700;
+        .link-item {
+            border-left: 4px solid #10b981;
+            transition: all 0.2s ease-in-out;
         }
-        .inactive-tab {
-            background-color: #f1f5f9;
-            color: #334155;
-        }
-        .accordion-header-active {
-            background-color: #f0fdfa;
-        }
-        .accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-in-out;
-        }
-        .accordion-content.show {
-            max-height: 1000px;
-        }
-        .rotate-180 {
-            transform: rotate(180deg);
-        }
-        .transition-transform {
-            transition: transform 0.3s ease;
+        .link-item:hover {
+            border-left: 4px solid #059669;
+            transform: translateX(5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
-<body class="bg-stone-50 text-stone-800">
-
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex-shrink-0">
-                    <h1 class="text-xl font-bold text-teal-700">
-                        動力系微積分(II)重補修班&nbsp;&nbsp;&nbsp;&nbsp;授課老師:吳文銓
-                    </h1>
-                    <p class="text-sm text-stone-500">參考書:Calculus Early Transcendentals 9th Edition Metric Edition by James Stewart, Daniel Clegg, Saleem Watson</p>
-                </div>
-                <div class="hidden md:block">
-                    <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="#concepts" class="text-stone-600 hover:bg-teal-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">核心概念</a>
-                        <a href="#examples" class="text-stone-600 hover:bg-teal-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">範例練習</a>
-                        <a href="#practice" class="text-stone-600 hover:bg-teal-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">動手練習</a>
-                    </div>
-                </div>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="container mx-auto p-4 md:p-8">
+        <div class="card bg-white shadow-lg rounded-lg p-6 md:p-10 border border-gray-200">
+            <!-- Updated main title and instructor name -->
+            <div class="mb-2">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 text-center">微積分(II)重補修班課程</h1>
+                <p class="text-base md:text-lg font-semibold text-gray-600 text-right mt-1">授課老師 : 吳文銓</p>
             </div>
-        </nav>
-    </header>
+            <!-- Updated subtitle -->
+            <p class="text-center text-gray-500 mb-8">參考書:Calculus Early Transcendentals 9th Edition Metric Edition by James Stewart, Daniel Clegg, Saleem Watson</p>
 
-    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-
-        <section id="intro" class="text-center mb-16">
-            <h2 class="text-3xl md:text-4xl font-bold text-teal-800 mb-4">7.4 Integration of Rational Functions by Partial Fractions</h2>
-            <p class="max-w-3xl mx-auto text-lg text-stone-600">有理函數的積分（部分分式法）</p>
-        </section>
-
-        <section id="concepts" class="mb-16 scroll-mt-20">
-            <h3 class="text-2xl md:text-3xl font-bold text-center mb-10 text-stone-700">第一部分：核心概念</h3>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-white p-6 rounded-lg shadow-lg border border-stone-200">
-                    <h4 class="text-xl font-bold mb-3 text-teal-700">🤔 什麼是部分分式？</h4>
-                    <p class="text-stone-600">當遇到複雜的有理函數積分時，直接計算非常困難。部分分式是一個代數技巧，能將一個複雜分式拆解成數個簡單分式的和。這些簡單分式通常能輕易地使用 $\ln|x|$ 或 $\arctan(x)$ 的形式積分，讓問題迎刃而解。</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow-lg border border-stone-200">
-                    <h4 class="text-xl font-bold mb-3 text-teal-700">🎯 學習目的</h4>
-                     <ul class="list-disc list-inside space-y-2 text-stone-600">
-                        <li>辨識可分解的有理函數。</li>
-                        <li>根據分母類型掌握分解技巧。</li>
-                        <li>熟練求解分解式中的未知係數。</li>
-                        <li>應用積分公式解決複雜問題。</li>
-                    </ul>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow-lg border border-stone-200">
-                    <h4 class="text-xl font-bold mb-3 text-teal-700">🌍 生活應用</h4>
-                    <p class="text-stone-600">部分分式不僅是數學理論，它在工程、化學與物理學等領域都有重要應用，例如分析電子濾波器響應、計算化學反應速率，以及解決電路與力學系統的微分方程。</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="examples" class="mb-16 scroll-mt-20">
-            <h3 class="text-2xl md:text-3xl font-bold text-center mb-10 text-stone-700">第二部分：範例練習</h3>
-            <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">請選擇您想練習的題型。每個範例都將引導您完成從「觀察分析」到「求解積分」的完整流程。點擊步驟標題即可展開或收合詳細內容。</p>
-            <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-stone-200">
-                <div id="example-tabs-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6"></div>
-                <div id="example-content-container"></div>
-            </div>
-        </section>
-
-        <section id="practice" class="mb-16 scroll-mt-20">
-            <h3 class="text-2xl md:text-3xl font-bold text-center mb-10 text-stone-700">第三部分：動手練習</h3>
-            <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">現在輪到您了！請選擇一個練習題，並嘗試自己解題。您可以點擊「提示」按鈕查看分析思路，或輸入密碼解鎖完整解答。</p>
-            <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-stone-200">
-                <div id="practice-tabs-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6"></div>
-                <div id="practice-content-container"></div>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="bg-white mt-16">
-        <div class="container mx-auto px-8 py-4 text-center text-stone-500">
-            <p>&copy; 微積分互動教學</p>
+            <ul class="space-y-4">
+                <!-- All chapters are now streamlined into a single span with Chinese translation -->
+                <li>
+                    <a href="7.4 Integration of Rational Functions by Partial Fractions.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">7.4 Integration of Rational Functions by Partial Fractions (有理函數的積分-部分分式法)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="7.8 Improper Integrals.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">7.8 Improper Integrals (瑕積分)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="8.1 Arc Length.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">8.1 Arc Length (弧長)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="8.2 Area of a Surface of Revolution.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">8.2 Area of a Surface of Revolution (旋轉曲面的面積)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="10.1 Curves Defined by Parametric Equations.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">10.1 Curves Defined by Parametric Equations (參數方程式定義的曲線)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="10.2 Calculus with Parametric Curves.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">10.2 Calculus with Parametric Curves (參數曲線微積分)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="10.3 Polar Coordinates.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">10.3 Polar Coordinates (極坐標)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="10.4 Calculus in Polar Coordinates.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">10.4 Calculus in Polar Coordinates (極坐標微積分)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="11.1 Sequences.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">11.1 Sequences (數列)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="11.2 Series.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">11.2 Series (級數)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="11.6 The Ratio Tests.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">11.6 The Ratio Tests (比例檢驗法)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="11.8 Power Series.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">11.8 Power Series (冪級數)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="11.9 Representations of Functions as Power Series.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">11.9 Representations of Functions as Power Series (函數的冪級數表示法)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="11.10 Taylor and Maclaurin Series.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">11.10 Taylor and Maclaurin Series (泰勒和麥克勞林級數)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="12.4 The Cross Product.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">12.4 The Cross Product (向量外積)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="14.1 Functions of Several Variables.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">14.1 Functions of Several Variables (多變數函數)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="14.2 Limits and Continuity.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">14.2 Limits and Continuity (極限與連續)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="14.3 Partial Derivatives.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">14.3 Partial Derivatives (偏導數)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="14.4 Tangent Planes and Linear Approximations.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">14.4 Tangent Planes and Linear Approximations (切平面與線性逼近)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="14.5 The Chain Rule.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">14.5 The Chain Rule (鏈鎖律)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="14.6 Directional Derivatives and the Gradient Vector.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">14.6 Directional Derivatives and the Gradient Vector (方向導數與梯度向量)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="14.7 Maximum and Minimum Values.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">14.7 Maximum and Minimum Values (極大與極小值)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="15.1 Double Integrals over Rectangles.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">15.1 Double Integrals over Rectangles (矩形區域上的重積分)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="15.2 Double Integrals over General Regions.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">15.2 Double Integrals over General Regions (一般區域上的重積分)</span>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="15.3 Double Integrals in Polar Coordinates.html" class="link-item block p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-gray-700 hover:text-green-700">
+                        <div class="flex items-center">
+                            <span class="text-lg font-medium">15.3 Double Integrals in Polar Coordinates (極坐標下的重積分)</span>
+                        </div>
+                    </a>
+                </li>
+            </ul>
         </div>
-    </footer>
-
-    <script>
-        window.addEventListener('load', () => {
-            const examples = [
-                {
-                    title: '範例 1：不重複線性因式',
-                    problem: '$$\\int \\frac{3x+1}{x^2-x-6} dx$$',
-                    analysis: '這個函數的分母 $x^2-x-6$ 可以被分解為兩個不重複的線性因式：$(x-3)(x+2)$。因此，我們可以將這個有理函數分解為兩個簡單分式的加總。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `我們假設原始函數可以寫成以下形式：
-                                $$\\frac{3x+1}{(x-3)(x+2)} = \\frac{A}{x-3} + \\frac{B}{x+2}$$
-                                將右邊通分，我們得到：
-                                $$\\frac{3x+1}{(x-3)(x+2)} = \\frac{A(x+2) + B(x-3)}{(x-3)(x+2)}$$
-                                比較分子，得到一個線性方程：
-                                $$3x+1 = A(x+2) + B(x-3)$$`
-                        },
-                        {
-                            title: '步驟 2：求解係數',
-                            content: `為了求出 $A$ 和 $B$ 的值，我們可以選擇特殊的 $x$ 值來簡化方程式。<br>
-                                • 令 $x = 3$，則 $(x-3)$ 項為零：
-                                $$3(3)+1 = A(3+2) + B(3-3) \\implies 10 = 5A \\implies A = 2$$
-                                • 令 $x = -2$，則 $(x+2)$ 項為零：
-                                $$3(-2)+1 = A(-2+2) + B(-2-3) \\implies -5 = -5B \\implies B = 1$$
-                                因此，原始函數可以被分解為：
-                                $$\\frac{3x+1}{(x-3)(x+2)} = \\frac{2}{x-3} + \\frac{1}{x+2}$$`
-                        },
-                        {
-                            title: '步驟 3：進行積分',
-                            content: `現在我們對分解後的式子進行積分：
-                                $$\\int \\left( \\frac{2}{x-3} + \\frac{1}{x+2} \\right) dx = \\int \\frac{2}{x-3} dx + \\int \\frac{1}{x+2} dx$$
-                                使用基本積分公式 $\\int \\frac{1}{u} du = \\ln|u|+C$，我們得到：
-                                $$2 \\ln|x-3| + \\ln|x+2| + C$$`
-                        },
-                         {
-                            title: '步驟 4：最終答案',
-                            content: `$$\\int \\frac{3x+1}{x^2-x-6} dx = 2 \\ln|x-3| + \\ln|x+2| + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '範例 2：重複線性因式',
-                    problem: '$$\\int \\frac{x}{(x-1)^2(x+2)} dx$$',
-                    analysis: '這個函數的分母包含一個重複的線性因式 $(x-1)^2$ 和一個不重複的線性因式 $(x+2)$。對於重複的因式，我們需要為其每一級次方都設定一個部分分式。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `我們假設原始函數可以寫成以下形式：
-                                $$\\frac{x}{(x-1)^2(x+2)} = \\frac{A}{x-1} + \\frac{B}{(x-1)^2} + \\frac{C}{x+2}$$
-                                將右邊通分，得到：
-                                $$x = A(x-1)(x+2) + B(x+2) + C(x-1)^2$$`
-                        },
-                        {
-                            title: '步驟 2：求解係數',
-                            content: `• 令 $x=1$ (使 $(x-1)$ 項為零)：
-                                $$1 = A(0) + B(1+2) + C(0) \\implies 1 = 3B \\implies B = \\frac{1}{3}$$
-                                • 令 $x=-2$ (使 $(x+2)$ 項為零)：
-                                $$-2 = A(0) + B(0) + C(-2-1)^2 \\implies -2 = 9C \\implies C = -\\frac{2}{9}$$
-                                • 為了求出 $A$，我們選擇一個方便的 $x$ 值，例如 $x=0$：
-                                $$0 = A(-1)(2) + B(2) + C(-1)^2 \\implies 0 = -2A + 2B + C$$
-                                將 $B = \\frac{1}{3}$ 和 $C = -\\frac{2}{9}$ 代入：
-                                $$0 = -2A + 2(\\frac{1}{3}) + (-\\frac{2}{9}) \\implies 2A = \\frac{4}{9} \\implies A = \\frac{2}{9}$$
-                                因此，原始函數可以被分解為：
-                                $$\\frac{x}{(x-1)^2(x+2)} = \\frac{2/9}{x-1} + \\frac{1/3}{(x-1)^2} - \\frac{2/9}{x+2}$$`
-                        },
-                        {
-                            title: '步驟 3：進行積分',
-                            content: `$$\\int \\left( \\frac{2/9}{x-1} + \\frac{1/3}{(x-1)^2} - \\frac{2/9}{x+2} \\right) dx$$
-                                $$= \\frac{2}{9} \\int \\frac{1}{x-1} dx + \\frac{1}{3} \\int (x-1)^{-2} dx - \\frac{2}{9} \\int \\frac{1}{x+2} dx$$
-                                積分得到：
-                                $$= \\frac{2}{9} \\ln|x-1| - \\frac{1}{3(x-1)} - \\frac{2}{9} \\ln|x+2| + C$$`
-                        },
-                         {
-                            title: '步驟 4：最終答案',
-                            content: `$$\\int \\frac{x}{(x-1)^2(x+2)} dx = \\frac{2}{9} \\ln|x-1| - \\frac{1}{3(x-1)} - \\frac{2}{9} \\ln|x+2| + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '範例 3：不可約二次因式',
-                    problem: '$$\\int \\frac{2x^2+x+8}{x(x^2+4)} dx$$',
-                    analysis: '分母包含一個線性因式 $x$ 和一個不可約的二次因式 $x^2+4$（因為 $x^2+4=0$ 沒有實數解）。對於不可約的二次因式，其對應的部分分式分子必須是一個線性的表達式 $Bx+C$。',
-                     steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `我們假設原始函數可以寫成以下形式：
-                                $$\\frac{2x^2+x+8}{x(x^2+4)} = \\frac{A}{x} + \\frac{Bx+C}{x^2+4}$$
-                                將右邊通分，得到：
-                                $$2x^2+x+8 = A(x^2+4) + (Bx+C)x$$`
-                        },
-                        {
-                            title: '步驟 2：求解係數',
-                            content: `• 令 $x=0$ (使 $(Bx+C)x$ 項為零)：
-                                $$2(0)^2+0+8 = A(0^2+4) + (0) \\implies 8 = 4A \\implies A = 2$$
-                                • 展開右邊並比較 $x^2$, $x$ 和常數項的係數：
-                                $$2x^2+x+8 = (A+B)x^2 + Cx + 4A$$
-                                比較係數得: $A+B=2$, $C=1$, $4A=8$.
-                                由 $A=2$, 可得 $B=0$.
-                                因此，原始函數可以被分解為：
-                                $$\\frac{2x^2+x+8}{x(x^2+4)} = \\frac{2}{x} + \\frac{1}{x^2+4}$$`
-                        },
-                        {
-                            title: '步驟 3：進行積分',
-                            content: `$$\\int \\left( \\frac{2}{x} + \\frac{1}{x^2+4} \\right) dx = \\int \\frac{2}{x} dx + \\int \\frac{1}{x^2+2^2} dx$$
-                                使用基本積分公式 $\\int \\frac{1}{x} dx = \\ln|x|$ 和 $\\int \\frac{1}{x^2+a^2} dx = \\frac{1}{a} \\arctan(\\frac{x}{a})$，我們得到：
-                                $$= 2 \\ln|x| + \\frac{1}{2} \\arctan(\\frac{x}{2}) + C$$`
-                        },
-                        {
-                            title: '步驟 4：最終答案',
-                            content: `$$\\int \\frac{2x^2+x+8}{x(x^2+4)} dx = 2 \\ln|x| + \\frac{1}{2} \\arctan(\\frac{x}{2}) + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '範例 4：線性與二次因式',
-                    problem: '$$\\int \\frac{4x^2-3x+5}{(x-1)(x^2+1)} dx$$',
-                    analysis: '分母包含一個線性因式 $(x-1)$ 和一個不可約的二次因式 $(x^2+1)$。我們需要為這兩個因式分別設定部分分式。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `我們假設原始函數可以寫成以下形式：
-                                $$\\frac{4x^2-3x+5}{(x-1)(x^2+1)} = \\frac{A}{x-1} + \\frac{Bx+C}{x^2+1}$$
-                                通分後，分子變為：
-                                $$4x^2-3x+5 = A(x^2+1) + (Bx+C)(x-1)$$`
-                        },
-                        {
-                            title: '步驟 2：求解係數',
-                            content: `• 令 $x=1$ (使 $(Bx+C)(x-1)$ 項為零)：
-                                $$4(1)^2-3(1)+5 = A(1^2+1) + 0 \\implies 6 = 2A \\implies A = 3$$
-                                • 展開右邊並比較係數：
-                                $$4x^2-3x+5 = (A+B)x^2 + (C-B)x + (A-C)$$
-                                比較係數得: $A+B=4$, $C-B=-3$, $A-C=5$.
-                                由 $A=3$, 可得 $B=1$ and $C=-2$.
-                                因此，原始函數可以被分解為：
-                                $$\\frac{4x^2-3x+5}{(x-1)(x^2+1)} = \\frac{3}{x-1} + \\frac{x-2}{x^2+1}$$`
-                        },
-                        {
-                            title: '步驟 3：進行積分',
-                            content: `$$\\int \\left( \\frac{3}{x-1} + \\frac{x-2}{x^2+1} \\right) dx = \\int \\frac{3}{x-1} dx + \\int \\frac{x}{x^2+1} dx - \\int \\frac{2}{x^2+1} dx$$
-                                分別積分三項：
-                                $$= 3 \\ln|x-1| + \\frac{1}{2} \\ln(x^2+1) - 2 \\arctan(x) + C$$`
-                        },
-                        {
-                            title: '步驟 4：最終答案',
-                            content: `$$\\int \\frac{4x^2-3x+5}{(x-1)(x^2+1)} dx = 3 \\ln|x-1| + \\frac{1}{2} \\ln(x^2+1) - 2 \\arctan(x) + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '範例 5：不真分式',
-                    problem: '$$\\int \\frac{x^3+x}{x-1} dx$$',
-                    analysis: '在這個函數中，分子的次數（3）大於分母的次數（1），這是一個不真分式。我們必須先用多項式長除法將其化為一個多項式與一個真分式的和。',
-                     steps: [
-                        {
-                            title: '步驟 1：多項式長除法',
-                            content: `用 $x^3+x$ 除以 $x-1$：
-                                $$\\frac{x^3+x}{x-1} = x^2+x+2+\\frac{2}{x-1}$$
-                                因此，我們需要積分的式子是：
-                                $$\\int \\left( x^2+x+2+\\frac{2}{x-1} \\right) dx$$`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `我們可以直接對多項式和真分式進行積分：
-                                $$\\int x^2 dx + \\int x dx + \\int 2 dx + \\int \\frac{2}{x-1} dx$$
-                                $$= \\frac{x^3}{3} + \\frac{x^2}{2} + 2x + 2 \\ln|x-1| + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{x^3+x}{x-1} dx = \\frac{x^3}{3} + \\frac{x^2}{2} + 2x + 2 \\ln|x-1| + C$$`
-                        }
-                    ]
-                }
-            ];
-
-            const practiceExamples = [
-                {
-                    title: '問題一',
-                    problem: '$$\\int \\frac{x+2}{x^2+5x+6} dx$$',
-                    analysis: '這是一個真分式，分母可以分解為兩個不重複的線性因式 $x^2+5x+6 = (x+2)(x+3)$。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `假設 $\\frac{x+2}{(x+2)(x+3)} = \\frac{A}{x+2} + \\frac{B}{x+3}$。
-                                $$x+2 = A(x+3) + B(x+2)$$
-                                令 $x=-2$, $0 = A(1) + B(0) \\implies A=0$.
-                                令 $x=-3$, $-1 = A(0) + B(-1) \\implies B=1$.
-                                所以，$\\frac{x+2}{(x+2)(x+3)} = \\frac{1}{x+3}$`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\frac{1}{x+3} dx$$
-                                $$= \\ln|x+3| + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{x+2}{x^2+5x+6} dx = \\ln|x+3| + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題二',
-                    problem: '$$\\int \\frac{1-x}{x(x^2+2x+1)} dx$$',
-                    analysis: '這個分母是 $x(x+1)^2$，包含一個不重複線性因式 $x$ 和一個重複線性因式 $(x+1)^2$。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `假設 $\\frac{1-x}{x(x+1)^2} = \\frac{A}{x} + \\frac{B}{x+1} + \\frac{C}{(x+1)^2}$。
-                                $$1-x = A(x+1)^2 + Bx(x+1) + Cx$$
-                                令 $x=0$, $1=A(1)^2 \\implies A=1$.
-                                令 $x=-1$, $2=C(-1) \\implies C=-2$.
-                                令 $x=1$, $0=A(2)^2+B(1)(2)+C(1) \\implies 0=4A+2B+C$.
-                                $0 = 4(1)+2B+(-2) \\implies 2B=-2 \\implies B=-1$.
-                                所以，$\\frac{1-x}{x(x^2+2x+1)} = \\frac{1}{x} - \\frac{1}{x+1} - \\frac{2}{(x+1)^2}$`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\left( \\frac{1}{x} - \\frac{1}{x+1} - \\frac{2}{(x+1)^2} \\right) dx$$
-                                $$= \\ln|x| - \\ln|x+1| - 2 \\int (x+1)^{-2} dx$$
-                                $$= \\ln|x| - \\ln|x+1| + \\frac{2}{x+1} + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{1-x}{x(x^2+2x+1)} dx = \\ln|x| - \\ln|x+1| + \\frac{2}{x+1} + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題三',
-                    problem: '$$\\int \\frac{x-1}{x^2+2x+5} dx$$',
-                    analysis: '分母 $x^2+2x+5$ 的判別式 $2^2-4(1)(5)=-16 < 0$，所以是不可約二次因式。我們需要完成平方，將其化為 $\\int \\frac{A}{u^2+a^2} du$ 和 $\\int \\frac{u}{u^2+a^2} du$ 的形式。',
-                    steps: [
-                        {
-                            title: '步驟 1：完成分母平方',
-                            content: `分母 $x^2+2x+5 = (x+1)^2+4$。
-                                原式子變為：
-                                $$\\int \\frac{x-1}{(x+1)^2+4} dx$$
-                                為了讓分子配合分母，我們進行換元，令 $u=x+1$，則 $du=dx$，且 $x=u-1$。
-                                原式子變為：
-                                $$\\int \\frac{(u-1)-1}{u^2+4} du = \\int \\frac{u-2}{u^2+4} du = \\int \\frac{u}{u^2+4} du - \\int \\frac{2}{u^2+4} du$$`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\frac{u}{u^2+4} du - \\int \\frac{2}{u^2+4} du$$
-                                第一項：令 $v=u^2+4, dv=2u du$，則 $\\int \\frac{u}{u^2+4} du = \\frac{1}{2}\\int \\frac{dv}{v} = \\frac{1}{2} \\ln|v| = \\frac{1}{2} \\ln(u^2+4)$.
-                                第二項：使用 $\\arctan$ 公式，$\\int \\frac{2}{u^2+2^2} du = 2 \\cdot \\frac{1}{2} \\arctan(\\frac{u}{2}) = \\arctan(\\frac{u}{2})$.
-                                積分結果為：
-                                $$\\frac{1}{2} \\ln(u^2+4) - \\arctan(\\frac{u}{2}) + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `將 $u = x+1$ 代回：
-                                $$\\frac{1}{2} \\ln((x+1)^2+4) - \\arctan(\\frac{x+1}{2}) + C$$
-                                $$\\int \\frac{x-1}{x^2+2x+5} dx = \\frac{1}{2} \\ln(x^2+2x+5) - \\arctan(\\frac{x+1}{2}) + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題四',
-                    problem: '$$\\int \\frac{2x^2+3x+1}{x(x^2+1)} dx$$',
-                    analysis: '分母包含一個線性因式 $x$ 和一個不可約二次因式 $x^2+1$。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `假設 $\\frac{2x^2+3x+1}{x(x^2+1)} = \\frac{A}{x} + \\frac{Bx+C}{x^2+1}$。
-                                $$2x^2+3x+1 = A(x^2+1) + (Bx+C)x$$
-                                令 $x=0$, $1=A(1) \\implies A=1$.
-                                比較係數: $A+B=2 \\implies 1+B=2 \\implies B=1$.
-                                比較 $x$ 係數: $C=3$.
-                                所以，$\\frac{2x^2+3x+1}{x(x^2+1)} = \\frac{1}{x} + \\frac{x+3}{x^2+1}$。`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\left( \\frac{1}{x} + \\frac{x}{x^2+1} + \\frac{3}{x^2+1} \\right) dx$$
-                                $$= \\ln|x| + \\frac{1}{2} \\ln(x^2+1) + 3\\arctan(x) + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{2x^2+3x+1}{x(x^2+1)} dx = \\ln|x| + \\frac{1}{2} \\ln(x^2+1) + 3\\arctan(x) + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題五',
-                    problem: '$$\\int \\frac{x^2+2x+1}{x+1} dx$$',
-                    analysis: '分子次數等於分母次數，是不真分式。可使用多項式長除法，或直接觀察分子為 $(x+1)^2$。',
-                    steps: [
-                        {
-                            title: '步驟 1：簡化式子',
-                            content: `觀察分子 $x^2+2x+1 = (x+1)^2$。
-                                原式子為：
-                                $$\\int \\frac{(x+1)^2}{x+1} dx = \\int (x+1) dx$$`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int (x+1) dx = \\frac{x^2}{2} + x + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{x^2+2x+1}{x+1} dx = \\frac{x^2}{2} + x + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題六',
-                    problem: '$$\\int \\frac{x^2+4x-1}{x(x^2+1)} dx$$',
-                    source: '清華大學-微積分113年考古題',
-                    analysis: '分母包含一個線性因式 $x$ 和一個不可約二次因式 $x^2+1$，這類題型需要將原式分解為 $\\frac{A}{x} + \\frac{Bx+C}{x^2+1}$ 的形式。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `設 $\\frac{x^2+4x-1}{x(x^2+1)} = \\frac{A}{x} + \\frac{Bx+C}{x^2+1}$。
-                                則 $x^2+4x-1 = A(x^2+1) + (Bx+C)x$。
-                                令 $x=0$, 則 $-1 = A(1) \\implies A=-1$.
-                                比較 $x^2$ 係數: $1=A+B \\implies 1=-1+B \\implies B=2$.
-                                比較 $x$ 係數: $4=C$.
-                                所以，$\\frac{x^2+4x-1}{x(x^2+1)} = \\frac{-1}{x} + \\frac{2x+4}{x^2+1}$。`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\left( -\\frac{1}{x} + \\frac{2x}{x^2+1} + \\frac{4}{x^2+1} \\right) dx$$
-                                $$= -\\ln|x| + \\ln(x^2+1) + 4\\arctan(x) + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{x^2+4x-1}{x(x^2+1)} dx = \\ln(\\frac{x^2+1}{|x|}) + 4\\arctan(x) + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題七',
-                    problem: '$$\\int \\frac{x-1}{(x-2)^2(x+3)} dx$$',
-                    source: '成功大學-微積分113年考古題',
-                    analysis: '分母包含一個重複的線性因式 $(x-2)^2$ 和一個不重複的線性因式 $(x+3)$。我們需要為重複的因式設置多個部分分式。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `設 $\\frac{x-1}{(x-2)^2(x+3)} = \\frac{A}{x-2} + \\frac{B}{(x-2)^2} + \\frac{C}{x+3}$。
-                                則 $x-1 = A(x-2)(x+3) + B(x+3) + C(x-2)^2$。
-                                令 $x=2$, $1=B(5) \\implies B=\\frac{1}{5}.
-                                令 $x=-3$, $-4=C(-5)^2 \\implies C = -\\frac{4}{25}$.
-                                令 $x=0$, $-1=A(-2)(3)+B(3)+C(4) \\implies -1 = -6A + 3B + 4C$.
-                                $-1=-6A + 3(\\frac{1}{5}) + 4(-\\frac{4}{25}) \\implies -1=-6A+\\frac{15-16}{25} \\implies -1=-6A-\\frac{1}{25} \\implies -\\frac{24}{25}=-6A \\implies A=\\frac{4}{25}$.
-                                所以，$\\frac{x-1}{(x-2)^2(x+3)} = \\frac{4/25}{x-2} + \\frac{1/5}{(x-2)^2} - \\frac{4/25}{x+3}$。`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\left( \\frac{4/25}{x-2} + \\frac{1/5}{(x-2)^2} - \\frac{4/25}{x+3} \\right) dx$$
-                                $$= \\frac{4}{25}\\ln|x-2| - \\frac{1}{5(x-2)} - \\frac{4}{25}\\ln|x+3| + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{x-1}{(x-2)^2(x+3)} dx = \\frac{4}{25}\\ln|x-2| - \\frac{1}{5(x-2)} - \\frac{4}{25}\\ln|x+3| + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題八',
-                    problem: '$$\\int \\frac{x^4}{x^2-1} dx$$',
-                    source: '陽明交通大學-微積分113年考古題',
-                    analysis: '這個分式是假分式（分子次數大於分母次數），所以我們必須先進行多項式長除法。',
-                    steps: [
-                        {
-                            title: '步驟 1：多項式長除法',
-                            content: `用 $x^4$ 除以 $x^2-1$：
-                                $$\\frac{x^4}{x^2-1} = x^2+1+\\frac{1}{x^2-1}$$
-                                原式子變為：
-                                $$\\int \\left( x^2+1+\\frac{1}{x^2-1} \\right) dx$$`
-                        },
-                        {
-                            title: '步驟 2：部分分式分解',
-                            content: `對於 $\\frac{1}{x^2-1} = \\frac{1}{(x-1)(x+1)}$，設 $\\frac{1}{(x-1)(x+1)} = \\frac{A}{x-1} + \\frac{B}{x+1}$。
-                                則 $1=A(x+1)+B(x-1)$。
-                                令 $x=1$, $1=2A \\implies A=\\frac{1}{2}.
-                                令 $x=-1$, $1=-2B \\implies B=-\\frac{1}{2}$.
-                                所以 $\\frac{1}{x^2-1} = \\frac{1/2}{x-1} - \\frac{1/2}{x+1}$。`
-                        },
-                        {
-                            title: '步驟 3：進行積分',
-                            content: `$$\\int \\left( x^2+1+\\frac{1}{2(x-1)} - \\frac{1}{2(x+1)} \\right) dx$$
-                                $$= \\frac{x^3}{3} + x + \\frac{1}{2}\\ln|x-1| - \\frac{1}{2}\\ln|x+1| + C$$`
-                        },
-                        {
-                            title: '步驟 4：最終答案',
-                            content: `$$\\int \\frac{x^4}{x^2-1} dx = \\frac{x^3}{3} + x + \\frac{1}{2}\\ln|\\frac{x-1}{x+1}| + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題九',
-                    problem: '$$\\int \\frac{x^2+1}{x(x^2-4)} dx$$',
-                    source: '台灣大學-微積分113年考古題',
-                    analysis: '這個分母可以分解為三個不重複的線性因式 $x(x-2)(x+2)$。',
-                    steps: [
-                        {
-                            title: '步驟 1：分解為部分分式',
-                            content: `設 $\\frac{x^2+1}{x(x^2-4)} = \\frac{A}{x} + \\frac{B}{x-2} + \\frac{C}{x+2}$。
-                                $$x^2+1 = A(x-2)(x+2) + Bx(x+2) + Cx(x-2)$$
-                                令 $x=0$, $1=A(-2)(2) \\implies A=-\\frac{1}{4}.
-                                令 $x=2$, $5=B(2)(4) \\implies B=\\frac{5}{8}.
-                                令 $x=-2$, $5=C(-2)(-4) \\implies C=\\frac{5}{8}.
-                                所以，$\\frac{x^2+1}{x(x^2-4)} = -\\frac{1}{4x} + \\frac{5}{8(x-2)} + \\frac{5}{8(x+2)}$。`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\left( -\\frac{1}{4x} + \\frac{5}{8(x-2)} + \\frac{5}{8(x+2)} \\right) dx$$
-                                $$= -\\frac{1}{4}\\ln|x| + \\frac{5}{8}\\ln|x-2| + \\frac{5}{8}\\ln|x+2| + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `$$\\int \\frac{x^2+1}{x(x^2-4)} dx = -\\frac{1}{4}\\ln|x| + \\frac{5}{8}\\ln|(x-2)(x+2)| + C$$`
-                        }
-                    ]
-                },
-                {
-                    title: '問題十',
-                    problem: '$$\\int \\frac{2x+3}{x^2+2x+2} dx$$',
-                    source: '台北科技大學-微積分113年考古題',
-                    analysis: '分母 $x^2+2x+2$ 是不可約的二次因式，因為判別式 $2^2-4(1)(2)=-4<0$。我們需要將其化為 $\\int \\frac{u}{u^2+a^2} du$ 和 $\\int \\frac{A}{u^2+a^2} du$ 的形式。',
-                    steps: [
-                        {
-                            title: '步驟 1：完成分母平方並調整分子',
-                            content: `分母 $x^2+2x+2 = (x+1)^2+1$.
-                                令 $u=x+1$, 則 $du=dx, x=u-1$.
-                                分子 $2x+3 = 2(u-1)+3=2u-2+3=2u+1$.
-                                原式子變為 $\\int \\frac{2u+1}{u^2+1} du = \\int \\frac{2u}{u^2+1} du + \\int \\frac{1}{u^2+1} du$.`
-                        },
-                        {
-                            title: '步驟 2：進行積分',
-                            content: `$$\\int \\frac{2u}{u^2+1} du + \\int \\frac{1}{u^2+1} du$$
-                                第一項：令 $v=u^2+1, dv=2u du$. $\\int \\frac{dv}{v} = \\ln|v|=\\ln(u^2+1)$.
-                                第二項：$\\int \\frac{1}{u^2+1} du = \\arctan(u)$.
-                                積分結果為：
-                                $$\\ln(u^2+1) + \\arctan(u) + C$$`
-                        },
-                        {
-                            title: '步驟 3：最終答案',
-                            content: `將 $u=x+1$ 代回：
-                                $$\\ln((x+1)^2+1) + \\arctan(x+1) + C$$
-                                $$\\int \\frac{2x+3}{x^2+2x+2} dx = \\ln(x^2+2x+2) + \\arctan(x+1) + C$$`
-                        }
-                    ]
-                }
-            ];
-
-            const exampleTabsContainer = document.getElementById('example-tabs-container');
-            const exampleContentContainer = document.getElementById('example-content-container');
-            const practiceTabsContainer = document.getElementById('practice-tabs-container');
-            const practiceContentContainer = document.getElementById('practice-content-container');
-
-            function renderTabs(container, items, activeIndex, isPractice) {
-                container.innerHTML = items.map((ex, i) => {
-                    const tabTitle = isPractice ? ex.title : ex.title.split('：')[1];
-                    return `<button data-index="${i}" class="tab-button text-sm sm:text-base py-2 px-1 sm:px-4 rounded-md transition duration-300 ${i === activeIndex ? 'active-tab' : 'inactive-tab'}">${tabTitle}</button>`;
-                }).join('');
-
-                document.querySelectorAll(`#${container.id} .tab-button`).forEach(button => {
-                    button.addEventListener('click', () => {
-                        const newIndex = parseInt(button.dataset.index);
-                        if (isPractice) {
-                            renderPracticeTabs(newIndex);
-                            renderPracticeContent(newIndex);
-                        } else {
-                            renderExampleTabs(newIndex);
-                            renderExampleContent(newIndex);
-                        }
-                    });
-                });
-            }
-
-            function renderExampleTabs(index) {
-                renderTabs(exampleTabsContainer, examples, index, false);
-            }
-
-            function renderPracticeTabs(index) {
-                renderTabs(practiceTabsContainer, practiceExamples, index, true);
-            }
-
-            function renderExampleContent(index) {
-                const example = examples[index];
-                let stepsHtml = example.steps.map((step, i) => `
-                    <div class="border-b border-stone-200">
-                        <button class="accordion-header w-full text-left p-4 focus:outline-none hover:bg-teal-50 transition duration-300 flex justify-between items-center" data-step="${i}">
-                            <span class="font-semibold text-stone-700">${step.title}</span>
-                            <svg class="w-5 h-5 text-teal-600 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="p-4 bg-stone-50 border-t border-stone-200 text-stone-600 leading-relaxed math-display">${step.content}</div>
-                        </div>
-                    </div>
-                `).join('');
-
-                exampleContentContainer.innerHTML = `
-                    <div class="mb-6">
-                        <h4 class="text-xl font-bold text-stone-800 mb-2">題目：</h4>
-                        <div class="p-4 bg-amber-50 rounded-lg text-lg math-display">${example.problem}</div>
-                    </div>
-                    <div class="mb-6">
-                        <h4 class="text-xl font-bold text-stone-800 mb-2">觀察與分析：</h4>
-                        <p class="p-4 bg-sky-50 rounded-lg text-stone-600">${example.analysis}</p>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-bold text-stone-800 mb-2">解題步驟：</h4>
-                        <div class="border border-stone-200 rounded-lg overflow-hidden">${stepsHtml}</div>
-                    </div>
-                `;
-                if (window.MathJax) {
-                    window.MathJax.typeset();
-                }
-
-                document.querySelectorAll('#example-content-container .accordion-header').forEach(header => {
-                    header.addEventListener('click', () => {
-                        const content = header.nextElementSibling;
-                        const icon = header.querySelector('svg');
-                        header.classList.toggle('accordion-header-active');
-                        content.classList.toggle('show');
-                        icon.classList.toggle('rotate-180');
-                    });
-                });
-            }
-
-            function renderPracticeContent(index) {
-                const example = practiceExamples[index];
-                practiceContentContainer.innerHTML = `
-                    <div class="mb-6">
-                        <h4 class="text-xl font-bold text-stone-800 mb-2">題目：</h4>
-                        <div class="p-4 bg-amber-50 rounded-lg text-lg math-display">${example.problem}</div>
-                        ${example.source ? `<p class="mt-2 text-sm text-stone-500">${example.source}</p>` : ''}
-                    </div>
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-2">
-                             <h4 class="text-xl font-bold text-stone-800">觀察與分析：</h4>
-                             <button id="hint-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition-transform transform hover:scale-105">提示</button>
-                        </div>
-                        <div id="analysis-container" class="transition duration-500 ease-in-out">
-                            <div class="bg-gray-100 p-4 rounded-lg text-center text-gray-500">
-                                <span class="text-2xl">🔒</span><br>
-                                點擊上方的「提示」按鈕來查看分析思路。
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-xl font-bold text-stone-800">解題步驟：</h4>
-                        </div>
-                        <div id="steps-container" class="transition duration-500 ease-in-out">
-                            <div class="bg-gray-100 p-4 rounded-lg text-center text-gray-500">
-                                <span class="text-2xl">🔒</span><br>
-                                請輸入密碼解鎖解題步驟。
-                                <div class="mt-4 flex items-center justify-center">
-                                    <input id="password-input" type="password" placeholder="****" class="px-4 py-2 text-center rounded-md border-2 border-gray-300 focus:border-teal-500 focus:outline-none w-32">
-                                    <button id="unlock-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-md shadow-md ml-2 transition-transform transform hover:scale-105">解鎖</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                const hintButton = document.getElementById('hint-button');
-                const analysisContainer = document.getElementById('analysis-container');
-                const unlockButton = document.getElementById('unlock-button');
-                const passwordInput = document.getElementById('password-input');
-                const stepsContainer = document.getElementById('steps-container');
-                const defaultPassword = '0000';
-
-                hintButton.addEventListener('click', () => {
-                    analysisContainer.innerHTML = `<p class="p-4 bg-sky-50 rounded-lg text-stone-600">${example.analysis}</p>`;
-                    if (window.MathJax) {
-                        window.MathJax.typeset();
-                    }
-                });
-
-                unlockButton.addEventListener('click', () => {
-                    if (passwordInput.value === defaultPassword) {
-                        let stepsHtml = example.steps.map((step, i) => `
-                            <div class="border-b border-stone-200">
-                                <button class="accordion-header w-full text-left p-4 focus:outline-none hover:bg-teal-50 transition duration-300 flex justify-between items-center" data-step="${i}">
-                                    <span class="font-semibold text-stone-700">${step.title}</span>
-                                    <svg class="w-5 h-5 text-teal-600 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </button>
-                                <div class="accordion-content">
-                                    <div class="p-4 bg-stone-50 border-t border-stone-200 text-stone-600 leading-relaxed math-display">${step.content}</div>
-                                </div>
-                            </div>
-                        `).join('');
-
-                        stepsContainer.innerHTML = `<div class="border border-stone-200 rounded-lg overflow-hidden">${stepsHtml}</div>`;
-
-                        document.querySelectorAll('#steps-container .accordion-header').forEach(header => {
-                            header.addEventListener('click', () => {
-                                const content = header.nextElementSibling;
-                                const icon = header.querySelector('svg');
-                                header.classList.toggle('accordion-header-active');
-                                content.classList.toggle('show');
-                                icon.classList.toggle('rotate-180');
-                            });
-                        });
-                        if (window.MathJax) {
-                            window.MathJax.typeset();
-                        }
-                    } else {
-                        alert('密碼錯誤，請再試一次。');
-                    }
-                });
-
-                if (window.MathJax) {
-                    window.MathJax.typeset();
-                }
-            }
-            
-            let activeExampleIndex = 0;
-            let activePracticeIndex = 0;
-
-            renderExampleTabs(activeExampleIndex);
-            renderExampleContent(activeExampleIndex);
-            renderPracticeTabs(activePracticeIndex);
-            renderPracticeContent(activePracticeIndex);
-        });
-    </script>
+    </div>
 </body>
 </html>
