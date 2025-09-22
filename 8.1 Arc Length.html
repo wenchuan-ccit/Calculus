@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動力系微積分(II)重補修班 - 弧長</title>
+    <script type="text/javascript">
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fdfcfb;
+            color: #44403c;
+        }
+        .math-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5rem 0;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .math-display::-webkit-scrollbar {
+            display: none;
+        }
+        .active-tab {
+            background-color: #0d9488;
+            color: #ffffff;
+            font-weight: 700;
+        }
+        .inactive-tab {
+            background-color: #f1f5f9;
+            color: #334155;
+        }
+        .accordion-header-active {
+            background-color: #f0fdfa;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .accordion-content.show {
+            max-height: 2000px;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        .text-justify {
+            text-align: justify;
+        }
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.2); /* Reduced overlay darkness */
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            pointer-events: none; /* Allow clicking through overlay */
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: absolute; /* Changed for dragging */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            pointer-events: auto; /* Modal itself is clickable */
+        }
+        .modal-overlay.show .modal-container {
+             transform: translate(-50%, -50%) scale(1);
+        }
+        .blinking-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2rem;
+            background-color: #44403c;
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            from, to { background-color: transparent }
+            50% { background-color: #44403c; }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-teal-700">
+                        動力系微積分(II)重補修班&nbsp;&nbsp;&nbsp;&nbsp;授課老師:吳文銓
+                    </h1>
+                    <p class="text-sm text-stone-500">參考書:Calculus Early Transcendentals 9th Edition Metric Edition by James Stewart, Daniel Clegg, Saleem Watson</p>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-center space-x-4">
+                        <a href="#concepts" class="text-stone-600 hover:bg-teal-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">核心概念</a>
+                        <a href="#examples" class="text-stone-600 hover:bg-teal-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">範例練習</a>
+                        <a href="#practice" class="text-stone-600 hover:bg-teal-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">動手練習</a>
+                        <button id="api-key-modal-trigger" class="text-stone-500 hover:text-teal-600 transition-colors duration-200" title="設定 AI API Key">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"></path><circle cx="16.5" cy="7.5" r=".5"></circle></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="intro" class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-teal-800 mb-4">8.1 Arc Length</h2>
+            <p class="max-w-3xl mx-auto text-lg text-stone-600">弧長</p>
+        </section>
+
+        <section id="concepts" class="mb-16 scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-10 text-stone-700">第一部分：核心概念</h3>
+            <div class="space-y-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg border border-stone-200">
+                    <h4 class="text-xl font-bold mb-3 text-teal-700">🤔 課程摘要</h4>
+                    <p class="text-stone-600 text-justify">弧長是計算曲線上一段弧線實際長度的問題。核心思想是將曲線分割成許多微小的直線段，利用畢氏定理計算每一小段的長度，最後將這些長度積分起來得到總長度。這個概念可以應用於直角坐標、參數方程或極坐標下的曲線。</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-stone-600">
+                        <li><b>弧長微分元素 (Differential of Arc Length)</b><br>
+                        一個微小的弧長 $ds$ 可以由 $dx$ 和 $dy$ 構成的直角三角形斜邊來近似：
+                        $ds = \sqrt{(dx)^2 + (dy)^2}$
+                        </li>
+                        <li><b>直角坐標弧長公式 (Cartesian Form)</b><br>
+                        如果曲線由 $y=f(x)$ 給出，且 $f'$ 在 $[a, b]$ 上連續，則從 $x=a$ 到 $x=b$ 的弧長 $L$ 為：
+                        $$ L = \int_a^b \sqrt{1 + (\frac{dy}{dx})^2} dx = \int_a^b \sqrt{1 + [f'(x)]^2} dx $$
+                        同理，若曲線為 $x=g(y)$，則弧長為 $L = \int_c^d \sqrt{1 + (\frac{dx}{dy})^2} dy$。
+                        </li>
+                         <li><b>弧長函數 (Arc Length Function)</b><br>
+                        從一個固定起點 $P_0(a, f(a))$ 到曲線上任意點 $P(x, f(x))$ 的弧長，可以定義為一個關於 $x$ 的函數 $s(x)$：
+                        $$ s(x) = \int_a^x \sqrt{1 + [f'(t)]^2} dt $$
+                        根據微積分基本定理，弧長對 $x$ 的變化率為 $\frac{ds}{dx} = \sqrt{1 + (\frac{dy}{dx})^2}$。
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg border border-stone-200">
+                    <h4 class="text-xl font-bold mb-3 text-teal-700">🎯 學習目的</h4>
+                     <ul class="list-disc list-inside space-y-2 text-stone-600">
+                        <li class="text-justify">理解弧長公式是如何從畢氏定理與積分概念推導出來的。</li>
+                        <li class="text-justify">能夠為以 $y=f(x)$ 或 $x=g(y)$ 形式表示的函數，正確地設立弧長積分式。</li>
+                        <li class="text-justify">熟練計算包含根號的定積分，這通常需要代數化簡或三角代換等技巧。</li>
+                        <li class="text-justify">理解弧長函數的定義，並能求出一個曲線的弧長函數。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="examples" class="mb-16 scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-10 text-stone-700">第二部分：範例練習</h3>
+            <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">請選擇題型範例。每個範例都將引導您完成從「觀察分析」到「解題」的完整流程。</p>
+            <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-stone-200">
+                <div id="example-tabs-container" class="flex flex-wrap gap-2 mb-6"></div>
+                <div id="example-content-container"></div>
+            </div>
+        </section>
+
+        <section id="practice" class="mb-16 scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-10 text-stone-700">第三部分：動手練習</h3>
+            <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">現在輪到您了！八道精心挑選的題目，前五題為基礎練習，後三題為頂尖大學的考古題。您可以點擊「提示」按鈕查看分析思路，或輸入密碼解鎖完整解答。</p>
+            <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-stone-200">
+                <div id="practice-tabs-container" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 mb-6"></div>
+                <div id="practice-content-container"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-16">
+        <div class="container mx-auto px-8 py-4 text-center text-stone-500">
+            <p>&copy; 微積分互動教學</p>
+        </div>
+    </footer>
+
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="modal-overlay">
+        <div class="modal-container">
+            <button id="api-key-modal-close" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <div>
+                <h3 class="text-xl font-bold mb-4 text-stone-700">設定 Google AI Studio API Key</h3>
+                <p class="mb-4 text-stone-600">請輸入您的 API Key 以啟用 AI 助教功能。您的 Key 將只會儲存在您的瀏覽器中。</p>
+                <input id="api-key-input" type="password" placeholder="請在此輸入 API Key" class="w-full px-4 py-2 rounded-md border-2 border-gray-300 focus:border-teal-500 focus:outline-none">
+                <div class="flex justify-end gap-4 mt-6">
+                    <button id="api-key-save" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition-transform transform hover:scale-105">儲存</button>
+                    <button id="api-key-modal-cancel" class="bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold py-2 px-4 rounded-md shadow-md transition-transform transform hover:scale-105">取消</button>
+                </div>
+                 <p id="save-status" class="text-sm text-green-600 mt-2 h-4"></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI Tutor Modal -->
+    <div id="ai-tutor-modal" class="modal-overlay">
+        <div id="ai-tutor-modal-container" class="modal-container">
+            <div id="ai-tutor-modal-header" class="w-full pb-4 border-b border-gray-200 cursor-move">
+                 <h3 class="text-xl font-bold text-teal-700">AI 助教語音解說</h3>
+            </div>
+            <button id="ai-tutor-modal-close" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <div id="ai-tutor-status" class="text-stone-700 leading-relaxed space-y-4 min-h-[50px] mt-4"></div>
+            <audio id="ai-tutor-audio" class="w-full mt-4" controls></audio>
+        </div>
+    </div>
+
+
+    <script>
+        window.addEventListener('load', async () => {
+            const examples = [
+                {
+                    title: '基礎弧長計算 (I)',
+                    problem: '求曲線 $y^2=x^3$ 從點 $(1,1)$ 到點 $(4,8)$ 的弧長。',
+                    source: 'p.561 Example 1',
+                    analysis: '曲線方程式為 $y=x^{3/2}$。首先求出 $dy/dx$，然後代入弧長公式 $L = \\int_a^b \\sqrt{1+(dy/dx)^2}dx$。積分的上下限由給定的 x 坐標決定，即從 1 到 4。',
+                    steps: [
+                        {
+                            title: '步驟 1：求導數',
+                            content: `$$ y = x^{3/2} \\implies \\frac{dy}{dx} = \\frac{3}{2}x^{1/2} $$`
+                        },
+                        {
+                            title: '步驟 2：設立積分式',
+                            content: `$$ 1 + (\\frac{dy}{dx})^2 = 1 + (\\frac{3}{2}x^{1/2})^2 = 1 + \\frac{9}{4}x $$
+                                     $$ L = \\int_1^4 \\sqrt{1 + \\frac{9}{4}x} dx $$`
+                        },
+                        {
+                            title: '步驟 3：計算積分',
+                            content: `使用變數變換，令 $u = 1 + \\frac{9}{4}x$，則 $du = \\frac{9}{4}dx \\implies dx = \\frac{4}{9}du$。
+                                     <br>當 $x=1, u = 1+9/4 = 13/4$。
+                                     <br>當 $x=4, u = 1+9 = 10$。
+                                     $$ L = \\int_{13/4}^{10} \\sqrt{u} (\\frac{4}{9}du) = \\frac{4}{9} [\\frac{2}{3}u^{3/2}]_{13/4}^{10} $$
+                                     $$ = \\frac{8}{27} [10^{3/2} - (\\frac{13}{4})^{3/2}] = \\frac{8}{27} (10\\sqrt{10} - \\frac{13\\sqrt{13}}{8}) = \\frac{1}{27}(80\\sqrt{10}-13\\sqrt{13}) $$`
+                        }
+                    ]
+                },
+                {
+                    title: '基礎弧長計算 (II)',
+                    problem: '求曲線 $y^2=x$ 從點 $(0,0)$ 到點 $(1,1)$ 的弧長。',
+                    source: 'p.562 Example 2',
+                    analysis: '這個問題有兩種解法：可以對 x 積分，也可以對 y 積分。若對 x 積分 ($y=\\sqrt{x}$)，積分式會比較複雜。若將曲線視為 $x=y^2$ 並對 y 積分，計算會相對簡單。',
+                    steps: [
+                        {
+                            title: '解法 1：對 x 積分',
+                            content: `$$ y=\\sqrt{x}, \\frac{dy}{dx} = \\frac{1}{2\\sqrt{x}} $$
+                                     $$ L = \\int_0^1 \\sqrt{1 + (\\frac{1}{2\\sqrt{x}})^2}dx = \\int_0^1 \\sqrt{1 + \\frac{1}{4x}}dx = \\int_0^1 \\frac{\\sqrt{4x+1}}{2\\sqrt{x}}dx $$
+                                     <p>這個積分比較困難，需要三角代換。</p>`
+                        },
+                        {
+                            title: '解法 2：對 y 積分 (較佳)',
+                            content: `$$ x=y^2, \\frac{dx}{dy} = 2y $$
+                                     <p>積分範圍是 y 從 0 到 1。</p>
+                                     $$ L = \\int_0^1 \\sqrt{1 + (\\frac{dx}{dy})^2}dy = \\int_0^1 \\sqrt{1+4y^2}dy $$
+                                     <p>使用三角代換，令 $2y = \\tan\\theta$, $2dy=\\sec^2\\theta d\\theta$。</p>
+                                     $$ = \\int_0^{\\tan^{-1}(2)} \\sec\\theta \\cdot \\frac{1}{2}\\sec^2\\theta d\\theta = \\frac{1}{2} \\int_0^{\\tan^{-1}(2)} \\sec^3\\theta d\\theta $$
+                                     $$ = \\frac{1}{2} [\\frac{1}{2}(\\sec\\theta\\tan\\theta + \\ln|\\sec\\theta+\\tan\\theta|)]_0^{\\tan^{-1}(2)} $$
+                                     <p>當 $\\tan\\theta = 2, \\sec\\theta = \\sqrt{5}$。</p>
+                                     $$ = \\frac{1}{4} [\\sqrt{5} \\cdot 2 + \\ln(\\sqrt{5}+2)] = \\frac{\\sqrt{5}}{2} + \\frac{\\ln(\\sqrt{5}+2)}{4} $$`
+                        }
+                    ]
+                },
+                {
+                    title: '弧長函數',
+                    problem: '求曲線 $y=x^2 - \\frac{1}{8}\\ln x$ 從起始點 $P_0(1,1)$ 出發的弧長函數。',
+                    source: 'p.564 Example 4',
+                    analysis: '我們需要計算弧長函數 $s(x) = \\int_1^x \\sqrt{1+(dy/dt)^2}dt$。關鍵在於化簡根號內的表達式，通常會希望能湊成一個完全平方式。',
+                    steps: [
+                        {
+                            title: '步驟 1：求導數',
+                            content: `$$ \\frac{dy}{dx} = 2x - \\frac{1}{8x} $$`
+                        },
+                        {
+                            title: '步驟 2：化簡 $1+(dy/dx)^2$',
+                            content: `$$ 1+(\\frac{dy}{dx})^2 = 1 + (2x - \\frac{1}{8x})^2 = 1 + (4x^2 - 2(2x)(\\frac{1}{8x}) + \\frac{1}{64x^2}) $$
+                                     $$ = 1 + 4x^2 - \\frac{1}{2} + \\frac{1}{64x^2} = 4x^2 + \\frac{1}{2} + \\frac{1}{64x^2} $$
+                                     <p>觀察到這可以配方成：</p>
+                                     $$ = (2x + \\frac{1}{8x})^2 $$`
+                        },
+                        {
+                            title: '步驟 3：設立並計算積分',
+                            content: `$$ s(x) = \\int_1^x \\sqrt{(2t+\\frac{1}{8t})^2} dt = \\int_1^x (2t+\\frac{1}{8t}) dt $$
+                                     $$ = [t^2 + \\frac{1}{8}\\ln t]_1^x $$
+                                     $$ = (x^2 + \\frac{1}{8}\\ln x) - (1^2 + \\frac{1}{8}\\ln 1) = x^2 + \\frac{1}{8}\\ln x - 1 $$`
+                        }
+                    ]
+                }
+            ];
+            const practiceExamples = [
+                {
+                    title: '問題一',
+                    problem: '求曲線 $y = 1+6x^{3/2}$ 從 $x=0$ 到 $x=1$ 的弧長。',
+                    analysis: '標準的弧長公式應用題。求導、代入公式、積分。',
+                    steps: [
+                        {
+                            title: '步驟 1：求導與設立積分',
+                            content: `$$ \\frac{dy}{dx} = 6 \\cdot \\frac{3}{2}x^{1/2} = 9\\sqrt{x} $$
+                                     $$ L = \\int_0^1 \\sqrt{1 + (9\\sqrt{x})^2}dx = \\int_0^1 \\sqrt{1+81x}dx $$`
+                        },
+                        {
+                           title: '步驟 2：計算積分',
+                           content: `令 $u=1+81x, du=81dx$。
+                                    $$ = \\frac{1}{81} \\int_1^{82} u^{1/2}du = \\frac{1}{81} [\\frac{2}{3}u^{3/2}]_1^{82} = \\frac{2}{243}(82\\sqrt{82}-1) $$`
+                        }
+                    ]
+                },
+                {
+                    title: '問題二',
+                    problem: '求曲線 $x = \\frac{y^4}{8} + \\frac{1}{4y^2}$ 從 $y=1$ 到 $y=2$ 的弧長。',
+                    analysis: '曲線是以 $x=g(y)$ 的形式給出，所以我們對 y 積分。同樣地，關鍵在於化簡 $1+(dx/dy)^2$ 為一個完全平方式。',
+                    steps: [
+                         {
+                            title: '步驟 1：求導與化簡',
+                            content: `$$ \\frac{dx}{dy} = \\frac{4y^3}{8} - \\frac{2}{4y^3} = \\frac{y^3}{2} - \\frac{1}{2y^3} $$
+                                     $$ 1+(\\frac{dx}{dy})^2 = 1 + (\\frac{y^3}{2} - \\frac{1}{2y^3})^2 = 1 + (\\frac{y^6}{4} - \\frac{1}{2} + \\frac{1}{4y^6}) $$
+                                     $$ = \\frac{y^6}{4} + \\frac{1}{2} + \\frac{1}{4y^6} = (\\frac{y^3}{2} + \\frac{1}{2y^3})^2 $$`
+                        },
+                        {
+                           title: '步驟 2：計算積分',
+                           content: `$$ L = \\int_1^2 \\sqrt{(\\frac{y^3}{2} + \\frac{1}{2y^3})^2} dy = \\int_1^2 (\\frac{y^3}{2} + \\frac{1}{2y^3}) dy $$
+                                    $$ = [\\frac{y^4}{8} - \\frac{1}{4y^2}]_1^2 = (\\frac{16}{8} - \\frac{1}{16}) - (\\frac{1}{8} - \\frac{1}{4}) = (2-\\frac{1}{16}) - (-\\frac{1}{8}) = 2+\\frac{1}{16} = \\frac{33}{16} $$`
+                        }
+                    ]
+                },
+                {
+                    title: '問題三',
+                    problem: '求曲線 $y = \\ln(\\cos x)$ 從 $x=0$ 到 $x=\\pi/4$ 的弧長。',
+                    analysis: '涉及三角函數的弧長計算。',
+                    steps: [
+                        {
+                            title: '步驟 1：求導與設立積分',
+                            content: `$$ \\frac{dy}{dx} = \\frac{1}{\\cos x}(-\\sin x) = -\\tan x $$
+                                     $$ L = \\int_0^{\\pi/4} \\sqrt{1+(-\\tan x)^2}dx = \\int_0^{\\pi/4} \\sqrt{1+\\tan^2 x}dx = \\int_0^{\\pi/4} \\sqrt{\\sec^2 x}dx $$`
+                        },
+                        {
+                           title: '步驟 2：計算積分',
+                           content: `$$ = \\int_0^{\\pi/4} \\sec x dx = [\\ln|\\sec x + \\tan x|]_0^{\\pi/4} $$
+                                    $$ = \\ln|\\sec(\\pi/4)+\\tan(\\pi/4)| - \\ln|\\sec(0)+\\tan(0)| = \\ln(\\sqrt{2}+1) - \\ln(1+0) = \\ln(\\sqrt{2}+1) $$`
+                        }
+                    ]
+                },
+                {
+                    title: '問題四',
+                    problem: '設立一個積分式來表示橢圓 $\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1$ 的總弧長。',
+                    analysis: '橢圓的弧長積分是沒有初等函數解的，稱為橢圓積分。我們只需要設立出積分式即可。可以利用對稱性，只算第一象限的弧長再乘以 4。',
+                    steps: [
+                        {
+                            title: '步驟 1：表示 y 並求導',
+                            content: `在第一象限, $y=b\\sqrt{1-\\frac{x^2}{a^2}} = \\frac{b}{a}\\sqrt{a^2-x^2}$。
+                                      $$ \\frac{dy}{dx} = \\frac{b}{a} \\cdot \\frac{-2x}{2\\sqrt{a^2-x^2}} = -\\frac{bx}{a\\sqrt{a^2-x^2}} $$`
+                        },
+                        {
+                           title: '步驟 2：設立積分式',
+                           content: `$$ 1+(\\frac{dy}{dx})^2 = 1 + \\frac{b^2x^2}{a^2(a^2-x^2)} = \\frac{a^2(a^2-x^2)+b^2x^2}{a^2(a^2-x^2)} = \\frac{a^4-a^2x^2+b^2x^2}{a^2(a^2-x^2)} = \\frac{a^4-(a^2-b^2)x^2}{a^2(a^2-x^2)} $$
+                                      <p>令 $c^2=a^2-b^2$，$e=c/a$ 為離心率。</p>
+                                      $$ 1+(\\frac{dy}{dx})^2 = \\frac{a^2-e^2x^2}{a^2-x^2} $$
+                                      <p>總弧長 $L = 4 \\int_0^a \\sqrt{\\frac{a^2-e^2x^2}{a^2-x^2}} dx$</p>`
+                        }
+                    ]
+                },
+                 {
+                    title: '問題五',
+                    problem: '求懸鏈線 (catenary) $y = a \\cosh(x/a)$ 從 $x=0$ 到 $x=x_1$ 的弧長。',
+                    analysis: '懸鏈線是鏈條自然懸掛時形成的曲線，其弧長計算有個漂亮的結果。利用雙曲函數的性質 $\\cosh^2 u - \\sinh^2 u = 1$。',
+                    steps: [
+                        {
+                            title: '步驟 1：求導與設立積分',
+                            content: `$$ \\frac{dy}{dx} = a \\cdot \\sinh(\\frac{x}{a}) \\cdot \\frac{1}{a} = \\sinh(\\frac{x}{a}) $$
+                                     $$ L = \\int_0^{x_1} \\sqrt{1+\\sinh^2(x/a)} dx = \\int_0^{x_1} \\sqrt{\\cosh^2(x/a)} dx $$`
+                        },
+                        {
+                           title: '步驟 2：計算積分',
+                           content: `$$ = \\int_0^{x_1} \\cosh(x/a) dx = [a \\sinh(x/a)]_0^{x_1} = a\\sinh(x_1/a) - a\\sinh(0) = a\\sinh(x_1/a) $$`
+                        }
+                    ]
+                },
+                {
+                    title: '問題六',
+                    problem: '求 $y = \\int_1^x \\sqrt{t^3-1} dt$ 在 $1 \\le x \\le 4$ 上的弧長。',
+                    source: '台灣大學-微積分考古題',
+                    analysis: '這是一個看起來很嚇人的題目，但其實是考驗對微積分基本定理和弧長定義的理解。',
+                    steps: [
+                        {
+                            title: '步驟 1：求導',
+                            content: `根據微積分第一基本定理，可以直接得到 $y$ 對 $x$ 的導數：
+                                     $$ \\frac{dy}{dx} = \\sqrt{x^3-1} $$`
+                        },
+                        {
+                           title: '步驟 2：設立弧長積分',
+                           content: `$$ L = \\int_1^4 \\sqrt{1+(\\frac{dy}{dx})^2} dx = \\int_1^4 \\sqrt{1+(\\sqrt{x^3-1})^2} dx $$
+                                    $$ = \\int_1^4 \\sqrt{1+x^3-1} dx = \\int_1^4 \\sqrt{x^3} dx = \\int_1^4 x^{3/2} dx $$`
+                        },
+                        {
+                            title: '步驟 3：計算',
+                            content: `$$ = [\\frac{2}{5}x^{5/2}]_1^4 = \\frac{2}{5}(4^{5/2} - 1^{5/2}) = \\frac{2}{5}(32-1) = \\frac{62}{5} $$`
+                        }
+                    ]
+                },
+                {
+                    title: '問題七',
+                    problem: '求 $y=\\ln x$ 在 $[1, \\sqrt{3}]$ 上的弧長。',
+                    source: '清華大學-微積分考古題',
+                    analysis: '一個看似簡單但積分需要技巧的題目。',
+                    steps: [
+                        {
+                            title: '步驟 1：設立積分',
+                            content: `$$ \\frac{dy}{dx} = \\frac{1}{x} $$
+                                     $$ L = \\int_1^{\\sqrt{3}} \\sqrt{1+\\frac{1}{x^2}} dx = \\int_1^{\\sqrt{3}} \\frac{\\sqrt{x^2+1}}{x} dx $$`
+                        },
+                        {
+                           title: '步驟 2：變數變換',
+                           content: `令 $u=\\sqrt{x^2+1}$，則 $u^2=x^2+1, 2udu=2xdx \\implies \\frac{u}{x}du=dx$。
+                                    $$ L = \\int_{\\sqrt{2}}^2 \\frac{u}{x} \\frac{u}{x} du = \\int_{\\sqrt{2}}^2 \\frac{u^2}{x^2} du = \\int_{\\sqrt{2}}^2 \\frac{u^2}{u^2-1} du $$
+                                    $$ = \\int_{\\sqrt{2}}^2 (1 + \\frac{1}{u^2-1}) du = \\int_{\\sqrt{2}}^2 (1 + \\frac{1}{2}(\\frac{1}{u-1}-\\frac{1}{u+1}))du $$`
+                        },
+                         {
+                            title: '步驟 3：計算',
+                            content: `$$ = [u + \\frac{1}{2}(\\ln|u-1|-\\ln|u+1|)]_{\\sqrt{2}}^2 $$
+                                     $$ = (2 + \\frac{1}{2}\\ln\\frac{1}{3}) - (\\sqrt{2} + \\frac{1}{2}\\ln\\frac{\\sqrt{2}-1}{\\sqrt{2}+1}) $$
+                                     <p>利用對數性質化簡後得到：</p>
+                                     $$ = 2 - \\sqrt{2} - \\frac{1}{2}\\ln 3 + \\ln(\\sqrt{2}+1) $$`
+                        }
+                    ]
+                },
+                {
+                    title: '問題八',
+                    problem: 'Find the length of the astroid $x^{2/3}+y^{2/3}=a^{2/3}$',
+                    source: '成功大學-微積分考古題',
+                    analysis: '星形線的弧長。利用其對稱性，計算第一象限的長度再乘以 4。隱微分會是個好方法。',
+                    steps: [
+                        {
+                            title: '步驟 1：隱微分',
+                            content: `$$ \\frac{2}{3}x^{-1/3} + \\frac{2}{3}y^{-1/3}\\frac{dy}{dx} = 0 \\implies \\frac{dy}{dx} = -\\frac{y^{1/3}}{x^{1/3}} $$`
+                        },
+                        {
+                           title: '步驟 2：設立積分',
+                           content: `$$ 1+(\\frac{dy}{dx})^2 = 1 + \\frac{y^{2/3}}{x^{2/3}} = \\frac{x^{2/3}+y^{2/3}}{x^{2/3}} = \\frac{a^{2/3}}{x^{2/3}} $$
+                                     <p>第一象限的 x 範圍是從 0 到 a。</p>
+                                     $$ L = 4 \\int_0^a \\sqrt{\\frac{a^{2/3}}{x^{2/3}}} dx = 4 \\int_0^a \\frac{a^{1/3}}{x^{1/3}} dx = 4a^{1/3} \\int_0^a x^{-1/3}dx $$`
+                        },
+                         {
+                            title: '步驟 3：計算 (瑕積分)',
+                            content: `注意這是一個在 x=0 的瑕積分。
+                                     $$ = 4a^{1/3} \\lim_{t\\to 0^+} [\\frac{3}{2}x^{2/3}]_t^a = 4a^{1/3} \\cdot \\frac{3}{2}(a^{2/3} - 0) = 6a $$`
+                        }
+                    ]
+                }
+            ];
+            
+            // DOM Elements
+            const exampleTabsContainer = document.getElementById('example-tabs-container');
+            const exampleContentContainer = document.getElementById('example-content-container');
+            const practiceTabsContainer = document.getElementById('practice-tabs-container');
+            const practiceContentContainer = document.getElementById('practice-content-container');
+            
+            let activeExampleIndex = 0;
+            let activePracticeIndex = 0;
+
+            // --- Modal Management ---
+            const apiKeyModal = document.getElementById('api-key-modal');
+            const aiTutorModal = document.getElementById('ai-tutor-modal');
+            const aiTutorModalContainer = document.getElementById('ai-tutor-modal-container');
+            const aiTutorModalHeader = document.getElementById('ai-tutor-modal-header');
+
+            function setupModal(modal, triggerId, closeButtonId) {
+                const trigger = document.getElementById(triggerId);
+                const closeBtn = document.getElementById(closeButtonId);
+                
+                if (trigger) {
+                    trigger.addEventListener('click', () => {
+                       modal.classList.add('show');
+                       // Center non-draggable modals
+                       if (modal.id === 'api-key-modal') {
+                           modal.querySelector('.modal-container').style.transform = 'translate(-50%, -50%) scale(1)';
+                       }
+                    });
+                }
+                
+                const closeModal = () => {
+                    modal.classList.remove('show');
+                    if (modal.id === 'ai-tutor-modal') {
+                        const audioPlayer = document.getElementById('ai-tutor-audio');
+                        audioPlayer.pause();
+                        audioPlayer.currentTime = 0;
+                    }
+                };
+
+                if (closeBtn) closeBtn.addEventListener('click', closeModal);
+                 // Only close overlay modals on background click
+                if(modal.id !== 'ai-tutor-modal') {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            closeModal();
+                        }
+                    });
+                }
+            }
+
+
+            setupModal(apiKeyModal, 'api-key-modal-trigger', 'api-key-modal-close');
+            setupModal(aiTutorModal, null, 'ai-tutor-modal-close'); // AI tutor modal is opened programmatically
+            document.getElementById('api-key-modal-cancel').addEventListener('click', () => apiKeyModal.classList.remove('show'));
+            
+            // --- Draggable Modal Logic ---
+            function makeDraggable(modal, header) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                let isDragging = false;
+
+                header.onmousedown = dragMouseDown;
+
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    isDragging = true;
+
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    if (!isDragging) return;
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    
+                    modal.style.top = (modal.offsetTop - pos2) + "px";
+                    modal.style.left = (modal.offsetLeft - pos1) + "px";
+                    // Remove transform after first drag to prevent position snapping
+                    modal.style.transform = 'none'; 
+                }
+
+                function closeDragElement() {
+                    isDragging = false;
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
+            makeDraggable(aiTutorModalContainer, aiTutorModalHeader);
+
+
+            // --- API Key Logic ---
+            const apiKeySaveButton = document.getElementById('api-key-save');
+            const apiKeyInput = document.getElementById('api-key-input');
+            const saveStatus = document.getElementById('save-status');
+
+            apiKeySaveButton.addEventListener('click', () => {
+                const key = apiKeyInput.value.trim();
+                if (key) {
+                    localStorage.setItem('googleApiKey', key);
+                    saveStatus.textContent = 'API Key 已儲存！';
+                } else {
+                    localStorage.removeItem('googleApiKey');
+                    saveStatus.textContent = 'API Key 已清除。';
+                }
+                renderExampleContent(activeExampleIndex); // Re-render to update button state
+                setTimeout(() => {
+                    apiKeyModal.classList.remove('show');
+                    saveStatus.textContent = '';
+                }, 1000);
+            });
+            
+             // --- AI Tutor Logic ---
+            const aiTutorStatus = document.getElementById('ai-tutor-status');
+            const aiTutorAudio = document.getElementById('ai-tutor-audio');
+
+            function base64ToArrayBuffer(base64) {
+                const binaryString = window.atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+
+            function pcmToWav(pcmData, sampleRate) {
+                const numChannels = 1;
+                const bytesPerSample = 2; // 16-bit
+                const blockAlign = numChannels * bytesPerSample;
+                const byteRate = sampleRate * blockAlign;
+                const dataSize = pcmData.length * bytesPerSample;
+                const buffer = new ArrayBuffer(44 + dataSize);
+                const view = new DataView(buffer);
+
+                // RIFF header
+                view.setUint32(0, 0x52494646, false); // "RIFF"
+                view.setUint32(4, 36 + dataSize, true);
+                view.setUint32(8, 0x57415645, false); // "WAVE"
+                // "fmt " sub-chunk
+                view.setUint32(12, 0x666d7420, false); // "fmt "
+                view.setUint32(16, 16, true); // Sub-chunk size
+                view.setUint16(20, 1, true); // Audio format (1 = PCM)
+                view.setUint16(22, numChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, byteRate, true);
+                view.setUint16(32, blockAlign, true);
+                view.setUint16(34, 16, true); // Bits per sample
+                // "data" sub-chunk
+                view.setUint32(36, 0x64617461, false); // "data"
+                view.setUint32(40, dataSize, true);
+
+                // Write PCM data
+                let offset = 44;
+                for (let i = 0; i < pcmData.length; i++, offset += 2) {
+                    view.setInt16(offset, pcmData[i], true);
+                }
+
+                return new Blob([view], { type: 'audio/wav' });
+            }
+
+            async function generateAiExplanation(prompt, apiKey) {
+                // Reset and show modal
+                aiTutorModalContainer.style.top = '50%';
+                aiTutorModalContainer.style.left = '50%';
+                aiTutorModalContainer.style.transform = 'translate(-50%, -50%)';
+                aiTutorStatus.innerHTML = `<p>AI 助教思考中...<span class="blinking-cursor"></span></p>`;
+                aiTutorAudio.src = '';
+                aiTutorAudio.hidden = true;
+                aiTutorModal.classList.add('show');
+
+                const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const ttsApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                try {
+                    // 1. Generate Text
+                    const textPayload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: {
+                            parts: [{ text: "你是一位親切的微積分助教。請用簡單易懂、口語化的方式，解說以下的微積分題目。請先解釋解題的思路，然後逐步說明解題過程。" }]
+                        }
+                    };
+                    const textResponse = await fetch(textApiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(textPayload)
+                    });
+                    if (!textResponse.ok) throw new Error(`文字生成失敗：${textResponse.statusText}`);
+                    const textResult = await textResponse.json();
+                    const explanationText = textResult.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!explanationText) throw new Error('無法從 API 獲取有效的文字內容。');
+                    
+                    aiTutorStatus.innerHTML = `<p>正在為您產生語音...<span class="blinking-cursor"></span></p>`;
+
+                    // 2. Generate Audio
+                    const ttsPayload = {
+                        contents: [{ parts: [{ text: explanationText }] }],
+                         generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: { prebuiltVoiceConfig: { voiceName: "Sadaltager" } }
+                            }
+                        }
+                    };
+                    const audioResponse = await fetch(ttsApiUrl, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(ttsPayload)
+                    });
+                    if (!audioResponse.ok) throw new Error(`語音生成失敗：${audioResponse.statusText}`);
+                    const audioResult = await audioResponse.json();
+                    const audioData = audioResult?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                    const mimeType = audioResult?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
+
+                    if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                        const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                        const pcmData = base64ToArrayBuffer(audioData);
+                        const pcm16 = new Int16Array(pcmData);
+                        const wavBlob = pcmToWav(pcm16, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+                        aiTutorStatus.innerHTML = `<p>語音解說已就緒！</p>`;
+                        aiTutorAudio.src = audioUrl;
+                        aiTutorAudio.hidden = false;
+                        aiTutorAudio.play();
+                    } else {
+                        throw new Error('無法從 API 獲取有效的語音內容。');
+                    }
+
+                } catch (error) {
+                    console.error("AI Tutor Error:", error);
+                    aiTutorStatus.innerHTML = `<p class="text-red-600">抱歉，AI 助教出了一點問題：<br>${error.message}</p><p class="text-sm mt-2">請確認您的 API Key 是否正確且有足夠的權限。</p>`;
+                }
+            }
+
+
+            function renderTabs(container, items, activeIndex, isPractice) {
+                container.innerHTML = items.map((ex, i) => {
+                    const tabTitle = isPractice ? `問題 ${i+1}` : ex.title;
+                    return `<button data-index="${i}" class="tab-button text-sm sm:text-base py-2 px-1 sm:px-4 rounded-md transition duration-300 ${i === activeIndex ? 'active-tab' : 'inactive-tab'}">${tabTitle}</button>`;
+                }).join('');
+
+                document.querySelectorAll(`#${container.id} .tab-button`).forEach(button => {
+                    button.addEventListener('click', () => {
+                        const newIndex = parseInt(button.dataset.index);
+                        if (isPractice) {
+                            activePracticeIndex = newIndex;
+                            renderPracticeContent(newIndex);
+                            renderTabs(practiceTabsContainer, practiceExamples, newIndex, true);
+                        } else {
+                            activeExampleIndex = newIndex;
+                            renderExampleContent(newIndex);
+                            renderTabs(exampleTabsContainer, examples, newIndex, false);
+                        }
+                    });
+                });
+            }
+
+            async function renderExampleContent(index) {
+                const example = examples[index];
+                let stepsHtml = example.steps.map((step, i) => `
+                    <div class="border-b border-stone-200">
+                        <button class="accordion-header w-full text-left p-4 focus:outline-none hover:bg-teal-50 transition duration-300 flex justify-between items-center" data-step="${i}">
+                            <span class="font-semibold text-stone-700">${step.title}</span>
+                            <svg class="w-5 h-5 text-teal-600 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="p-4 bg-stone-50 border-t border-stone-200 text-stone-600 leading-relaxed math-display">${step.content}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                exampleContentContainer.innerHTML = `
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                             <h4 class="text-xl font-bold text-stone-800">${example.title}</h4>
+                             <button id="ai-tutor-button-${index}" data-index="${index}" class="ai-tutor-btn flex items-center gap-2 bg-teal-500 text-white font-bold py-2 px-4 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 disabled:bg-gray-400 disabled:opacity-70 disabled:cursor-not-allowed" title="需要 API Key">
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play-circle"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                                 AI助教解說
+                             </button>
+                        </div>
+                        <div class="p-4 bg-amber-50 rounded-lg text-lg math-display">${example.problem}</div>
+                        ${example.source ? `<p class="mt-2 text-sm text-stone-500 text-right">${example.source}</p>` : ''}
+                    </div>
+                    <div class="mb-6">
+                        <h4 class="text-xl font-bold text-stone-800 mb-2">觀察與分析：</h4>
+                        <p class="p-4 bg-sky-50 rounded-lg text-stone-600">${example.analysis}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold text-stone-800 mb-2">解題步驟：</h4>
+                        <div class="border border-stone-200 rounded-lg overflow-hidden">${stepsHtml}</div>
+                    </div>
+                `;
+                
+                // AI Tutor Button Logic
+                const aiTutorButton = document.getElementById(`ai-tutor-button-${index}`);
+                const apiKey = localStorage.getItem('googleApiKey');
+                if (!apiKey) {
+                    aiTutorButton.disabled = true;
+                }
+                aiTutorButton.addEventListener('click', (e) => {
+                    const idx = e.currentTarget.dataset.index;
+                    const currentExample = examples[idx];
+                    let stepsText = currentExample.steps.map(s => `${s.title}:\n${s.content.replace(/<br>/g, '\n').replace(/<[^>]*>/g, '')}`).join('\n\n');
+                    const prompt = `題目：\n${currentExample.problem.replace(/<[^>]*>/g, '')}\n\n分析：\n${currentExample.analysis}\n\n解題步驟：\n${stepsText}`;
+                    generateAiExplanation(prompt, apiKey);
+                });
+                
+                await window.MathJax.typesetPromise();
+
+                document.querySelectorAll('#example-content-container .accordion-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const content = header.nextElementSibling;
+                        const icon = header.querySelector('svg');
+                        content.classList.toggle('show');
+                        icon.classList.toggle('rotate-180');
+                    });
+                });
+            }
+
+            async function renderPracticeContent(index) {
+                const example = practiceExamples[index];
+                practiceContentContainer.innerHTML = `
+                    <div class="mb-6">
+                        <h4 class="text-xl font-bold text-stone-800 mb-2">題目：</h4>
+                        <div class="p-4 bg-amber-50 rounded-lg text-lg math-display">${example.problem}</div>
+                        ${example.source ? `<p class="mt-2 text-sm text-stone-500 text-right">${example.source}</p>` : ''}
+                    </div>
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                             <h4 class="text-xl font-bold text-stone-800">觀察與分析：</h4>
+                             <button id="hint-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition-transform transform hover:scale-105">提示</button>
+                        </div>
+                        <div id="analysis-container" class="transition duration-500 ease-in-out">
+                            <div class="bg-gray-100 p-4 rounded-lg text-center text-gray-500">
+                                <span class="text-2xl">🔒</span><br>
+                                點擊上方的「提示」按鈕來查看分析思路。
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xl font-bold text-stone-800">解題步驟：</h4>
+                        </div>
+                        <div id="steps-container" class="transition duration-500 ease-in-out">
+                            <div class="bg-gray-100 p-4 rounded-lg text-center text-gray-500">
+                                <span class="text-2xl">🔒</span><br>
+                                請輸入密碼解鎖解題步驟
+                                <div class="mt-4 flex items-center justify-center">
+                                    <input id="password-input" type="password" placeholder="****" class="px-4 py-2 text-center rounded-md border-2 border-gray-300 focus:border-teal-500 focus:outline-none w-32">
+                                    <button id="unlock-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-md shadow-md ml-2 transition-transform transform hover:scale-105">解鎖</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                await window.MathJax.typesetPromise();
+
+                const hintButton = document.getElementById('hint-button');
+                const analysisContainer = document.getElementById('analysis-container');
+                const unlockButton = document.getElementById('unlock-button');
+                const passwordInput = document.getElementById('password-input');
+                const stepsContainer = document.getElementById('steps-container');
+                const defaultPassword = '0000'; //這是解題密碼
+
+                hintButton.addEventListener('click', async () => {
+                    analysisContainer.innerHTML = `<p class="p-4 bg-sky-50 rounded-lg text-stone-600">${example.analysis}</p>`;
+                    await window.MathJax.typesetPromise();
+                });
+
+                const unlockSteps = async () => {
+                     if (passwordInput.value === defaultPassword) {
+                        let stepsHtml = example.steps.map((step, i) => `
+                            <div class="border-b border-stone-200">
+                                <button class="accordion-header w-full text-left p-4 focus:outline-none hover:bg-teal-50 transition duration-300 flex justify-between items-center" data-step="${i}">
+                                    <span class="font-semibold text-stone-700">${step.title}</span>
+                                    <svg class="w-5 h-5 text-teal-600 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+                                <div class="accordion-content">
+                                    <div class="p-4 bg-stone-50 border-t border-stone-200 text-stone-600 leading-relaxed math-display">${step.content}</div>
+                                </div>
+                            </div>
+                        `).join('');
+
+                        stepsContainer.innerHTML = `<div class="border border-stone-200 rounded-lg overflow-hidden">${stepsHtml}</div>`;
+
+                        document.querySelectorAll('#steps-container .accordion-header').forEach(header => {
+                            header.addEventListener('click', () => {
+                                const content = header.nextElementSibling;
+                                const icon = header.querySelector('svg');
+                                content.classList.toggle('show');
+                                icon.classList.toggle('rotate-180');
+                            });
+                        });
+                        await window.MathJax.typesetPromise();
+                    } else {
+                        alert('密碼錯誤，請再試一次。');
+                    }
+                };
+
+                unlockButton.addEventListener('click', unlockSteps);
+                passwordInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        unlockSteps();
+                    }
+                });
+            }
+            
+            // Initial Render
+            renderTabs(exampleTabsContainer, examples, activeExampleIndex, false);
+            renderExampleContent(activeExampleIndex);
+            renderTabs(practiceTabsContainer, practiceExamples, activePracticeIndex, true);
+            renderPracticeContent(activePracticeIndex);
+
+        });
+    </script>
+</body>
+</html>
+
+
+
