@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 8.1 弧長 | Prof. Wu Wen-Chuan</title>
+    
+    <!-- 1. 核心樣式與庫載入 -->
+    <!-- Tailwind CSS (樣式框架) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (前端框架) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (JSX 編譯器) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- KaTeX (數學公式渲染) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <!-- 自定義樣式 -->
+    <style>
+        /* 平滑滾動 */
+        html { scroll-behavior: smooth; }
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        /* 數學公式容器樣式 - 允許水平滾動 */
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ==========================================
+        // 2. 工具組件 (Utilities)
+        // ==========================================
+
+        /**
+         * LaTeX 渲染組件
+         */
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        // ==========================================
+        // 3. UI 子組件 (Sub-components)
+        // ==========================================
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-lg">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            {t.menu.map((item, i) => (
+                                <a key={i} href={`#part${i+1}`} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors">{item}</a>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            {t.menu.map((item, i) => (
+                                <a key={i} href={`#part${i+1}`} onClick={() => setIsMenuOpen(false)} className="px-2 py-1 text-lg font-bold text-gray-600">{item}</a>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{'\\displaystyle L = \\int_a^b \\sqrt{1 + [f\'(x)]^2} \\, dx = \\int_a^b \\sqrt{1 + \\left(\\frac{dy}{dx}\\right)^2} \\, dx'}</Latex>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step2Desc}</div>
+                        <div className="text-center my-4 math-display bg-blue-50 p-4 rounded-xl">
+                            <Latex block>{'\\displaystyle L = \\int_c^d \\sqrt{1 + [g\'(y)]^2} \\, dy = \\int_c^d \\sqrt{1 + \\left(\\frac{dx}{dy}\\right)^2} \\, dy'}</Latex>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border-2 border-pink-300 py-4 px-6 rounded-2xl text-center shadow-sm">
+                        <div className="text-xl font-bold text-pink-700 mb-2">{t.funcTitle}</div>
+                        <div className="text-lg text-gray-600 mb-2">{t.funcDesc}</div>
+                        <div className="math-display text-lg">
+                            <Latex block>{'\\displaystyle s(x) = \\int_a^x \\sqrt{1 + [f\'(t)]^2} \\, dt'}</Latex>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-blue-800 mb-3">{activeEx.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2025 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "8.1",
+                unitTitle: "弧長",
+                unitSub: "Arc Length",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "計算平面曲線的長度",
+                part1Desc: (
+                    <span>
+                        本單元的學習目的是計算一條曲線在給定區間內的長度。我們可以將曲線想像成一根拉直的繩子，並利用積分來精確計算其長度。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：把滾動的輪胎印拉直",
+                analogyDesc: (
+                    <span>
+                        弧長積分就像是把彎曲的線段「拉直」來測量。公式中 <Latex>{'\\sqrt{1+(f\')^2}'}</Latex> 的部分，實際上是利用畢氏定理在微小的尺度下計算一小段斜邊 <Latex>{'ds = \\sqrt{dx^2 + dy^2}'}</Latex>。當我們把這些無窮小段的「微小斜邊」全部加總起來（積分），就得到了曲線的總長度。
+                    </span>
+                ),
+                part1Step1: "情況 A：曲線由 y = f(x) 定義",
+                part1Step1Desc: (
+                    <span>
+                        若曲線由 <Latex>{'y = f(x)'}</Latex> 定義，且 <Latex>{'f\''}</Latex> 連續，則長度 <Latex>{'L'}</Latex> 為：
+                    </span>
+                ),
+                part1Step2: "情況 B：曲線由 x = g(y) 定義",
+                part1Step2Desc: (
+                    <span>
+                         若曲線由 <Latex>{'x = g(y)'}</Latex> 定義，則長度 <Latex>{'L'}</Latex> 為：
+                    </span>
+                ),
+                funcTitle: "弧長函數 (Arc Length Function)",
+                funcDesc: "從起點 a 到任意點 x 的累積弧長 s(x) 為：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "8.1",
+                unitTitle: "Arc Length",
+                unitSub: "弧長",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Calculating Length of Plane Curves",
+                part1Desc: (
+                    <span>
+                        The goal of this unit is to calculate the length of a curve over a given interval. Think of it as straightening a curved string to measure it precisely using integration.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Straightening a Tire Track",
+                analogyDesc: (
+                    <span>
+                        Arc length integration is like "straightening out" a curve. The <Latex>{'\\sqrt{1+(f\')^2}'}</Latex> term comes from the Pythagorean theorem for an infinitesimal segment <Latex>{'ds = \\sqrt{dx^2 + dy^2}'}</Latex>. Summing these tiny hypotenuses (integration) gives the total length.
+                    </span>
+                ),
+                part1Step1: "Case A: Curve defined by y = f(x)",
+                part1Step1Desc: (
+                    <span>
+                        If the curve is <Latex>{'y = f(x)'}</Latex> and <Latex>{'f\''}</Latex> is continuous, the length <Latex>{'L'}</Latex> is:
+                    </span>
+                ),
+                part1Step2: "Case B: Curve defined by x = g(y)",
+                part1Step2Desc: (
+                    <span>
+                         If the curve is <Latex>{'x = g(y)'}</Latex>, the length <Latex>{'L'}</Latex> is:
+                    </span>
+                ),
+                funcTitle: "The Arc Length Function",
+                funcDesc: "The accumulated length s(x) from a starting point a to x is:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "半立方拋物線 (P.561)",
+                    math: "\\displaystyle y^2 = x^3 \\quad \\text{from } (1, 1) \\text{ to } (4, 8)",
+                    steps: [
+                        { t: "Step 1: 表達函數 (Express Function)", d: (<span>取上半部曲線，將 <Latex>{'y'}</Latex> 表示為 <Latex>{'x'}</Latex> 的函數。</span>), m: "\\displaystyle y = x^{3/2}" },
+                        { t: "Step 2: 求導數 (Differentiate)", d: (<span>計算 <Latex>{'dy/dx'}</Latex>。</span>), m: "\\displaystyle \\frac{dy}{dx} = \\frac{3}{2}x^{1/2}" },
+                        { t: "Step 3: 代入公式 (Setup Integral)", d: (<span>代入弧長公式 <Latex>{'\\sqrt{1+(y\')^2}'}</Latex>。</span>), m: "\\displaystyle L = \\int_1^4 \\sqrt{1 + \\left(\\frac{3}{2}x^{1/2}\\right)^2} \\, dx = \\int_1^4 \\sqrt{1 + \\frac{9}{4}x} \\, dx" },
+                        { t: "Step 4: 變數代換 (u-Substitution)", d: (<span>令 <Latex>{'u = 1 + \\frac{9}{4}x'}</Latex>，則 <Latex>{'du = \\frac{9}{4}dx \\Rightarrow dx = \\frac{4}{9}du'}</Latex>。<br/>換界：<Latex>{'x=1 \\to u=13/4; x=4 \\to u=10'}</Latex>。</span>), m: "\\displaystyle L = \\frac{4}{9} \\int_{13/4}^{10} u^{1/2} \\, du" },
+                        { t: "Step 5: 積分 (Integrate)", d: (<span>對 <Latex>{'u^{1/2}'}</Latex> 進行積分。<Latex>{'\\int u^{1/2} du = \\frac{2}{3}u^{3/2}'}</Latex>。</span>), m: "\\displaystyle \\frac{4}{9} \\cdot \\left[\\frac{2}{3} u^{3/2}\\right]_{13/4}^{10} = \\frac{8}{27} \\left[ u^{3/2} \\right]_{13/4}^{10}" },
+                        { t: "Step 6: 代入數值 (Substitute Limits)", d: (<span>將上下限代入。</span>), m: "\\displaystyle \\frac{8}{27} \\left( 10^{3/2} - \\left(\\frac{13}{4}\\right)^{3/2} \\right)" },
+                        { t: "Step 7: 最終結果 (Result)", d: (<span>計算近似值。</span>), m: "\\displaystyle \\approx \\frac{8}{27} (31.623 - 5.859) \\approx 7.63" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "拋物線 (對 y 積分) (P.562)",
+                    math: "\\displaystyle y^2 = x \\quad \\text{from } (0, 0) \\text{ to } (1, 1)",
+                    steps: [
+                        { t: "Step 1: 選擇變數 (Select Variable)", d: (<span>由於 <Latex>{'x=y^2'}</Latex>，使用 <Latex>{'y'}</Latex> 作為積分變數較方便。計算 <Latex>{'dx/dy'}</Latex>。</span>), m: "\\displaystyle x = y^2 \\implies \\frac{dx}{dy} = 2y" },
+                        { t: "Step 2: 代入公式 (Setup Integral)", d: (<span>代入 <Latex>{'x=g(y)'}</Latex> 的弧長公式。</span>), m: "\\displaystyle L = \\int_0^1 \\sqrt{1 + (2y)^2} \\, dy = \\int_0^1 \\sqrt{1 + 4y^2} \\, dy" },
+                        { t: "Step 3: 三角代換 (Trig Substitution)", d: (<span>令 <Latex>{'2y = \\tan\\theta'}</Latex>，則 <Latex>{'2dy = \\sec^2\\theta d\\theta'}</Latex>。根號項 <Latex>{'\\sqrt{1+4y^2} = \\sqrt{1+\\tan^2\\theta} = \\sec\\theta'}</Latex>。</span>), m: "\\displaystyle L = \\int \\sec\\theta \\cdot \\frac{1}{2}\\sec^2\\theta \\, d\\theta = \\frac{1}{2} \\int \\sec^3\\theta \\, d\\theta" },
+                        { t: "Step 4: 積分運算 (Integration)", d: (<span>利用 <Latex>{'\\sec^3\\theta'}</Latex> 的積分公式：<Latex>{'\\int \\sec^3\\theta d\\theta = \\frac{1}{2}(\\sec\\theta\\tan\\theta + \\ln|\\sec\\theta+\\tan\\theta|)'}</Latex>。</span>), m: "\\displaystyle L = \\frac{1}{2} \\cdot \\frac{1}{2} \\left[ \\sec\\theta\\tan\\theta + \\ln|\\sec\\theta+\\tan\\theta| \\right]" },
+                        { t: "Step 5: 代入數值 (Substitute Values)", d: (<span>當 <Latex>{'y=1'}</Latex>，<Latex>{'\\tan\\theta=2, \\sec\\theta=\\sqrt{5}'}</Latex>；當 <Latex>{'y=0'}</Latex>，<Latex>{'\\tan\\theta=0, \\sec\\theta=1'}</Latex>。</span>), m: "\\displaystyle L = \\frac{1}{4} \\left[ (\\sqrt{5}\\cdot 2 + \\ln|\\sqrt{5}+2|) - (1\\cdot 0 + \\ln|1+0|) \\right]" },
+                        { t: "Step 6: 計算結果 (Result)", d: (<span>整理後得到最終精確值。</span>), m: "\\displaystyle L = \\frac{1}{4} \\left( 2\\sqrt{5} + \\ln(\\sqrt{5}+2) \\right) = \\frac{\\sqrt{5}}{2} + \\frac{\\ln(\\sqrt{5}+2)}{4} \\approx 1.48" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 4", title: "弧長函數 (P.564)",
+                    math: "\\displaystyle y = x^2 - \\frac{1}{8}\\ln x \\quad \\text{starting at } (1, 1)",
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>計算 <Latex>{'f\'(x)'}</Latex>。</span>), m: "\\displaystyle f'(x) = 2x - \\frac{1}{8x}" },
+                        { t: "Step 2: 平方並化簡 (Simplify Algebra)", d: (<span>計算 <Latex>{'1+(f\')^2'}</Latex>。這是一個常見的配方技巧：<Latex>{'1 + (a-b)^2 = 1 + a^2 - 2ab + b^2 = a^2 + 2ab + b^2 = (a+b)^2'}</Latex>。這裡 <Latex>{'2ab = 2(2x)(1/8x) = 1/2'}</Latex>。</span>), m: "\\displaystyle 1 + \\left(2x - \\frac{1}{8x}\\right)^2 = 1 + 4x^2 - \\frac{1}{2} + \\frac{1}{64x^2} = 4x^2 + \\frac{1}{2} + \\frac{1}{64x^2} = \\left(2x + \\frac{1}{8x}\\right)^2" },
+                        { t: "Step 3: 開根號積分 (Integrate)", d: (<span>完全平方式開根號後直接積分。注意變數改用 <Latex>{'t'}</Latex>。</span>), m: "\\displaystyle s(x) = \\int_1^x \\sqrt{\\left(2t + \\frac{1}{8t}\\right)^2} \\, dt = \\int_1^x \\left(2t + \\frac{1}{8t}\\right) \\, dt" },
+                        { t: "Step 4: 計算結果 (Result)", d: (<span>積分多項式與對數項。</span>), m: "\\displaystyle s(x) = \\left[t^2 + \\frac{1}{8}\\ln t\\right]_1^x = x^2 + \\frac{1}{8}\\ln x - 1" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Semi-cubical Parabola (P.561)",
+                    math: "\\displaystyle y^2 = x^3 \\quad \\text{from } (1, 1) \\text{ to } (4, 8)",
+                    steps: [
+                        { t: "Step 1: Express Function", d: (<span>Use upper branch: <Latex>{'y = x^{3/2}'}</Latex>.</span>), m: "\\displaystyle y = x^{3/2}" },
+                        { t: "Step 2: Differentiate", d: (<span>Find <Latex>{'dy/dx'}</Latex>.</span>), m: "\\displaystyle \\frac{dy}{dx} = \\frac{3}{2}x^{1/2}" },
+                        { t: "Step 3: Setup Integral", d: (<span>Use arc length formula.</span>), m: "\\displaystyle L = \\int_1^4 \\sqrt{1 + \\left(\\frac{3}{2}x^{1/2}\\right)^2} \\, dx = \\int_1^4 \\sqrt{1 + \\frac{9}{4}x} \\, dx" },
+                        { t: "Step 4: u-Substitution", d: (<span>Let <Latex>{'u = 1 + 9x/4'}</Latex>.</span>), m: "\\displaystyle L = \\frac{4}{9} \\int_{13/4}^{10} u^{1/2} \\, du" },
+                        { t: "Step 5: Integrate", d: (<span>Integrate <Latex>{'u^{1/2}'}</Latex>.</span>), m: "\\displaystyle \\frac{4}{9} \\cdot \\left[\\frac{2}{3} u^{3/2}\\right]_{13/4}^{10} = \\frac{8}{27} \\left[ u^{3/2} \\right]_{13/4}^{10}" },
+                        { t: "Step 6: Substitute Limits", d: (<span>Plug in upper and lower limits.</span>), m: "\\displaystyle \\frac{8}{27} \\left( 10^{3/2} - \\left(\\frac{13}{4}\\right)^{3/2} \\right)" },
+                        { t: "Step 7: Result", d: (<span>Calculate approximate value.</span>), m: "\\displaystyle \\approx 7.63" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Parabola (Integrate wrt y) (P.562)",
+                    math: "\\displaystyle y^2 = x \\quad \\text{from } (0, 0) \\text{ to } (1, 1)",
+                    steps: [
+                        { t: "Step 1: Select Variable", d: (<span>Use <Latex>{'y'}</Latex> since <Latex>{'x=y^2'}</Latex>.</span>), m: "\\displaystyle \\frac{dx}{dy} = 2y" },
+                        { t: "Step 2: Setup Integral", d: (<span>Use x=g(y) formula.</span>), m: "\\displaystyle L = \\int_0^1 \\sqrt{1 + 4y^2} \\, dy" },
+                        { t: "Step 3: Trig Substitution", d: (<span>Let <Latex>{'2y = \\tan\\theta'}</Latex>. Convert to <Latex>{'\\sec^3\\theta'}</Latex>.</span>), m: "\\displaystyle L = \\frac{1}{2} \\int \\sec^3\\theta \\, d\\theta" },
+                        { t: "Step 4: Integrate", d: (<span>Use <Latex>{'\\sec^3'}</Latex> reduction formula.</span>), m: "\\displaystyle L = \\frac{1}{4} [\\sec\\theta\\tan\\theta + \\ln|\\sec\\theta+\\tan\\theta|]" },
+                        { t: "Step 5: Substitute Values", d: (<span><Latex>{'\\tan\\theta=2, \\sec\\theta=\\sqrt{5}'}</Latex> at upper limit.</span>), m: "\\displaystyle L = \\frac{1}{4} (2\\sqrt{5} + \\ln(\\sqrt{5}+2))" },
+                        { t: "Step 6: Result", d: (<span>Final value.</span>), m: "\\displaystyle L = \\frac{\\sqrt{5}}{2} + \\frac{\\ln(\\sqrt{5}+2)}{4} \\approx 1.48" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 4", title: "Arc Length Function (P.564)",
+                    math: "\\displaystyle y = x^2 - \\frac{1}{8}\\ln x \\quad \\text{starting at } (1, 1)",
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Find <Latex>{'f\'(x)'}</Latex>.</span>), m: "\\displaystyle f'(x) = 2x - \\frac{1}{8x}" },
+                        { t: "Step 2: Simplify Algebra", d: (<span>Complete the square for <Latex>{'1+(f\')^2'}</Latex>. Notice the sign change from minus to plus in the squared term.</span>), m: "\\displaystyle 1 + \\left(2x - \\frac{1}{8x}\\right)^2 = \\left(2x + \\frac{1}{8x}\\right)^2" },
+                        { t: "Step 3: Integrate", d: (<span>Use dummy variable <Latex>{'t'}</Latex>.</span>), m: "\\displaystyle s(x) = \\int_1^x \\left(2t + \\frac{1}{8t}\\right) \\, dt" },
+                        { t: "Step 4: Result", d: (<span>Evaluate integral.</span>), m: "\\displaystyle s(x) = x^2 + \\frac{1}{8}\\ln x - 1" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "練習題 1 (基礎應用)", math: "\\displaystyle y = \\frac{2}{3}x^{3/2}, \\quad 0 \\le x \\le 1", 
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>冪次法則：<Latex>{'\\frac{d}{dx} x^{3/2} = \\frac{3}{2}x^{1/2}'}</Latex>。</span>), m: "\\displaystyle y' = \\frac{2}{3} \\cdot \\frac{3}{2}x^{1/2} = x^{1/2}" },
+                        { t: "Step 2: 代入公式 (Setup)", d: (<span>計算 <Latex>{'1+(y\')^2'}</Latex>。</span>), m: "\\displaystyle L = \\int_0^1 \\sqrt{1 + (x^{1/2})^2} \\, dx = \\int_0^1 \\sqrt{1 + x} \\, dx" },
+                        { t: "Step 3: 積分 (Integrate)", d: (<span>使用簡單代換 <Latex>{'u=1+x'}</Latex> 或直接積分。</span>), m: "\\displaystyle \\left[ \\frac{2}{3}(1+x)^{3/2} \\right]_0^1" },
+                        { t: "Step 4: 計算 (Evaluate)", d: (<span>代入上下限。</span>), m: "\\displaystyle \\frac{2}{3}(2^{3/2} - 1^{3/2}) = \\frac{2}{3}(2\\sqrt{2} - 1)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "練習題 2 (關於 y 軸積分)", math: "\\displaystyle x = \\frac{1}{3}(y^2 + 2)^{3/2}, \\quad 0 \\le y \\le 1", 
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>對 <Latex>{'y'}</Latex> 微分，使用鏈鎖律。</span>), m: "\\displaystyle \\frac{dx}{dy} = \\frac{1}{3} \\cdot \\frac{3}{2}(y^2+2)^{1/2} \\cdot 2y = y\\sqrt{y^2+2}" },
+                        { t: "Step 2: 平方並加一 (Square & Add 1)", d: (<span>化簡根號內的式子。</span>), m: "\\displaystyle 1 + \\left(\\frac{dx}{dy}\\right)^2 = 1 + y^2(y^2+2) = y^4 + 2y^2 + 1 = (y^2+1)^2" },
+                        { t: "Step 3: 積分 (Integrate)", d: (<span>開根號後變為多項式積分。</span>), m: "\\displaystyle L = \\int_0^1 \\sqrt{(y^2+1)^2} \\, dy = \\int_0^1 (y^2+1) \\, dy" },
+                        { t: "Step 4: 計算 (Evaluate)", d: (<span>完成積分。</span>), m: "\\displaystyle \\left[ \\frac{1}{3}y^3 + y \\right]_0^1 = \\frac{1}{3} + 1 = \\frac{4}{3}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "練習題 3 (直線檢驗)", math: "\\displaystyle y = 2x - 3, \\quad 1 \\le x \\le 3", 
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>直線的導數是常數。</span>), m: "\\displaystyle y' = 2" },
+                        { t: "Step 2: 代入公式 (Setup)", d: (<span>被積函數為常數。</span>), m: "\\displaystyle L = \\int_1^3 \\sqrt{1 + 2^2} \\, dx = \\int_1^3 \\sqrt{5} \\, dx" },
+                        { t: "Step 3: 積分 (Integrate)", d: (<span>常數積分等於常數乘以區間長度。</span>), m: "\\displaystyle [\\sqrt{5}x]_1^3 = \\sqrt{5}(3-1) = 2\\sqrt{5}" },
+                        { t: "Step 4: 驗證 (Verify)", d: (<span>利用兩點距離公式：點 (1,-1) 到 (3,3)。</span>), m: "\\displaystyle \\sqrt{(3-1)^2 + (3-(-1))^2} = \\sqrt{4 + 16} = \\sqrt{20} = 2\\sqrt{5}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "練習題 4 (弧長函數)", math: "\\displaystyle y = \\frac{2}{3}(x-1)^{3/2} \\quad \\text{from } (1, 0)", 
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>將變數改為 <Latex>{'t'}</Latex>。</span>), m: "\\displaystyle f'(t) = (t-1)^{1/2}" },
+                        { t: "Step 2: 設定積分 (Setup Integral)", d: (<span>弧長函數 <Latex>{'s(x)'}</Latex>。</span>), m: "\\displaystyle s(x) = \\int_1^x \\sqrt{1 + [(t-1)^{1/2}]^2} \\, dt = \\int_1^x \\sqrt{1 + t - 1} \\, dt" },
+                        { t: "Step 3: 化簡 (Simplify)", d: (<span>被積函數化簡為 <Latex>{'\\sqrt{t}'}</Latex>。</span>), m: "\\displaystyle s(x) = \\int_1^x t^{1/2} \\, dt" },
+                        { t: "Step 4: 積分 (Integrate)", d: (<span>完成積分。</span>), m: "\\displaystyle s(x) = \\left[ \\frac{2}{3}t^{3/2} \\right]_1^x = \\frac{2}{3}x^{3/2} - \\frac{2}{3}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "練習題 5 (代換應用)", math: "\\displaystyle y = \\ln(\\cos x), \\quad 0 \\le x \\le \\pi/4", 
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>鏈鎖律：<Latex>{'d(\\ln u) = du/u'}</Latex>。</span>), m: "\\displaystyle y' = \\frac{1}{\\cos x}(-\\sin x) = -\\tan x" },
+                        { t: "Step 2: 代入公式 (Setup)", d: (<span>利用三角恆等式 <Latex>{'1+\\tan^2 x = \\sec^2 x'}</Latex>。</span>), m: "\\displaystyle L = \\int_0^{\\pi/4} \\sqrt{1 + (-\\tan x)^2} \\, dx = \\int_0^{\\pi/4} \\sqrt{\\sec^2 x} \\, dx" },
+                        { t: "Step 3: 化簡 (Simplify)", d: (<span>在 <Latex>{'[0, \\pi/4]'}</Latex>，<Latex>{'\\sec x > 0'}</Latex>，直接開根號。</span>), m: "\\displaystyle L = \\int_0^{\\pi/4} \\sec x \\, dx" },
+                        { t: "Step 4: 積分 (Integrate)", d: (<span>利用 Secant 積分公式。</span>), m: "\\displaystyle [\\ln|\\sec x + \\tan x|]_0^{\\pi/4} = \\ln(\\sqrt{2}+1) - \\ln(1+0) = \\ln(\\sqrt{2}+1)" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Practice 1 (Basic)", math: "\\displaystyle y = \\frac{2}{3}x^{3/2}, \\quad 0 \\le x \\le 1", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Power rule.</span>), m: "\\displaystyle y' = x^{1/2}" },
+                        { t: "Step 2: Setup", d: (<span>Plug into formula.</span>), m: "\\displaystyle L = \\int_0^1 \\sqrt{1 + x} \\, dx" },
+                        { t: "Step 3: Integrate", d: (<span>Simple power rule.</span>), m: "\\displaystyle \\left[ \\frac{2}{3}(1+x)^{3/2} \\right]_0^1" },
+                        { t: "Step 4: Evaluate", d: (<span>Final answer.</span>), m: "\\displaystyle \\frac{2}{3}(2\\sqrt{2} - 1)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Practice 2 (Integration wrt y)", math: "\\displaystyle x = \\frac{1}{3}(y^2 + 2)^{3/2}, \\quad 0 \\le y \\le 1", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Chain rule wrt y.</span>), m: "\\displaystyle \\frac{dx}{dy} = y\\sqrt{y^2+2}" },
+                        { t: "Step 2: Square & Add 1", d: (<span>Simplify the radical term.</span>), m: "\\displaystyle 1 + \\left(\\frac{dx}{dy}\\right)^2 = (y^2+1)^2" },
+                        { t: "Step 3: Integrate", d: (<span>Root cancels square.</span>), m: "\\displaystyle L = \\int_0^1 (y^2+1) \\, dy" },
+                        { t: "Step 4: Evaluate", d: (<span>Polynomial integration.</span>), m: "\\displaystyle \\left[ \\frac{1}{3}y^3 + y \\right]_0^1 = \\frac{4}{3}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Practice 3 (Line Check)", math: "\\displaystyle y = 2x - 3, \\quad 1 \\le x \\le 3", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Slope is constant.</span>), m: "\\displaystyle y' = 2" },
+                        { t: "Step 2: Setup", d: (<span>Constant integrand.</span>), m: "\\displaystyle L = \\int_1^3 \\sqrt{5} \\, dx" },
+                        { t: "Step 3: Integrate", d: (<span>Length of interval.</span>), m: "\\displaystyle 2\\sqrt{5}" },
+                        { t: "Step 4: Verify", d: (<span>Distance formula.</span>), m: "\\displaystyle \\sqrt{(3-1)^2 + (3-(-1))^2} = \\sqrt{20} = 2\\sqrt{5}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Practice 4 (Arc Length Function)", math: "\\displaystyle y = \\frac{2}{3}(x-1)^{3/2} \\quad \\text{from } (1, 0)", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Use variable t.</span>), m: "\\displaystyle f'(t) = (t-1)^{1/2}" },
+                        { t: "Step 2: Setup Integral", d: (<span>s(x) definition.</span>), m: "\\displaystyle s(x) = \\int_1^x \\sqrt{1 + (t-1)} \\, dt = \\int_1^x \\sqrt{t} \\, dt" },
+                        { t: "Step 3: Simplify", d: (<span>Integrand is root t.</span>), m: "\\displaystyle \\int_1^x t^{1/2} \\, dt" },
+                        { t: "Step 4: Integrate", d: (<span>Result.</span>), m: "\\displaystyle \\frac{2}{3}x^{3/2} - \\frac{2}{3}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Practice 5 (Trig)", math: "\\displaystyle y = \\ln(\\cos x), \\quad 0 \\le x \\le \\pi/4", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Derivative of ln(cos).</span>), m: "\\displaystyle y' = -\\tan x" },
+                        { t: "Step 2: Setup", d: (<span>Identity 1+tan^2 = sec^2.</span>), m: "\\displaystyle L = \\int_0^{\\pi/4} \\sqrt{\\sec^2 x} \\, dx = \\int_0^{\\pi/4} \\sec x \\, dx" },
+                        { t: "Step 3: Simplify", d: (<span>Secant integral.</span>), m: "\\displaystyle [\\ln|\\sec x + \\tan x|]_0^{\\pi/4}" },
+                        { t: "Step 4: Evaluate", d: (<span>Log value.</span>), m: "\\displaystyle \\ln(\\sqrt{2}+1)" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
