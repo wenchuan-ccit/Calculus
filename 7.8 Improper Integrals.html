@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 7.8 瑕積分 | Prof. Wu Wen-Chuan</title>
+    
+    <!-- 1. 核心樣式與庫載入 -->
+    <!-- Tailwind CSS (樣式框架) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (前端框架) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (JSX 編譯器) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- KaTeX (數學公式渲染) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <!-- 自定義樣式 -->
+    <style>
+        /* 平滑滾動 */
+        html { scroll-behavior: smooth; }
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        /* 數學公式容器樣式 - 允許水平滾動 */
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ==========================================
+        // 2. 工具組件 (Utilities)
+        // ==========================================
+
+        /**
+         * LaTeX 渲染組件
+         */
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        // ==========================================
+        // 3. UI 子組件 (Sub-components)
+        // ==========================================
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            {t.menu.map((item, i) => (
+                                <a key={i} href={`#part${i+1}`} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors">{item}</a>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            {t.menu.map((item, i) => (
+                                <a key={i} href={`#part${i+1}`} onClick={() => setIsMenuOpen(false)} className="px-2 py-1 text-lg font-bold text-gray-600">{item}</a>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    {/* 觀念類比區塊 */}
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    {/* Process Block */}
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.processTitle}</h4>
+                        <ul className="list-decimal pl-6 space-y-3 text-xl text-gray-700">
+                            <li>
+                                <span className="font-bold">收斂 (Convergent):</span> {t.processStep1}
+                            </li>
+                            <li>
+                                <span className="font-bold">發散 (Divergent):</span> {t.processStep2}
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* Cases Block */}
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.casesTitle}</h4>
+                        <ul className="space-y-4 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold">{t.case1}</span> 
+                                <span className="ml-2"><Latex fontSize="0.9em">{'\\displaystyle \\int_a^\\infty f(x) dx = \\lim_{t \\to \\infty} \\int_a^t f(x) dx'}</Latex></span>
+                            </li>
+                            <li>
+                                <span className="font-bold">{t.case2}</span> 
+                                <span className="ml-2"><Latex fontSize="0.9em">{'\\displaystyle \\int_a^b f(x) dx = \\lim_{t \\to b^-} \\int_a^t f(x) dx'}</Latex></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-blue-800 mb-3">{activeEx.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2025 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "7.8",
+                unitTitle: "瑕積分",
+                unitSub: "Improper Integrals",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "瑕積分定義與判別",
+                part1Desc: (
+                    <span>
+                        定積分 <Latex>{'\\int_a^b f(x) dx'}</Latex> 通常要求區間有限且函數連續。瑕積分則是將積分推廣到「無窮區間」或「函數有斷點」的情形。我們透過極限 (Limits) 來計算這類積分。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：永不停止的馬拉松",
+                analogyDesc: (
+                    <span>
+                        瑕積分的第一類（無窮區間）就像是一場選手永遠在跑的馬拉松。雖然路徑無限延伸，但如果選手的速度慢得足夠快（函數衰減極快），他最終「總共跑過的距離」（積分值）可能趨近於一個固定的數值，這就是「收斂」。
+                    </span>
+                ),
+                processTitle: "重要術語 (Terminology)",
+                processStep1: "若極限存在且為有限數值，積分收斂 (Convergent)。",
+                processStep2: "若極限不存在或為無窮大，積分發散 (Divergent)。",
+                casesTitle: "積分定義 (Definitions)",
+                case1: "第一類 (無窮區間):",
+                case2: "第二類 (不連續函數):",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "7.8",
+                unitTitle: "Improper Integrals",
+                unitSub: "瑕積分",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Definition & Convergence",
+                part1Desc: (
+                    <span>
+                        Improper integrals extend the definite integral to infinite intervals or functions with infinite discontinuities. We evaluate them by taking limits.
+                    </span>
+                ),
+                analogyTitle: "Analogy: The Never-Ending Marathon",
+                analogyDesc: (
+                    <span>
+                        Type 1 improper integrals are like a marathon that never ends. Although the path is infinite, if the runner slows down fast enough (function decays quickly), the total distance covered might approach a finite value (Convergence).
+                    </span>
+                ),
+                processTitle: "Terminology",
+                processStep1: "Convergent: Limit exists and is finite.",
+                processStep2: "Divergent: Limit does not exist or is infinite.",
+                casesTitle: "Definitions",
+                case1: "Type 1 (Infinite Intervals):",
+                case2: "Type 2 (Discontinuous Integrands):",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "Type 1: p-級數判別 (P.543)",
+                    math: "\\displaystyle (a) \\int_1^\\infty \\frac{1}{x} \\, dx \\quad (b) \\int_1^\\infty \\frac{1}{x^2} \\, dx",
+                    steps: [
+                        { t: "Step 1: (a) 定義極限與積分", d: (<span>針對 (a) 題，將上限改為 <Latex>{'t'}</Latex>。積分 <Latex>{'1/x'}</Latex>。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\int_1^t \\frac{1}{x} dx = \\lim_{t \\to \\infty} [\\ln|x|]_1^t" },
+                        { t: "Step 2: (a) 計算結果", d: (<span>代入邊界求極限。 <br/><img src="Figure/7.8_1_2.PNG" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\lim_{t \\to \\infty} (\\ln t - \\ln 1) = \\infty \\quad (\\text{Divergent 發散})" },
+                        { t: "Step 3: (b) 定義極限與積分", d: (<span>針對 (b) 題，積分 <Latex>{'x^{-2}'}</Latex>。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\int_1^t x^{-2} dx = \\lim_{t \\to \\infty} [-\\frac{1}{x}]_1^t" },
+                        { t: "Step 4: (b) 計算結果", d: (<span>代入邊界求極限。 <br/><img src="Figure/7.8_1_1.PNG" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\lim_{t \\to \\infty} (-\\frac{1}{t} - (-1)) = 0 + 1 = 1 \\quad (\\text{Convergent 收斂})" },
+                        { t: "Step 5: p-級數結論", d: (<span>總結：次方 p=1 發散，p=2 收斂。</span>), m: "\\displaystyle \\int_1^\\infty \\frac{1}{x^p} dx: \\quad p \\le 1 \\to \\text{Div}, \\quad p > 1 \\to \\text{Conv}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "指數函數積分 (P.544)",
+                    math: "\\displaystyle \\int_{-\\infty}^0 x e^x \\, dx",
+                    steps: [
+                        { t: "Step 1: 寫出極限式 (Write Limit)", d: (<span>下限為負無窮。</span>), m: "\\displaystyle \\lim_{t \\to -\\infty} \\int_t^0 x e^x \\, dx" },
+                        { t: "Step 2: 分部積分 (Integration by Parts)", d: (<span>令 <Latex>{'u=x, dv=e^x dx'}</Latex>，則 <Latex>{'du=dx, v=e^x'}</Latex>。</span>), m: "\\displaystyle \\int x e^x dx = x e^x - \\int e^x dx = x e^x - e^x" },
+                        { t: "Step 3: 代入上下限 (Substitute)", d: (<span>代入 0 與 <Latex>{'t'}</Latex>。</span>), m: "\\displaystyle \\lim_{t \\to -\\infty} [(0 - e^0) - (t e^t - e^t)] = -1 - \\lim_{t \\to -\\infty} (t e^t - e^t)" },
+                        { t: "Step 4: 羅必達法則 (L'Hopital)", d: (<span><Latex>{'t e^t'}</Latex> 為 <Latex>{'\\infty \\cdot 0'}</Latex> 型，改寫為 <Latex>{'t/e^{-t}'}</Latex> 並微分。</span>), m: "\\displaystyle \\lim_{t \\to -\\infty} \\frac{t}{e^{-t}} = \\lim_{t \\to -\\infty} \\frac{1}{-e^{-t}} = 0 \\implies -1 - (0-0) = -1" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "雙邊無窮積分 (P.545)",
+                    math: "\\displaystyle \\int_{-\\infty}^\\infty \\frac{1}{1+x^2} \\, dx",
+                    steps: [
+                        { t: "Step 1: 拆分積分 (Split Integral)", d: (<span>選擇 0 將其拆開。</span>), m: "\\displaystyle \\int_{-\\infty}^0 \\frac{1}{1+x^2} dx + \\int_0^\\infty \\frac{1}{1+x^2} dx" },
+                        { t: "Step 2: 求右半部極限 (Evaluate Right)", d: (<span>積分為 <Latex>{'\\tan^{-1}x'}</Latex>。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} [\\tan^{-1}x]_0^t = \\frac{\\pi}{2} - 0 = \\frac{\\pi}{2}" },
+                        { t: "Step 3: 求左半部極限 (Evaluate Left)", d: (<span>同理計算左側。</span>), m: "\\displaystyle \\lim_{t \\to -\\infty} [\\tan^{-1}x]_t^0 = 0 - (-\\frac{\\pi}{2}) = \\frac{\\pi}{2}" },
+                        { t: "Step 4: 加總 (Sum)", d: (<span>兩部分皆收斂，故可相加。 <br/><img src="Figure/7.8_3.PNG" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\frac{\\pi}{2} + \\frac{\\pi}{2} = \\pi \\quad (\\text{Convergent})" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "p-級數測試 (P.545)",
+                    math: "\\displaystyle \\int_1^\\infty \\frac{1}{x^p} \\, dx",
+                    steps: [
+                        { t: "Step 1: 分類討論 (Cases)", d: (<span>已知 <Latex>{'p=1'}</Latex> 時發散 (Ex 1)。討論 <Latex>{'p \\ne 1'}</Latex>。</span>), m: "\\displaystyle \\int x^{-p} dx = \\frac{x^{-p+1}}{-p+1}" },
+                        { t: "Step 2: 代入極限 (Substitute)", d: (<span>代入 <Latex>{'t'}</Latex> 與 1。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\frac{1}{1-p} (t^{1-p} - 1)" },
+                        { t: "Step 3: 判斷 p > 1 (Case p > 1)", d: (<span>次方 <Latex>{'1-p < 0'}</Latex>，故 <Latex>{'t^{1-p} \\to 0'}</Latex>。</span>), m: "\\displaystyle \\text{Limit} = \\frac{-1}{1-p} = \\frac{1}{p-1} \\quad (\\text{Convergent})" },
+                        { t: "Step 4: 判斷 p < 1 (Case p < 1)", d: (<span>次方 <Latex>{'1-p > 0'}</Latex>，故 <Latex>{'t^{1-p} \\to \\infty'}</Latex>。</span>), m: "\\displaystyle \\text{Limit} = \\infty \\quad (\\text{Divergent})" }
+                    ]
+                },
+                {
+                    id: 7, label: "Ex 7", title: "不連續函數 (P.547)",
+                    math: "\\displaystyle \\int_0^3 \\frac{1}{x-1} \\, dx",
+                    steps: [
+                        { t: "Step 1: 檢查不連續點 (Check Discontinuity)", d: (<span>分母在 <Latex>{'x=1'}</Latex> 為 0，且 1 在區間內。必須拆分。</span>), m: "\\displaystyle \\int_0^1 \\frac{1}{x-1} dx + \\int_1^3 \\frac{1}{x-1} dx" },
+                        { t: "Step 2: 計算第一部分 (Evaluate Part 1)", d: (<span>取左極限 <Latex>{'t \\to 1^-'}</Latex>。</span>), m: "\\displaystyle \\lim_{t \\to 1^-} [\\ln|x-1|]_0^t = \\lim_{t \\to 1^-} (\\ln|t-1| - \\ln 1)" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>當 <Latex>{'t \\to 1'}</Latex>，<Latex>{'\\ln|t-1| \\to -\\infty'}</Latex>。只要一部分發散，整體即發散。</span>), m: "\\displaystyle -\\infty \\implies \\text{Divergent}" }
+                    ]
+                },
+                {
+                    id: 8, label: "Ex 8", title: "對數函數積分 (P.548)",
+                    math: "\\displaystyle \\int_0^1 \\ln x \\, dx",
+                    steps: [
+                        { t: "Step 1: 寫出極限式 (Write Limit)", d: (<span><Latex>{'\\ln x'}</Latex> 在 0 處不連續。取右極限。</span>), m: "\\displaystyle \\lim_{t \\to 0^+} \\int_t^1 \\ln x \\, dx" },
+                        { t: "Step 2: 分部積分 (IBP)", d: (<span>積分得 <Latex>{'x\\ln x - x'}</Latex>。</span>), m: "\\displaystyle [x\\ln x - x]_t^1 = (1\\ln 1 - 1) - (t\\ln t - t) = -1 - (t\\ln t - t)" },
+                        { t: "Step 3: 羅必達求極限 (L'Hopital)", d: (<span><Latex>{'t\\ln t'}</Latex> 為 <Latex>{'0 \\cdot \\infty'}</Latex> 型。</span>), m: "\\displaystyle \\lim_{t \\to 0^+} \\frac{\\ln t}{1/t} = \\lim \\frac{1/t}{-1/t^2} = \\lim (-t) = 0" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>代回計算結果。 <br/><img src="Figure/7.8_8.PNG" width="250" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle -1 - (0 - 0) = -1 \\quad (\\text{Convergent})" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Type 1: p-Series Test (P.543)",
+                    math: "\\displaystyle (a) \\int_1^\\infty \\frac{1}{x} \\, dx \\quad (b) \\int_1^\\infty \\frac{1}{x^2} \\, dx",
+                    steps: [
+                        { t: "Step 1: (a) Setup & Integrate", d: (<span>For (a), integral is <Latex>{'\\ln|x|'}</Latex>.</span>), m: "\\displaystyle \\lim_{t \\to \\infty} [\\ln x]_1^t = \\lim_{t \\to \\infty} \\ln t" },
+                        { t: "Step 2: (a) Result", d: (<span>Limit goes to infinity. <br/><img src="Figure/7.8_1_2.PNG" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\infty \\quad (\\text{Divergent})" },
+                        { t: "Step 3: (b) Setup & Integrate", d: (<span>For (b), integral is <Latex>{'-1/x'}</Latex>.</span>), m: "\\displaystyle \\lim_{t \\to \\infty} [-\\frac{1}{x}]_1^t = \\lim_{t \\to \\infty} (1 - \\frac{1}{t})" },
+                        { t: "Step 4: (b) Result", d: (<span>Limit is 1. <br/><img src="Figure/7.8_1_1.PNG" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle 1 \\quad (\\text{Convergent})" },
+                        { t: "Step 5: Conclusion", d: (<span>p-series rule.</span>), m: "\\displaystyle p \\le 1 \\to \\text{Divergent}, \\quad p > 1 \\to \\text{Convergent}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Negative Infinity (P.544)",
+                    math: "\\displaystyle \\int_{-\\infty}^0 x e^x \\, dx",
+                    steps: [
+                        { t: "Step 1: Write Limit", d: (<span>Replace lower negative infinity with t.</span>), m: "\\displaystyle \\lim_{t \\to -\\infty} \\int_t^0 x e^x \\, dx" },
+                        { t: "Step 2: IBP", d: (<span>Integration by parts.</span>), m: "\\displaystyle [x e^x - e^x]_t^0" },
+                        { t: "Step 3: Substitute", d: (<span>Plug in limits.</span>), m: "\\displaystyle (0 - 1) - (t e^t - e^t)" },
+                        { t: "Step 4: L'Hopital", d: (<span>Limit of te^t is 0.</span>), m: "\\displaystyle -1 - 0 = -1 \\quad (\\text{Convergent})" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Doubly Infinite (P.545)",
+                    math: "\\displaystyle \\int_{-\\infty}^\\infty \\frac{1}{1+x^2} \\, dx",
+                    steps: [
+                        { t: "Step 1: Split", d: (<span>Split at 0.</span>), m: "\\displaystyle \\int_{-\\infty}^0 \\dots + \\int_0^\\infty \\dots" },
+                        { t: "Step 2: Limits", d: (<span>Evaluate both sides.</span>), m: "\\displaystyle \\frac{\\pi}{2} + \\frac{\\pi}{2}" },
+                        { t: "Step 3: Sum", d: (<span>Add results.  <br/><img src="Figure/7.8_3.PNG" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\pi \\quad (\\text{Convergent})" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "p-Series Test (P.545)",
+                    math: "\\displaystyle \\int_1^\\infty \\frac{1}{x^p} \\, dx",
+                    steps: [
+                        { t: "Step 1: Cases", d: (<span>Consider p=1 (Divergent) and p!=1.</span>), m: "\\displaystyle \\text{If } p \\ne 1, \\text{ integral is } \\frac{x^{1-p}}{1-p}" },
+                        { t: "Step 2: Limit p>1", d: (<span>Term goes to 0.</span>), m: "\\displaystyle \\frac{1}{p-1} \\quad (\\text{Convergent})" },
+                        { t: "Step 3: Limit p<1", d: (<span>Term goes to infinity.</span>), m: "\\displaystyle \\infty \\quad (\\text{Divergent})" }
+                    ]
+                },
+                {
+                    id: 7, label: "Ex 7", title: "Discontinuous Integrand (P.547)",
+                    math: "\\displaystyle \\int_0^3 \\frac{1}{x-1} \\, dx",
+                    steps: [
+                        { t: "Step 1: Identify Break", d: (<span>Discontinuous at x=1. Split.</span>), m: "\\displaystyle \\int_0^1 \\dots + \\int_1^3 \\dots" },
+                        { t: "Step 2: Evaluate Part 1", d: (<span>Limit as t approaches 1 from left.</span>), m: "\\displaystyle \\lim_{t \\to 1^-} \\ln|t-1| = -\\infty" },
+                        { t: "Step 3: Conclusion", d: (<span>Diverges.</span>), m: "\\displaystyle \\text{Divergent}" }
+                    ]
+                },
+                {
+                    id: 8, label: "Ex 8", title: "Logarithm at 0 (P.548)",
+                    math: "\\displaystyle \\int_0^1 \\ln x \\, dx",
+                    steps: [
+                        { t: "Step 1: Write Limit", d: (<span>Limit as t approaches 0 from right.</span>), m: "\\displaystyle \\lim_{t \\to 0^+} \\int_t^1 \\ln x \\, dx" },
+                        { t: "Step 2: IBP", d: (<span>Integrate.</span>), m: "\\displaystyle [x\\ln x - x]_t^1" },
+                        { t: "Step 3: L'Hopital", d: (<span>Limit of tln(t) is 0. <br/><img src="Figure/7.8_8.PNG" width="250" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle -1 - 0 = -1 \\quad (\\text{Convergent})" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "練習題 1 (Ref Ex 1)", math: "\\displaystyle \\int_1^\\infty \\frac{1}{x^3} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 寫出極限式", d: (<span>Type 1 無窮區間。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\int_1^t x^{-3} \\, dx" },
+                        { t: "Step 2: 積分", d: (<span>使用冪次法則 <Latex>{'n=-3'}</Latex>。</span>), m: "\\displaystyle \\int x^{-3} dx = \\frac{x^{-2}}{-2} = -\\frac{1}{2x^2}" },
+                        { t: "Step 3: 代入上下限", d: (<span>代入 <Latex>{'t'}</Latex> 與 1。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\left[ -\\frac{1}{2t^2} - (-\\frac{1}{2(1)^2}) \\right]" },
+                        { t: "Step 4: 求極限", d: (<span>當 <Latex>{'t \\to \\infty'}</Latex>，第一項趨近 0。</span>), m: "\\displaystyle 0 + \\frac{1}{2} = 0.5 \\quad (\\text{Convergent 收斂})" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "練習題 2 (Ref Ex 2)", math: "\\displaystyle \\int_0^\\infty e^{-2x} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 寫出極限式", d: (<span>上限為無窮大。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\int_0^t e^{-2x} \\, dx" },
+                        { t: "Step 2: 積分", d: (<span>指數函數積分，需除以係數 -2。</span>), m: "\\displaystyle \\left[ -\\frac{1}{2}e^{-2x} \\right]_0^t" },
+                        { t: "Step 3: 代入值", d: (<span>代入上下限。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\left( -\\frac{1}{2}e^{-2t} - (-\\frac{1}{2}e^0) \\right)" },
+                        { t: "Step 4: 求極限", d: (<span><Latex>{'e^{-2t} \\to 0'}</Latex>。</span>), m: "\\displaystyle 0 + \\frac{1}{2} = 0.5 \\quad (\\text{Convergent 收斂})" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "練習題 3 (Ref Ex 3)", math: "\\displaystyle \\int_{-\\infty}^\\infty \\frac{1}{x^2+4} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 拆分積分", d: (<span>在 0 處拆分。</span>), m: "\\displaystyle \\int_{-\\infty}^0 \\frac{dx}{x^2+4} + \\int_0^\\infty \\frac{dx}{x^2+4}" },
+                        { t: "Step 2: 求右半部", d: (<span>套用公式 <Latex>{'\\int \\frac{dx}{x^2+a^2} = \\frac{1}{a}\\tan^{-1}(\\frac{x}{a})'}</Latex>，<Latex>{'a=2'}</Latex>。</span>), m: "\\displaystyle \\lim_{t \\to \\infty} [\\frac{1}{2}\\tan^{-1}(\\frac{x}{2})]_0^t = \\frac{1}{2}(\\frac{\\pi}{2} - 0) = \\frac{\\pi}{4}" },
+                        { t: "Step 3: 求左半部", d: (<span>同理計算左側極限。</span>), m: "\\displaystyle \\lim_{t \\to -\\infty} [\\frac{1}{2}\\tan^{-1}(\\frac{x}{2})]_t^0 = \\frac{1}{2}(0 - (-\\frac{\\pi}{2})) = \\frac{\\pi}{4}" },
+                        { t: "Step 4: 加總", d: (<span>兩部分相加。</span>), m: "\\displaystyle \\frac{\\pi}{4} + \\frac{\\pi}{4} = \\frac{\\pi}{2} \\quad (\\text{Convergent 收斂})" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "練習題 4 (Ref Ex 8)", math: "\\displaystyle \\int_0^4 \\frac{1}{\\sqrt{x}} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 檢查斷點", d: (<span>在 <Latex>{'x=0'}</Latex> 處函數無意義 (Type 2)。</span>), m: "\\displaystyle \\text{Discontinuous at } x=0" },
+                        { t: "Step 2: 寫出極限", d: (<span>取右極限 <Latex>{'t \\to 0^+'}</Latex>。</span>), m: "\\displaystyle \\lim_{t \\to 0^+} \\int_t^4 x^{-1/2} \\, dx" },
+                        { t: "Step 3: 積分", d: (<span>冪次法則 <Latex>{'n=-1/2'}</Latex>。</span>), m: "\\displaystyle \\left[ 2x^{1/2} \\right]_t^4 = \\left[ 2\\sqrt{x} \\right]_t^4" },
+                        { t: "Step 4: 代入與求極限", d: (<span>代入數值。</span>), m: "\\displaystyle \\lim_{t \\to 0^+} (2\\sqrt{4} - 2\\sqrt{t}) = 4 - 0 = 4 \\quad (\\text{Convergent 收斂})" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "練習題 5 (陷阱題 Ref Ex 7)", math: "\\displaystyle \\int_{-1}^1 \\frac{1}{x^2} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 發現錯誤陷阱", d: (<span>函數在 <Latex>{'x=0'}</Latex> 不連續，且 0 在區間內。不可直接積分！</span>), m: "\\displaystyle \\text{Discontinuity at } x=0" },
+                        { t: "Step 2: 正確拆分", d: (<span>拆成兩段計算。</span>), m: "\\displaystyle \\int_{-1}^0 x^{-2} dx + \\int_0^1 x^{-2} dx" },
+                        { t: "Step 3: 計算其中一部分", d: (<span>計算 <Latex>{'[-1, 0]'}</Latex> 部分。</span>), m: "\\displaystyle \\lim_{t \\to 0^-} [-\\frac{1}{x}]_{-1}^t = \\lim_{t \\to 0^-} (-\\frac{1}{t} - 1) = \\infty" },
+                        { t: "Step 4: 結論", d: (<span>因為極限趨向無限大，積分發散。</span>), m: "\\displaystyle \\text{Divergent 發散}" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Practice 1 (Ref Ex 1)", math: "\\displaystyle \\int_1^\\infty \\frac{1}{x^3} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Setup Limit", d: (<span>Type 1 Infinite Interval.</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\int_1^t x^{-3} \\, dx" },
+                        { t: "Step 2: Integrate", d: (<span>Power rule.</span>), m: "\\displaystyle [-\\frac{1}{2x^2}]_1^t" },
+                        { t: "Step 3: Substitute", d: (<span>Plug in limits.</span>), m: "\\displaystyle -\\frac{1}{2t^2} - (-\\frac{1}{2})" },
+                        { t: "Step 4: Evaluate", d: (<span>Limit is 0.5.</span>), m: "\\displaystyle 0.5 \\quad (\\text{Convergent})" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Practice 2 (Ref Ex 2)", math: "\\displaystyle \\int_0^\\infty e^{-2x} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Setup Limit", d: (<span>Type 1 Infinite Interval.</span>), m: "\\displaystyle \\lim_{t \\to \\infty} \\int_0^t e^{-2x} \\, dx" },
+                        { t: "Step 2: Integrate", d: (<span>Chain rule.</span>), m: "\\displaystyle [-\\frac{1}{2}e^{-2x}]_0^t" },
+                        { t: "Step 3: Substitute", d: (<span>Plug in limits.</span>), m: "\\displaystyle -\\frac{1}{2}e^{-2t} - (-\\frac{1}{2})" },
+                        { t: "Step 4: Evaluate", d: (<span>Limit is 0.5.</span>), m: "\\displaystyle 0.5 \\quad (\\text{Convergent})" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Practice 3 (Ref Ex 3)", math: "\\displaystyle \\int_{-\\infty}^\\infty \\frac{1}{x^2+4} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Split Integral", d: (<span>Split at 0.</span>), m: "\\displaystyle \\int_{-\\infty}^0 \\dots + \\int_0^\\infty \\dots" },
+                        { t: "Step 2: Formula", d: (<span>Arctan formula with a=2.</span>), m: "\\displaystyle \\frac{1}{2}\\tan^{-1}(\\frac{x}{2})" },
+                        { t: "Step 3: Evaluate Parts", d: (<span>Compute limits for both parts.</span>), m: "\\displaystyle \\frac{\\pi}{4} + \\frac{\\pi}{4}" },
+                        { t: "Step 4: Sum", d: (<span>Total area.</span>), m: "\\displaystyle \\frac{\\pi}{2} \\quad (\\text{Convergent})" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Practice 4 (Ref Ex 8)", math: "\\displaystyle \\int_0^4 \\frac{1}{\\sqrt{x}} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Check Discontinuity", d: (<span>Type 2 at x=0.</span>), m: "\\displaystyle \\lim_{t \\to 0^+} \\int_t^4 x^{-1/2} \\, dx" },
+                        { t: "Step 2: Integrate", d: (<span>Power rule.</span>), m: "\\displaystyle [2\\sqrt{x}]_t^4" },
+                        { t: "Step 3: Substitute", d: (<span>Plug in limits.</span>), m: "\\displaystyle 2\\sqrt{4} - 2\\sqrt{t}" },
+                        { t: "Step 4: Evaluate", d: (<span>Limit is 4.</span>), m: "\\displaystyle 4 \\quad (\\text{Convergent})" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Practice 5 (Trap Ref Ex 7)", math: "\\displaystyle \\int_{-1}^1 \\frac{1}{x^2} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Identify Trap", d: (<span>Discontinuous at x=0 inside interval.</span>), m: "\\displaystyle \\text{Cannot integrate directly!}" },
+                        { t: "Step 2: Split", d: (<span>Split at 0.</span>), m: "\\displaystyle \\int_{-1}^0 x^{-2} dx + \\int_0^1 x^{-2} dx" },
+                        { t: "Step 3: Evaluate Part", d: (<span>Compute limit for first part.</span>), m: "\\displaystyle \\lim_{t \\to 0^-} [-1/x]_{-1}^t = \\infty" },
+                        { t: "Step 4: Conclusion", d: (<span>Diverges.</span>), m: "\\displaystyle \\text{Divergent}" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
