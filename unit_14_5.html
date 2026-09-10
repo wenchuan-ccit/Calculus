@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 14.5 連鎖律 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle \\frac{dz}{dt} = \\frac{\\partial z}{\\partial x}\\frac{dx}{dt} + \\frac{\\partial z}{\\partial y}\\frac{dy}{dt}"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>中間變數為 <Latex>{'x, y'}</Latex>，自變數為單一參數 <Latex>{'t'}</Latex>，透過樹狀圖所有通往 <Latex>{'t'}</Latex> 的路徑相加。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <Latex block>{"\\displaystyle \\frac{\\partial z}{\\partial s} = \\frac{\\partial z}{\\partial x}\\frac{\\partial x}{\\partial s} + \\frac{\\partial z}{\\partial y}\\frac{\\partial y}{\\partial s}, \\quad \\frac{\\partial z}{\\partial t} = \\frac{\\partial z}{\\partial x}\\frac{\\partial x}{\\partial t} + \\frac{\\partial z}{\\partial y}\\frac{\\partial y}{\\partial t}"}</Latex>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                                <Latex block>{"\\displaystyle \\frac{dy}{dx} = -\\frac{F_x}{F_y}, \\quad \\frac{\\partial z}{\\partial x} = -\\frac{F_x}{F_z}, \\quad \\frac{\\partial z}{\\partial y} = -\\frac{F_y}{F_z}"}</Latex>
+                                <span className="mt-2 block text-gray-600">無需繁瑣移項，只要計算大函數 F 各變數的偏導數即可秒殺隱函數微分。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                            {step.img && (
+                                                <div className="mt-4 flex justify-center">
+                                                    <img src={step.img} alt="連鎖律樹狀圖" className="rounded-xl shadow-md max-w-full md:max-w-md border border-blue-200" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "14.5",
+                unitTitle: "連鎖律",
+                unitSub: "The Chain Rule",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "多元複合函數連鎖律與樹狀圖法則",
+                part1Desc: (
+                    <span>
+                        當因變數 <Latex>{'z'}</Latex> 的自變數 <Latex>{'x, y'}</Latex> 又各自受到更深層的參數（如時間 <Latex>{'t'}</Latex> 或座標 <Latex>{'s, t'}</Latex>）驅動時，我們必須追蹤每一條影響傳遞的連鎖路徑。樹狀圖是梳理複合偏導結構最清晰的直覺工具。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：多條支流匯入主河道",
+                analogyDesc: (
+                    <span>
+                        想像主河道的水位 <Latex>{'z'}</Latex> 受到東支流 <Latex>{'x'}</Latex> 與西支流 <Latex>{'y'}</Latex> 的注入，而兩條支流的流量又隨季節氣溫 <Latex>{'t'}</Latex> 變化。要計算氣溫對主河道水位的總衝擊率 <Latex>{'dz/dt'}</Latex>，必須將「氣溫經由東支流傳遞到主河的效應」加上「氣溫經由西支流傳遞到主河的效應」，這正是連鎖律分枝相乘、路徑相加的本質。
+                    </span>
+                ),
+                part1Step1: "情況一：單一獨立參數 (One Independent Variable)",
+                part1Step1Desc: "z = f(x, y)，其中 x = g(t), y = h(t)：",
+                part1Step2: "情況二：多個獨立參數與隱函數定理",
+                part1Step2Desc: "z = f(x, y)，其中 x = g(s, t), y = h(s, t)：",
+                theorem1Title: "雙參數複合偏導公式 (Chain Rule Case 2)",
+                theorem1Desc: "沿著樹狀圖向下追蹤通往特定自變數的所有路徑：",
+                theorem2Title: "隱函數定理求導公式 (Implicit Function Theorem)",
+                theorem2Desc: "利用大函數 F 的偏導之比快速求導：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "14.5",
+                unitTitle: "The Chain Rule",
+                unitSub: "Multivariable Chain Rule & Tree Diagrams",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "The Chain Rule for Functions of Several Variables",
+                part1Desc: (
+                    <span>
+                        When intermediate variables are themselves functions of underlying parameters, the multivariable Chain Rule calculates total and partial rates of change by summing contributions along all paths in a tree diagram.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Multiple River Tributaries",
+                analogyDesc: (
+                    <span>
+                        If river volume z is fed by tributaries x and y, and both fluctuate with temperature t, the total rate of change dz/dt is the effect transmitted through tributary x plus the effect transmitted through tributary y.
+                    </span>
+                ),
+                part1Step1: "Case 1: One Independent Parameter",
+                part1Step1Desc: "z = f(x, y) where x = g(t), y = h(t):",
+                part1Step2: "Case 2: Multiple Parameters & Implicit Derivatives",
+                part1Step2Desc: "z = f(x, y) where x = g(s, t), y = h(s, t):",
+                theorem1Title: "Chain Rule for Multiple Parameters",
+                theorem1Desc: "Sum product of derivatives along each branch leading to target variable:",
+                theorem2Title: "Implicit Differentiation Theorem",
+                theorem2Desc: "Fast formulas using ratios of partial derivatives of F:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "連鎖律－單參數複合函數", source: "p.986 Example 1",
+                    math: "\\displaystyle z = x^2y + 3xy^4, \\quad x = \\sin 2t, \\, y = \\cos t, \\quad t = 0",
+                    steps: [
+                        { t: "Step 1: 寫出連鎖律公式 (Chain Rule Formula)", d: (<span>z 經由 x 與 y 受到 t 影響。</span>), m: "\\displaystyle \\frac{dz}{dt} = \\frac{\\partial z}{\\partial x}\\frac{dx}{dt} + \\frac{\\partial z}{\\partial y}\\frac{dy}{dt}" },
+                        { t: "Step 2: 計算各項偏導與單變數導數", d: (<span>分別求偏導與對 t 的導數。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial x} = 2xy + 3y^4, \\quad \\frac{\\partial z}{\\partial y} = x^2 + 12xy^3, \\quad \\frac{dx}{dt} = 2\\cos 2t, \\quad \\frac{dy}{dt} = -\\sin t" },
+                        { t: "Step 3: 求 t = 0 時之對應座標值", d: (<span>代入 t = 0 求 x 與 y。</span>), m: "\\displaystyle t = 0 \\implies x = \\sin 0 = 0, \\quad y = \\cos 0 = 1" },
+                        { t: "Step 4: 代入數值求 dz/dt", d: (<span>計算最終變化率。</span>), m: "\\displaystyle \\left.\\frac{dz}{dt}\\right|_{t=0} = [2(0)(1) + 3(1)^4](2\\cos 0) + [0 + 0](-\\sin 0) = 3(2) + 0 = 6", img: "https://drive.google.com/thumbnail?id=1s2CVPbRZiKx-CaSxsr3rUNdQTSlwGoqO&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "連鎖律－雙參數複合函數", source: "p.987 Example 3",
+                    math: "\\displaystyle z = e^x\\sin y, \\quad x = st^2, \\, y = s^2t",
+                    steps: [
+                        { t: "Step 1: 連鎖律求解對 s 偏導 (Chain Rule for s)", d: (<span>追蹤所有通往 s 的樹狀分枝。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial s} = \\frac{\\partial z}{\\partial x}\\frac{\\partial x}{\\partial s} + \\frac{\\partial z}{\\partial y}\\frac{\\partial y}{\\partial s} = (e^x\\sin y)(t^2) + (e^x\\cos y)(2st)" },
+                        { t: "Step 2: 化簡對 s 偏導結果", d: (<span>將 x, y 代回整理。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial s} = t^2 e^{st^2}\\sin(s^2t) + 2st e^{st^2}\\cos(s^2t)" },
+                        { t: "Step 3: 連鎖律求解對 t 偏導 (Chain Rule for t)", d: (<span>追蹤所有通往 t 的樹狀分枝。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial t} = \\frac{\\partial z}{\\partial x}\\frac{\\partial x}{\\partial t} + \\frac{\\partial z}{\\partial y}\\frac{\\partial y}{\\partial t} = (e^x\\sin y)(2st) + (e^x\\cos y)(s^2)" },
+                        { t: "Step 4: 化簡對 t 偏導結果", d: (<span>將 x, y 代回整理。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial t} = 2st e^{st^2}\\sin(s^2t) + s^2 e^{st^2}\\cos(s^2t)", img: "https://drive.google.com/thumbnail?id=1HebTLhOY7JcbNc5MOWSXdPe8d6FQpDeC&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "三變數連鎖律與點估算", source: "p.988 Example 5",
+                    math: "\\displaystyle u = x^4y + y^2z^3, \\quad x = rse^t, \\, y = rs^2e^{-t}, \\, z = r^2s\\sin t",
+                    steps: [
+                        { t: "Step 1: 建立對 s 之偏導公式", d: (<span>u 經由 x, y, z 受到 s 影響。</span>), m: "\\displaystyle \\frac{\\partial u}{\\partial s} = \\frac{\\partial u}{\\partial x}\\frac{\\partial x}{\\partial s} + \\frac{\\partial u}{\\partial y}\\frac{\\partial y}{\\partial s} + \\frac{\\partial u}{\\partial z}\\frac{\\partial z}{\\partial s}" },
+                        { t: "Step 2: 求點 (r=2, s=1, t=0) 之座標值", d: (<span>計算中間變數值。</span>), m: "\\displaystyle x = 2(1)e^0 = 2, \\quad y = 2(1)e^0 = 2, \\quad z = 4(1)\\sin 0 = 0" },
+                        { t: "Step 3: 展開並代入數值計算", d: (<span>各項逐一計算相乘。</span>), m: "\\displaystyle (4x^3y)(re^t) + (x^4+2yz^3)(2rse^{-t}) + (3y^2z^2)(r^2\\sin t) = (64)(2) + (16)(4) + 0" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>求得偏導數數值。</span>), m: "\\displaystyle \\left.\\frac{\\partial u}{\\partial s}\\right|_{(2,1,0)} = 128 + 64 = 192", img: "https://drive.google.com/thumbnail?id=19Mg7M1zYE29KCUpJhCOVFEUXfjPbzyVh&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "隱函數定理 (二變數曲線)", source: "p.990 Example 8",
+                    math: "\\displaystyle x^3 + y^3 = 6xy, \\quad \\text{求 } \\frac{dy}{dx}",
+                    steps: [
+                        { t: "Step 1: 構造全函數 F(x, y)", d: (<span>移項令 F(x,y) = 0。</span>), m: "\\displaystyle F(x,y) = x^3 + y^3 - 6xy = 0" },
+                        { t: "Step 2: 計算 F 對 x 與 y 偏導數", d: (<span>求偏導。</span>), m: "\\displaystyle F_x = 3x^2 - 6y, \\quad F_y = 3y^2 - 6x" },
+                        { t: "Step 3: 套用隱函數導數公式", d: (<span>dy/dx = -F_x / F_y。</span>), m: "\\displaystyle \\frac{dy}{dx} = -\\frac{F_x}{F_y} = -\\frac{3x^2 - 6y}{3y^2 - 6x} = \\frac{2y - x^2}{y^2 - 2x}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "隱函數定理 (空間曲面)", source: "p.991 Example 9",
+                    math: "\\displaystyle x^3 + y^3 + z^3 + 6xyz + 4 = 0",
+                    steps: [
+                        { t: "Step 1: 構造全函數 F(x, y, z)", d: (<span>方程式全項移至等號左側。</span>), m: "\\displaystyle F(x,y,z) = x^3 + y^3 + z^3 + 6xyz + 4 = 0" },
+                        { t: "Step 2: 求 F 的一階偏導數", d: (<span>計算偏導項。</span>), m: "\\displaystyle F_x = 3x^2 + 6yz, \\quad F_y = 3y^2 + 6xz, \\quad F_z = 3z^2 + 6xy" },
+                        { t: "Step 3: 套用隱函數偏導商公式", d: (<span>化簡求得 dz/dx 與 dz/dy。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial x} = -\\frac{F_x}{F_z} = -\\frac{x^2+2yz}{z^2+2xy}, \\quad \\frac{\\partial z}{\\partial y} = -\\frac{F_y}{F_z} = -\\frac{y^2+2xz}{z^2+2xy}" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "二階偏導數之連鎖律展開", source: "p.989 Example 7",
+                    math: "\\displaystyle z = f(x,y), \\quad x = r^2 + s^2, \\, y = 2rs, \\quad \\text{求 } \\frac{\\partial^2 z}{\\partial r^2}",
+                    steps: [
+                        { t: "Step 1: 一階連鎖律求 dz/dr", d: (<span>對 r 偏微。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial r} = f_x(2r) + f_y(2s) = 2r f_x + 2s f_y" },
+                        { t: "Step 2: 再次對 r 偏微乘積法則", d: (<span>對兩項分別使用乘積法則。</span>), m: "\\displaystyle \\frac{\\partial^2 z}{\\partial r^2} = 2f_x + 2r\\frac{\\partial f_x}{\\partial r} + 2s\\frac{\\partial f_y}{\\partial r}" },
+                        { t: "Step 3: 對偏導項套用連鎖律", d: (<span>展開 df_x/dr 與 df_y/dr。</span>), m: "\\displaystyle \\frac{\\partial f_x}{\\partial r} = f_{xx}(2r) + f_{xy}(2s), \\quad \\frac{\\partial f_y}{\\partial r} = f_{yx}(2r) + f_{yy}(2s)" },
+                        { t: "Step 4: 結論 (利用 Clairaut 定理)", d: (<span>合併同類項。</span>), m: "\\displaystyle \\frac{\\partial^2 z}{\\partial r^2} = 2f_x + 4r^2 f_{xx} + 8rs f_{xy} + 4s^2 f_{yy}", img: "https://drive.google.com/thumbnail?id=1eB-6e85g5stuowTx9Gmm0BZiFrlXypZ3&sz=w1000" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Chain Rule (Single Parameter)", source: "p.986 Example 1",
+                    math: "\\displaystyle z = x^2y + 3xy^4, \\quad x = \\sin 2t, \\, y = \\cos t, \\quad t = 0",
+                    steps: [
+                        { t: "Step 1: Chain Rule Formula", d: (<span>dz/dt = (dz/dx)(dx/dt) + (dz/dy)(dy/dt).</span>), m: "\\displaystyle \\frac{dz}{dt} = \\frac{\\partial z}{\\partial x}\\frac{dx}{dt} + \\frac{\\partial z}{\\partial y}\\frac{dy}{dt}" },
+                        { t: "Step 2: Compute Component Derivatives", d: (<span>Evaluate partials of z and derivatives of x, y.</span>), m: "\\displaystyle (2xy+3y^4)(2\\cos 2t) + (x^2+12xy^3)(-\\sin t)" },
+                        { t: "Step 3: Coordinates at t = 0", d: (<span>x = sin 0 = 0, y = cos 0 = 1.</span>), m: "\\displaystyle x(0) = 0, \\quad y(0) = 1" },
+                        { t: "Step 4: Evaluation", d: (<span>Substitute values to find rate of change.</span>), m: "\\displaystyle \\left.\\frac{dz}{dt}\\right|_{t=0} = (3)(2) + 0 = 6", img: "https://drive.google.com/thumbnail?id=1s2CVPbRZiKx-CaSxsr3rUNdQTSlwGoqO&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Chain Rule (Two Parameters)", source: "p.987 Example 3",
+                    math: "\\displaystyle z = e^x\\sin y, \\quad x = st^2, \\, y = s^2t",
+                    steps: [
+                        { t: "Step 1: Partial with respect to s", d: (<span>dz/ds = (dz/dx)(dx/ds) + (dz/dy)(dy/ds).</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial s} = t^2 e^{st^2}\\sin(s^2t) + 2st e^{st^2}\\cos(s^2t)" },
+                        { t: "Step 2: Partial with respect to t", d: (<span>dz/dt = (dz/dx)(dx/dt) + (dz/dy)(dy/dt).</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial t} = 2st e^{st^2}\\sin(s^2t) + s^2 e^{st^2}\\cos(s^2t)", img: "https://drive.google.com/thumbnail?id=1HebTLhOY7JcbNc5MOWSXdPe8d6FQpDeC&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Three Variables Chain Rule", source: "p.988 Example 5",
+                    math: "\\displaystyle u = x^4y + y^2z^3, \\quad x = rse^t, \\, y = rs^2e^{-t}, \\, z = r^2s\\sin t",
+                    steps: [
+                        { t: "Step 1: Partial Derivative Formula", d: (<span>du/ds = (du/dx)(dx/ds) + (du/dy)(dy/ds) + (du/dz)(dz/ds).</span>), m: "\\displaystyle \\frac{\\partial u}{\\partial s} = (4x^3y)(re^t) + (x^4+2yz^3)(2rse^{-t}) + (3y^2z^2)(r^2\\sin t)" },
+                        { t: "Step 2: Values at (r=2, s=1, t=0)", d: (<span>x = 2, y = 2, z = 0.</span>), m: "\\displaystyle x = 2, \\, y = 2, \\, z = 0" },
+                        { t: "Step 3: Evaluation", d: (<span>Substitute coordinate values.</span>), m: "\\displaystyle \\left.\\frac{\\partial u}{\\partial s}\\right|_{(2,1,0)} = 128 + 64 = 192", img: "https://drive.google.com/thumbnail?id=19Mg7M1zYE29KCUpJhCOVFEUXfjPbzyVh&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Implicit Differentiation (2D Curve)", source: "p.990 Example 8",
+                    math: "\\displaystyle x^3 + y^3 = 6xy, \\quad \\text{find } \\frac{dy}{dx}",
+                    steps: [
+                        { t: "Step 1: Define F(x, y)", d: (<span>F(x,y) = x^3 + y^3 - 6xy = 0.</span>), m: "\\displaystyle F(x,y) = x^3 + y^3 - 6xy" },
+                        { t: "Step 2: Apply Implicit Formula", d: (<span>dy/dx = -F_x / F_y.</span>), m: "\\displaystyle \\frac{dy}{dx} = -\\frac{3x^2-6y}{3y^2-6x} = \\frac{2y-x^2}{y^2-2x}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Implicit Differentiation (3D Surface)", source: "p.991 Example 9",
+                    math: "\\displaystyle x^3 + y^3 + z^3 + 6xyz + 4 = 0",
+                    steps: [
+                        { t: "Step 1: Compute Partials of F", d: (<span>F_x = 3x^2+6yz, F_y = 3y^2+6xz, F_z = 3z^2+6xy.</span>), m: "\\displaystyle F_x = 3x^2+6yz, \\, F_y = 3y^2+6xz, \\, F_z = 3z^2+6xy" },
+                        { t: "Step 2: Quotients", d: (<span>dz/dx = -F_x/F_z, dz/dy = -F_y/F_z.</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial x} = -\\frac{x^2+2yz}{z^2+2xy}, \\quad \\frac{\\partial z}{\\partial y} = -\\frac{y^2+2xz}{z^2+2xy}" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "Second Partials via Chain Rule", source: "p.989 Example 7",
+                    math: "\\displaystyle z = f(x,y), \\quad x = r^2 + s^2, \\, y = 2rs, \\quad \\text{find } \\frac{\\partial^2 z}{\\partial r^2}",
+                    steps: [
+                        { t: "Step 1: First Partial dz/dr", d: (<span>dz/dr = 2r f_x + 2s f_y.</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial r} = 2r f_x + 2s f_y" },
+                        { t: "Step 2: Second Partial", d: (<span>Differentiate again using Product and Chain rules.</span>), m: "\\displaystyle \\frac{\\partial^2 z}{\\partial r^2} = 2f_x + 4r^2 f_{xx} + 8rs f_{xy} + 4s^2 f_{yy}", img: "https://drive.google.com/thumbnail?id=1eB-6e85g5stuowTx9Gmm0BZiFrlXypZ3&sz=w1000" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "單參數連鎖律與數值代入", math: "\\displaystyle z = x^2 y - y^3, \\quad x = e^{2t}, \\, y = \\sin t, \\quad t = 0", 
+                    steps: [
+                        { t: "Step 1: 計算偏導與導數", d: (<span>分別對 x, y 與 t 求導。</span>), m: "\\displaystyle z_x = 2xy, \\, z_y = x^2 - 3y^2, \\, \\frac{dx}{dt} = 2e^{2t}, \\, \\frac{dy}{dt} = \\cos t" },
+                        { t: "Step 2: 求 t=0 時的中間座標", d: (<span>代入 t = 0。</span>), m: "\\displaystyle x(0) = 1, \\quad y(0) = 0" },
+                        { t: "Step 3: 代入連鎖律公式", d: (<span>dz/dt = z_x(dx/dt) + z_y(dy/dt)。</span>), m: "\\displaystyle \\left.\\frac{dz}{dt}\\right|_{t=0} = [2(1)(0)](2) + [1^2 - 0](\\cos 0) = 0 + 1 = 1" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "雙參數連鎖律偏微分", math: "\\displaystyle z = \\ln(x^2 + y^2), \\quad x = s\\cos t, \\, y = s\\sin t", 
+                    steps: [
+                        { t: "Step 1: 計算對 s 之偏導", d: (<span>套用連鎖律公式。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial s} = \\frac{2x}{x^2+y^2}(\\cos t) + \\frac{2y}{x^2+y^2}(\\sin t) = \\frac{2s\\cos^2 t + 2s\\sin^2 t}{s^2} = \\frac{2}{s}" },
+                        { t: "Step 2: 計算對 t 之偏導", d: (<span>套用連鎖律公式。</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial t} = \\frac{2x}{x^2+y^2}(-s\\sin t) + \\frac{2y}{x^2+y^2}(s\\cos t) = \\frac{-2s^2\\sin t\\cos t + 2s^2\\sin t\\cos t}{s^2} = 0" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "三變數連鎖律對稱性分析", math: "\\displaystyle w = xy + yz + zx, \\quad x = r - s, \\, y = s - t, \\, z = t - r", 
+                    steps: [
+                        { t: "Step 1: 分別計算對 r, s, t 偏導", d: (<span>沿各路徑偏微並化簡。</span>), m: "\\displaystyle w_r = (y+z)(1) + (x+y)(-1) = z-x, \\quad w_s = x-y, \\quad w_t = y-z" },
+                        { t: "Step 2: 三偏導相加求和", d: (<span>觀察循環對稱項相消。</span>), m: "\\displaystyle \\frac{\\partial w}{\\partial r} + \\frac{\\partial w}{\\partial s} + \\frac{\\partial w}{\\partial t} = (z-x) + (x-y) + (y-z) = 0" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "二變數曲線隱函數求導", math: "\\displaystyle x^4 + y^2 + \\sin(xy) = 5, \\quad \\text{求 } \\frac{dy}{dx}", 
+                    steps: [
+                        { t: "Step 1: 建立 F(x, y) 偏導數", d: (<span>求 F_x 與 F_y。</span>), m: "\\displaystyle F_x = 4x^3 + y\\cos(xy), \\quad F_y = 2y + x\\cos(xy)" },
+                        { t: "Step 2: 結論 (Conclusion)", d: (<span>套用 dy/dx = -F_x / F_y。</span>), m: "\\displaystyle \\frac{dy}{dx} = -\\frac{4x^3 + y\\cos(xy)}{2y + x\\cos(xy)}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "三變數曲面隱函數求導", math: "\\displaystyle x^2 y + y^2 z + z^2 x = 3, \\quad (1, 1, 1)", 
+                    steps: [
+                        { t: "Step 1: 計算 F_x 與 F_z", d: (<span>對 x 與 z 求偏導。</span>), m: "\\displaystyle F_x = 2xy + z^2, \\quad F_z = y^2 + 2zx" },
+                        { t: "Step 2: 代入點 (1, 1, 1) 求數值", d: (<span>套用 dz/dx = -F_x / F_z。</span>), m: "\\displaystyle \\left.\\frac{\\partial z}{\\partial x}\\right|_{(1,1,1)} = -\\frac{2(1)(1) + 1^2}{1^2 + 2(1)(1)} = -\\frac{3}{3} = -1" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "二階偏導數之連鎖律驗證", math: "\\displaystyle z = f(u, v), \\quad u = x + y, \\, v = x - y", 
+                    steps: [
+                        { t: "Step 1: 一階偏導", d: (<span>求 z_x 與 z_y。</span>), m: "\\displaystyle z_x = f_u + f_v, \\quad z_y = f_u - f_v" },
+                        { t: "Step 2: 二階偏導展開", d: (<span>二次微分並利用 Clairaut 定理。</span>), m: "\\displaystyle z_{xx} = f_{uu} + 2f_{uv} + f_{vv}, \\quad z_{yy} = f_{uu} - 2f_{uv} + f_{vv}" },
+                        { t: "Step 3: 兩式相加得證", d: (<span>交叉項相消。</span>), m: "\\displaystyle \\frac{\\partial^2 z}{\\partial x^2} + \\frac{\\partial^2 z}{\\partial y^2} = 2\\left(\\frac{\\partial^2 z}{\\partial u^2} + \\frac{\\partial^2 z}{\\partial v^2}\\right)" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Single Parameter Chain Rule", math: "\\displaystyle z = x^2 y - y^3, \\quad x = e^{2t}, \\, y = \\sin t, \\quad t = 0", 
+                    steps: [
+                        { t: "Step 1: Partials & Derivatives", d: (<span>Compute z_x, z_y, dx/dt, dy/dt.</span>), m: "\\displaystyle z_x = 2xy, \\, z_y = x^2-3y^2, \\, x'(t) = 2e^{2t}, \\, y'(t) = \\cos t" },
+                        { t: "Step 2: Evaluation at t = 0", d: (<span>dz/dt = 0 + 1 = 1.</span>), m: "\\displaystyle \\left.\\frac{dz}{dt}\\right|_{t=0} = 1" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Two Parameters Chain Rule", math: "\\displaystyle z = \\ln(x^2 + y^2), \\quad x = s\\cos t, \\, y = s\\sin t", 
+                    steps: [
+                        { t: "Step 1: Partial with respect to s", d: (<span>dz/ds = 2/s.</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial s} = \\frac{2}{s}" },
+                        { t: "Step 2: Partial with respect to t", d: (<span>dz/dt = 0.</span>), m: "\\displaystyle \\frac{\\partial z}{\\partial t} = 0" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Cyclic Three Variables Sum", math: "\\displaystyle w = xy + yz + zx, \\quad x = r - s, \\, y = s - t, \\, z = t - r", 
+                    steps: [
+                        { t: "Step 1: Component Partials", d: (<span>w_r = z-x, w_s = x-y, w_t = y-z.</span>), m: "\\displaystyle w_r = z-x, \\, w_s = x-y, \\, w_t = y-z" },
+                        { t: "Step 2: Sum of Partials", d: (<span>Terms cancel cyclically.</span>), m: "\\displaystyle w_r + w_s + w_t = 0" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Implicit Curve Differentiation", math: "\\displaystyle x^4 + y^2 + \\sin(xy) = 5", 
+                    steps: [
+                        { t: "Step 1: Partials of F", d: (<span>F_x = 4x^3 + y cos(xy), F_y = 2y + x cos(xy).</span>), m: "\\displaystyle F_x = 4x^3 + y\\cos(xy), \\, F_y = 2y + x\\cos(xy)" },
+                        { t: "Step 2: Conclusion", d: (<span>dy/dx = -F_x / F_y.</span>), m: "\\displaystyle \\frac{dy}{dx} = -\\frac{4x^3 + y\\cos(xy)}{2y + x\\cos(xy)}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Implicit Surface Differentiation", math: "\\displaystyle x^2 y + y^2 z + z^2 x = 3, \\quad (1, 1, 1)", 
+                    steps: [
+                        { t: "Step 1: Evaluate F_x and F_z", d: (<span>F_x = 3, F_z = 3 at (1,1,1).</span>), m: "\\displaystyle F_x(1,1,1) = 3, \\quad F_z(1,1,1) = 3" },
+                        { t: "Step 2: Evaluate dz/dx", d: (<span>dz/dx = -3/3 = -1.</span>), m: "\\displaystyle \\left.\\frac{\\partial z}{\\partial x}\\right|_{(1,1,1)} = -1" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "Second Order Chain Rule Verification", math: "\\displaystyle z = f(u, v), \\quad u = x + y, \\, v = x - y", 
+                    steps: [
+                        { t: "Step 1: Second Derivatives", d: (<span>Compute z_xx and z_yy.</span>), m: "\\displaystyle z_{xx} = f_{uu} + 2f_{uv} + f_{vv}, \\quad z_{yy} = f_{uu} - 2f_{uv} + f_{vv}" },
+                        { t: "Step 2: Sum Verification", d: (<span>Sum cancels cross terms.</span>), m: "\\displaystyle z_{xx} + z_{yy} = 2(f_{uu} + f_{vv})" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_14_5.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_14_5.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_14_5.py
+}
+}

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 11.9 函數的冪級數表示法 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle \\frac{1}{1-x} = \\sum_{n=0}^{\\infty} x^n = 1 + x + x^2 + x^3 + \\dots \\quad (|x| < 1)"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>透過代數代換（如以 <Latex>{'-x^2'}</Latex> 或 <Latex>{'x/2'}</Latex> 替換 <Latex>{'x'}</Latex>），可直接構造出大量函數的冪級數。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <Latex block>{"\\displaystyle f'(x) = \\frac{d}{dx} \\left( \\sum_{n=0}^{\\infty} c_n (x-a)^n \\right) = \\sum_{n=1}^{\\infty} n c_n (x-a)^{n-1}"}</Latex>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                                <Latex block>{"\\displaystyle \\int f(x)\\,dx = C + \\sum_{n=0}^{\\infty} c_n \\frac{(x-a)^{n+1}}{n+1}"}</Latex>
+                                <span className="mt-2 block text-gray-600">重要性質：逐項微分與積分所得的新級數，其收斂半徑 <Latex>{'R'}</Latex> 恆與原級數相同（但邊界端點的斂散性可能改變）。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "11.9",
+                unitTitle: "函數的冪級數表示法",
+                unitSub: "Representations of Functions as Power Series",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "幾何級數模型與逐項微積分",
+                part1Desc: (
+                    <span>
+                        將函數表示為冪級數，如同賦予複雜函數「無窮多項式」的化身。本章核心是從幾何級數 <Latex>{'1/(1-x)'}</Latex> 出發，透過代數代換、逐項微分與逐項積分，將有理函數、對數函數與反三角函數精確展開為冪級數。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：數學上的樂高積木",
+                analogyDesc: (
+                    <span>
+                        基礎幾何級數 <Latex>{'1/(1-x) = 1 + x + x^2 + \\dots'}</Latex> 就像一塊標準的樂高核心積木。我們不需要每次都從頭建構，只需將積木中的插槽替換（如代入 <Latex>{'-x^2'}</Latex>），或者對積木進行切割（微分）與拼裝堆疊（積分），就能輕鬆拼裝出如 <Latex>{'\\ln(1+x)'}</Latex> 與 <Latex>{'\\tan^{-1}(x)'}</Latex> 等精密函數結構。
+                    </span>
+                ),
+                part1Step1: "核心積木：幾何級數基礎模型",
+                part1Step1Desc: "一切展開的原點（在收斂半徑 R = 1 內）：",
+                part1Step2: "強大延伸工具：逐項微分與逐項積分",
+                part1Step2Desc: "在收斂半徑 R 內部，可對無窮級數逐項進行微分與積分：",
+                theorem1Title: "逐項微分定理 (Term-by-Term Differentiation)",
+                theorem1Desc: "收斂區間內的冪級數可逐項微分，收斂半徑維持 R 不變：",
+                theorem2Title: "逐項積分定理 (Term-by-Term Integration)",
+                theorem2Desc: "收斂區間內的冪級數可逐項積分，收斂半徑維持 R 不變（積分常數 C 可由初值條件決定）：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "11.9",
+                unitTitle: "Representations of Functions as Power Series",
+                unitSub: "Geometric Series and Term-by-Term Calculus",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Geometric Series Model and Term-by-Term Calculus",
+                part1Desc: (
+                    <span>
+                        Representing functions as power series turns complex transcendental functions into polynomial-like forms. By utilizing substitution, term-by-term differentiation, and integration on the geometric series, we obtain series for rational, logarithmic, and inverse trigonometric functions.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Mathematical LEGO Bricks",
+                analogyDesc: (
+                    <span>
+                        The basic series <Latex>{'1/(1-x) = 1 + x + x^2 + \\dots'}</Latex> acts as the foundational LEGO brick. By substituting variables, differentiating, or integrating, we construct complex functions like <Latex>{'\\ln(1+x)'}</Latex> and <Latex>{'\\tan^{-1}(x)'}</Latex> effortlessly.
+                    </span>
+                ),
+                part1Step1: "Foundational Model: Geometric Series",
+                part1Step1Desc: "The core formula valid for |x| < 1:",
+                part1Step2: "Term-by-Term Differentiation & Integration",
+                part1Step2Desc: "Within the radius of convergence R, series can be differentiated and integrated term-by-term:",
+                theorem1Title: "Term-by-Term Differentiation",
+                theorem1Desc: "Differentiating terms preserving the radius of convergence R:",
+                theorem2Title: "Term-by-Term Integration",
+                theorem2Desc: "Integrating terms preserving the radius of convergence R (constant C determined by initial value):",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "代換法求冪級數 (Substitution)", source: "p.788 Example 1",
+                    math: "\\displaystyle f(x) = \\frac{1}{1+x^2}",
+                    steps: [
+                        { t: "Step 1: 改寫為幾何級數形式 (Rewrite Form)", d: (<span>將分母寫成 <Latex>{'1 - (-x^2)'}</Latex>。</span>), m: "\\displaystyle \\frac{1}{1+x^2} = \\frac{1}{1 - (-x^2)}" },
+                        { t: "Step 2: 代入幾何級數展開 (Apply Geometric Series)", d: (<span>將 <Latex>{'-x^2'}</Latex> 代入公比位置。</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-x^2)^n = \\sum_{n=0}^{\\infty} (-1)^n x^{2n} = 1 - x^2 + x^4 - x^6 + \\dots" },
+                        { t: "Step 3: 求解收斂條件 (Determine Convergence)", d: (<span>公比絕對值必須小於 1。</span>), m: "\\displaystyle |-x^2| < 1 \\implies x^2 < 1 \\implies |x| < 1" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>求得收斂半徑與收斂區間。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } (-1, 1)" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "代數運算提出常數 (Factoring Constant)", source: "p.788 Example 2",
+                    math: "\\displaystyle f(x) = \\frac{1}{x+2}",
+                    steps: [
+                        { t: "Step 1: 提出常數構造 1 (Factor out 2)", d: (<span>分母提出 2 以取得標準的 <Latex>{'1 - r'}</Latex> 架構。</span>), m: "\\displaystyle \\frac{1}{2+x} = \\frac{1}{2\\left(1 + \\frac{x}{2}\\right)} = \\frac{1}{2} \\cdot \\frac{1}{1 - \\left(-\\frac{x}{2}\\right)}" },
+                        { t: "Step 2: 展開為幾何級數 (Expand Series)", d: (<span>以 <Latex>{'-x/2'}</Latex> 為公比展開。</span>), m: "\\displaystyle \\frac{1}{2} \\sum_{n=0}^{\\infty} \\left(-\\frac{x}{2}\\right)^n = \\frac{1}{2} \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{2^n} x^n = \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{2^{n+1}} x^n" },
+                        { t: "Step 3: 求解收斂半徑 (Find Radius R)", d: (<span>令公比絕對值小於 1。</span>), m: "\\displaystyle \\left|-\\frac{x}{2}\\right| < 1 \\implies |x| < 2, \\quad R = 2" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>求得收斂半徑與區間。</span>), m: "\\displaystyle R = 2, \\quad \\text{收斂區間為 } (-2, 2)" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "乘法求冪級數 (Multiplication by x^3)", source: "p.788 Example 3",
+                    math: "\\displaystyle f(x) = \\frac{x^3}{x+2}",
+                    steps: [
+                        { t: "Step 1: 結合已知級數 (Use Prior Result)", d: (<span>利用範例 2 中求得之 <Latex>{'1/(x+2)'}</Latex> 展開式。</span>), m: "\\displaystyle \\frac{x^3}{x+2} = x^3 \\cdot \\frac{1}{x+2} = x^3 \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{2^{n+1}} x^n" },
+                        { t: "Step 2: 乘入多項式次方 (Distribute x^3)", d: (<span>將 <Latex>{'x^3'}</Latex> 乘入級數內部，指數變為 <Latex>{'n+3'}</Latex>。</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{2^{n+1}} x^{n+3} = \\frac{x^3}{2} - \\frac{x^4}{4} + \\frac{x^5}{8} - \\frac{x^6}{16} + \\dots" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>乘以 <Latex>{'x^3'}</Latex> 不改變收斂半徑。</span>), m: "\\displaystyle R = 2, \\quad \\text{收斂區間為 } (-2, 2)" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "逐項微分求冪級數 (Differentiation)", source: "p.789 Example 4",
+                    math: "\\displaystyle f(x) = \\frac{1}{(1-x)^2}",
+                    steps: [
+                        { t: "Step 1: 建立導數關係 (Relate to Derivative)", d: (<span>注意到 <Latex>{'1/(1-x)^2'}</Latex> 恰為 <Latex>{'1/(1-x)'}</Latex> 的導數。</span>), m: "\\displaystyle \\frac{1}{(1-x)^2} = \\frac{d}{dx} \\left( \\frac{1}{1-x} \\right)" },
+                        { t: "Step 2: 逐項微分 (Differentiate Term-by-Term)", d: (<span>對幾何級數 <Latex>{'\\sum x^n'}</Latex> 逐項微分。</span>), m: "\\displaystyle \\frac{d}{dx} \\left( \\sum_{n=0}^{\\infty} x^n \\right) = \\sum_{n=1}^{\\infty} n x^{n-1} = 1 + 2x + 3x^2 + 4x^3 + \\dots" },
+                        { t: "Step 3: 變更索引起始項 (Re-index)", d: (<span>令 <Latex>{'n = n+1'}</Latex> 從 0 開始標註。</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (n+1) x^n" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>逐項微分保持收斂半徑不變。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } (-1, 1)" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "逐項積分求對數級數 (Integration for ln)", source: "p.790 Example 5",
+                    math: "\\displaystyle f(x) = \\ln(1+x)",
+                    steps: [
+                        { t: "Step 1: 建立積分關係 (Relate to Integral)", d: (<span>對數函數為 <Latex>{'1/(1+x)'}</Latex> 的不定積分。</span>), m: "\\displaystyle \\ln(1+x) = \\int \\frac{1}{1+x}\\,dx = \\int \\left( \\sum_{n=0}^{\\infty} (-1)^n x^n \\right) dx" },
+                        { t: "Step 2: 逐項積分並求解常數 C (Integrate and Solve C)", d: (<span>逐項積分後代入 <Latex>{'x = 0'}</Latex> 決定積分常數。</span>), m: "\\displaystyle C + \\sum_{n=0}^{\\infty} (-1)^n \\frac{x^{n+1}}{n+1}, \\quad \\ln(1+0) = C \\implies C = 0" },
+                        { t: "Step 3: 展開級數形式 (Expanded Form)", d: (<span>展開為多項式形式。</span>), m: "\\displaystyle \\ln(1+x) = \\sum_{n=0}^{\\infty} (-1)^n \\frac{x^{n+1}}{n+1} = x - \\frac{x^2}{2} + \\frac{x^3}{3} - \\frac{x^4}{4} + \\dots" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>收斂半徑維持 1，右端點 <Latex>{'x = 1'}</Latex> 處交錯級數收斂。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } (-1, 1]" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "逐項積分求反正切級數 (Integration for arctan)", source: "p.790 Example 6",
+                    math: "\\displaystyle f(x) = \\tan^{-1}x",
+                    steps: [
+                        { t: "Step 1: 建立積分關係 (Relate to Integral)", d: (<span>反雙曲/反三角函數 <Latex>{'\\tan^{-1}x'}</Latex> 為 <Latex>{'1/(1+x^2)'}</Latex> 之積分。</span>), m: "\\displaystyle \\tan^{-1}x = \\int \\frac{1}{1+x^2}\\,dx = \\int \\left( \\sum_{n=0}^{\\infty} (-1)^n x^{2n} \\right) dx" },
+                        { t: "Step 2: 逐項積分求 C (Integrate and Solve C)", d: (<span>逐項積分並代入 <Latex>{'x = 0'}</Latex>。</span>), m: "\\displaystyle C + \\sum_{n=0}^{\\infty} (-1)^n \\frac{x^{2n+1}}{2n+1}, \\quad \\tan^{-1}(0) = 0 \\implies C = 0" },
+                        { t: "Step 3: 展開多項式級數 (Expanded Form)", d: (<span>獲得經典格雷戈里級數。</span>), m: "\\displaystyle \\tan^{-1}x = \\sum_{n=0}^{\\infty} (-1)^n \\frac{x^{2n+1}}{2n+1} = x - \\frac{x^3}{3} + \\frac{x^5}{5} - \\frac{x^7}{7} + \\dots" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>收斂半徑為 1，兩端點代入交錯級數皆收斂。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } [-1, 1]" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Power Series by Substitution", source: "p.788 Example 1",
+                    math: "\\displaystyle f(x) = \\frac{1}{1+x^2}",
+                    steps: [
+                        { t: "Step 1: Rewrite Form", d: (<span>Express as <Latex>{'1 / (1 - (-x^2))'}</Latex>.</span>), m: "\\displaystyle \\frac{1}{1+x^2} = \\frac{1}{1 - (-x^2)}" },
+                        { t: "Step 2: Expand Geometric Series", d: (<span>Substitute <Latex>{'-x^2'}</Latex> for the common ratio.</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-1)^n x^{2n} = 1 - x^2 + x^4 - x^6 + \\dots" },
+                        { t: "Step 3: Convergence Condition", d: (<span>Set absolute ratio strictly less than 1.</span>), m: "\\displaystyle |-x^2| < 1 \\implies |x| < 1" },
+                        { t: "Step 4: Conclusion", d: (<span>Determine radius and interval of convergence.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } (-1, 1)" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Factoring a Constant", source: "p.788 Example 2",
+                    math: "\\displaystyle f(x) = \\frac{1}{x+2}",
+                    steps: [
+                        { t: "Step 1: Factor out 2", d: (<span>Factor out 2 from the denominator.</span>), m: "\\displaystyle \\frac{1}{2+x} = \\frac{1}{2} \\frac{1}{1 - (-x/2)}" },
+                        { t: "Step 2: Expand Series", d: (<span>Expand with common ratio <Latex>{'-x/2'}</Latex>.</span>), m: "\\displaystyle \\frac{1}{2} \\sum_{n=0}^{\\infty} \\left(-\\frac{x}{2}\\right)^n = \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{2^{n+1}} x^n" },
+                        { t: "Step 3: Radius of Convergence", d: (<span>Set absolute ratio strictly less than 1.</span>), m: "\\displaystyle |-x/2| < 1 \\implies |x| < 2, \\quad R = 2" },
+                        { t: "Step 4: Conclusion", d: (<span>State radius and interval.</span>), m: "\\displaystyle R = 2, \\quad \\text{Interval: } (-2, 2)" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Multiplication by x^3", source: "p.788 Example 3",
+                    math: "\\displaystyle f(x) = \\frac{x^3}{x+2}",
+                    steps: [
+                        { t: "Step 1: Multiply Prior Series", d: (<span>Multiply series from Example 2 by <Latex>{'x^3'}</Latex>.</span>), m: "\\displaystyle x^3 \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{2^{n+1}} x^n = \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{2^{n+1}} x^{n+3}" },
+                        { t: "Step 2: Expand Terms", d: (<span>Write out the leading non-zero terms.</span>), m: "\\displaystyle \\frac{x^3}{2} - \\frac{x^4}{4} + \\frac{x^5}{8} - \\frac{x^6}{16} + \\dots" },
+                        { t: "Step 3: Conclusion", d: (<span>Multiplying by a monomial does not change R.</span>), m: "\\displaystyle R = 2, \\quad \\text{Interval: } (-2, 2)" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Term-by-Term Differentiation", source: "p.789 Example 4",
+                    math: "\\displaystyle f(x) = \\frac{1}{(1-x)^2}",
+                    steps: [
+                        { t: "Step 1: Identify Derivative", d: (<span>Recognize that <Latex>{'1/(1-x)^2'}</Latex> is the derivative of <Latex>{'1/(1-x)'}</Latex>.</span>), m: "\\displaystyle \\frac{1}{(1-x)^2} = \\frac{d}{dx} \\left( \\frac{1}{1-x} \\right)" },
+                        { t: "Step 2: Differentiate Series", d: (<span>Differentiate <Latex>{'\\sum x^n'}</Latex> term by term.</span>), m: "\\displaystyle \\frac{d}{dx} \\left(\\sum_{n=0}^{\\infty} x^n\\right) = \\sum_{n=1}^{\\infty} n x^{n-1} = \\sum_{n=0}^{\\infty} (n+1) x^n" },
+                        { t: "Step 3: Conclusion", d: (<span>Radius remains unchanged under differentiation.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } (-1, 1)" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Integration for Logarithmic Series", source: "p.790 Example 5",
+                    math: "\\displaystyle f(x) = \\ln(1+x)",
+                    steps: [
+                        { t: "Step 1: Integral Formulation", d: (<span>Express as integral of <Latex>{'1/(1+x)'}</Latex>.</span>), m: "\\displaystyle \\ln(1+x) = \\int \\left( \\sum_{n=0}^{\\infty} (-1)^n x^n \\right) dx" },
+                        { t: "Step 2: Term-by-Term Integration", d: (<span>Integrate each term and determine C.</span>), m: "\\displaystyle C + \\sum_{n=0}^{\\infty} (-1)^n \\frac{x^{n+1}}{n+1}, \\quad C = 0" },
+                        { t: "Step 3: Conclusion", d: (<span>Converges for <Latex>{'|x| < 1'}</Latex> and at <Latex>{'x = 1'}</Latex>.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } (-1, 1]" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "Integration for Inverse Tangent", source: "p.790 Example 6",
+                    math: "\\displaystyle f(x) = \\tan^{-1}x",
+                    steps: [
+                        { t: "Step 1: Integral Formulation", d: (<span>Express as integral of <Latex>{'1/(1+x^2)'}</Latex>.</span>), m: "\\displaystyle \\tan^{-1}x = \\int \\left( \\sum_{n=0}^{\\infty} (-1)^n x^{2n} \\right) dx" },
+                        { t: "Step 2: Term-by-Term Integration", d: (<span>Integrate and evaluate constant C = 0.</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-1)^n \\frac{x^{2n+1}}{2n+1} = x - \\frac{x^3}{3} + \\frac{x^5}{5} - \\dots" },
+                        { t: "Step 3: Conclusion", d: (<span>Converges for <Latex>{'|x| \\le 1'}</Latex>.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } [-1, 1]" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "代換法求冪級數", math: "\\displaystyle f(x) = \\frac{1}{1 + 4x^2}", 
+                    steps: [
+                        { t: "Step 1: 改寫為幾何級數形式 (Rewrite Form)", d: (<span>將分母寫成 <Latex>{'1 - (-4x^2)'}</Latex>。</span>), m: "\\displaystyle \\frac{1}{1+4x^2} = \\frac{1}{1 - (-4x^2)}" },
+                        { t: "Step 2: 展開幾何級數 (Expand Series)", d: (<span>以 <Latex>{'-4x^2'}</Latex> 為公比代入展開。</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-4x^2)^n = \\sum_{n=0}^{\\infty} (-1)^n 4^n x^{2n} = 1 - 4x^2 + 16x^4 - \\dots" },
+                        { t: "Step 3: 求解收斂範圍 (Find Convergence)", d: (<span>令公比絕對值小於 1。</span>), m: "\\displaystyle |-4x^2| < 1 \\implies 4x^2 < 1 \\implies |x| < \\frac{1}{2}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>求得收斂半徑與區間。</span>), m: "\\displaystyle R = \\frac{1}{2}, \\quad \\text{收斂區間為 } \\left(-\\frac{1}{2}, \\frac{1}{2}\\right)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "代數提取常數法", math: "\\displaystyle f(x) = \\frac{1}{3 - x}", 
+                    steps: [
+                        { t: "Step 1: 提出常數 3 (Factor out 3)", d: (<span>提出分母常數 3。</span>), m: "\\displaystyle \\frac{1}{3-x} = \\frac{1}{3\\left(1 - \\frac{x}{3}\\right)} = \\frac{1}{3} \\cdot \\frac{1}{1 - \\frac{x}{3}}" },
+                        { t: "Step 2: 展開為幾何級數 (Expand Series)", d: (<span>以 <Latex>{'x/3'}</Latex> 為公比展開。</span>), m: "\\displaystyle \\frac{1}{3} \\sum_{n=0}^{\\infty} \\left(\\frac{x}{3}\\right)^n = \\sum_{n=0}^{\\infty} \\frac{x^n}{3^{n+1}}" },
+                        { t: "Step 3: 求解收斂半徑 (Find Radius R)", d: (<span>公比條件求收斂範圍。</span>), m: "\\displaystyle \\left|\\frac{x}{3}\\right| < 1 \\implies |x| < 3, \\quad R = 3" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>求得收斂半徑與區間。</span>), m: "\\displaystyle R = 3, \\quad \\text{收斂區間為 } (-3, 3)" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "分子含單項式乘積", math: "\\displaystyle f(x) = \\frac{x^2}{3 - x}", 
+                    steps: [
+                        { t: "Step 1: 乘入多項式 (Multiply by x^2)", d: (<span>利用練習題 2 之結果乘上 <Latex>{'x^2'}</Latex>。</span>), m: "\\displaystyle \\frac{x^2}{3-x} = x^2 \\sum_{n=0}^{\\infty} \\frac{x^n}{3^{n+1}} = \\sum_{n=0}^{\\infty} \\frac{x^{n+2}}{3^{n+1}}" },
+                        { t: "Step 2: 展開非零前幾項 (List Terms)", d: (<span>寫出前三項觀察。</span>), m: "\\displaystyle \\frac{x^2}{3} + \\frac{x^3}{9} + \\frac{x^4}{27} + \\dots" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>乘上 <Latex>{'x^2'}</Latex> 不影響收斂半徑。</span>), m: "\\displaystyle R = 3, \\quad \\text{收斂區間為 } (-3, 3)" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "逐項微分求冪級數", math: "\\displaystyle f(x) = \\frac{1}{(1+x)^2}", 
+                    steps: [
+                        { t: "Step 1: 建立導數關係 (Identify Derivative)", d: (<span>注意到 <Latex>{'1/(1+x)^2'}</Latex> 等於 <Latex>{'-d/dx [1/(1+x)]'}</Latex>。</span>), m: "\\displaystyle \\frac{1}{(1+x)^2} = -\\frac{d}{dx} \\left( \\frac{1}{1+x} \\right)" },
+                        { t: "Step 2: 逐項微分 (Differentiate)", d: (<span>對 <Latex>{'\\sum (-1)^n x^n'}</Latex> 微分。</span>), m: "\\displaystyle -\\frac{d}{dx} \\left( \\sum_{n=0}^{\\infty} (-1)^n x^n \\right) = -\\sum_{n=1}^{\\infty} (-1)^n n x^{n-1} = \\sum_{n=1}^{\\infty} (-1)^{n-1} n x^{n-1}" },
+                        { t: "Step 3: 重整指標 (Shift Index)", d: (<span>以 <Latex>{'n'}</Latex> 從 0 開始改寫。</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-1)^n (n+1) x^n = 1 - 2x + 3x^2 - 4x^3 + \\dots" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>收斂半徑保持不變。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } (-1, 1)" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "逐項積分求對數函數", math: "\\displaystyle f(x) = \\ln(1-x)", 
+                    steps: [
+                        { t: "Step 1: 建立積分關係 (Integral Setup)", d: (<span>對數函數等於 <Latex>{'- \\int 1/(1-x) dx'}</Latex>。</span>), m: "\\displaystyle \\ln(1-x) = -\\int \\frac{1}{1-x}\\,dx = -\\int \\left(\\sum_{n=0}^{\\infty} x^n\\right) dx" },
+                        { t: "Step 2: 逐項積分並求 C (Integrate and Solve C)", d: (<span>積分後由 <Latex>{'x = 0'}</Latex> 得常數 <Latex>{'C = 0'}</Latex>。</span>), m: "\\displaystyle -\\sum_{n=0}^{\\infty} \\frac{x^{n+1}}{n+1} = -x - \\frac{x^2}{2} - \\frac{x^3}{3} - \\dots" },
+                        { t: "Step 3: 檢查端點 (Check Endpoints)", d: (<span>代入 <Latex>{'x = -1'}</Latex> 為交錯調和級數收斂；<Latex>{'x = 1'}</Latex> 發散。</span>), m: "\\displaystyle x = -1 \\implies \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{n+1} \\quad (\\text{收斂})" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>左閉右開區間。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } [-1, 1)" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "縮放變數之反三角函數", math: "\\displaystyle f(x) = \\tan^{-1}(2x)", 
+                    steps: [
+                        { t: "Step 1: 建立積分關係 (Integral Setup)", d: (<span>由反切函數之積分性質改寫。</span>), m: "\\displaystyle \\tan^{-1}(2x) = \\int_0^x \\frac{2}{1+(2t)^2}\\,dt" },
+                        { t: "Step 2: 展開被積函數 (Expand Integrand)", d: (<span>展開分母中含 <Latex>{'(2t)^2 = 4t^2'}</Latex> 之幾何級數。</span>), m: "\\displaystyle \\frac{2}{1+4t^2} = 2 \\sum_{n=0}^{\\infty} (-1)^n (4t^2)^n = 2 \\sum_{n=0}^{\\infty} (-1)^n 4^n t^{2n}" },
+                        { t: "Step 3: 逐項積分 (Integrate)", d: (<span>對各項進行定積分。</span>), m: "\\displaystyle \\int_0^x 2 \\sum_{n=0}^{\\infty} (-1)^n 4^n t^{2n} dt = \\sum_{n=0}^{\\infty} (-1)^n \\frac{2^{2n+1} x^{2n+1}}{2n+1}" },
+                        { t: "Step 4: 求解收斂範圍 (Solve Convergence)", d: (<span>收斂條件為 <Latex>{'|2x| \\le 1'}</Latex>。</span>), m: "\\displaystyle |2x| \\le 1 \\implies |x| \\le \\frac{1}{2}, \\quad R = \\frac{1}{2}, \\quad \\text{收斂區間為 } \\left[-\\frac{1}{2}, \\frac{1}{2}\\right]" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Power Series by Substitution", math: "\\displaystyle f(x) = \\frac{1}{1 + 4x^2}", 
+                    steps: [
+                        { t: "Step 1: Rewrite Form", d: (<span>Rewrite denominator as <Latex>{'1 - (-4x^2)'}</Latex>.</span>), m: "\\displaystyle \\frac{1}{1+4x^2} = \\frac{1}{1 - (-4x^2)}" },
+                        { t: "Step 2: Expand Geometric Series", d: (<span>Substitute <Latex>{'-4x^2'}</Latex> as common ratio.</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-4x^2)^n = \\sum_{n=0}^{\\infty} (-1)^n 4^n x^{2n}" },
+                        { t: "Step 3: Convergence Range", d: (<span>Set absolute ratio less than 1.</span>), m: "\\displaystyle |-4x^2| < 1 \\implies |x| < \\frac{1}{2}" },
+                        { t: "Step 4: Conclusion", d: (<span>Determine radius and interval.</span>), m: "\\displaystyle R = \\frac{1}{2}, \\quad \\text{Interval: } \\left(-\\frac{1}{2}, \\frac{1}{2}\\right)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Factoring Constant", math: "\\displaystyle f(x) = \\frac{1}{3 - x}", 
+                    steps: [
+                        { t: "Step 1: Factor out 3", d: (<span>Factor out 3 from denominator.</span>), m: "\\displaystyle \\frac{1}{3-x} = \\frac{1}{3} \\frac{1}{1 - (x/3)}" },
+                        { t: "Step 2: Expand Series", d: (<span>Expand with common ratio <Latex>{'x/3'}</Latex>.</span>), m: "\\displaystyle \\frac{1}{3} \\sum_{n=0}^{\\infty} \\left(\\frac{x}{3}\\right)^n = \\sum_{n=0}^{\\infty} \\frac{x^n}{3^{n+1}}" },
+                        { t: "Step 3: Convergence Range", d: (<span>Set ratio less than 1.</span>), m: "\\displaystyle |x/3| < 1 \\implies |x| < 3, \\quad R = 3" },
+                        { t: "Step 4: Conclusion", d: (<span>State radius and interval.</span>), m: "\\displaystyle R = 3, \\quad \\text{Interval: } (-3, 3)" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Monomial Multiplication", math: "\\displaystyle f(x) = \\frac{x^2}{3 - x}", 
+                    steps: [
+                        { t: "Step 1: Multiply by x^2", d: (<span>Multiply result from Practice 2 by <Latex>{'x^2'}</Latex>.</span>), m: "\\displaystyle x^2 \\sum_{n=0}^{\\infty} \\frac{x^n}{3^{n+1}} = \\sum_{n=0}^{\\infty} \\frac{x^{n+2}}{3^{n+1}}" },
+                        { t: "Step 2: List Terms", d: (<span>Write first few non-zero terms.</span>), m: "\\displaystyle \\frac{x^2}{3} + \\frac{x^3}{9} + \\frac{x^4}{27} + \\dots" },
+                        { t: "Step 3: Conclusion", d: (<span>Multiplying by x^2 preserves radius of convergence.</span>), m: "\\displaystyle R = 3, \\quad \\text{Interval: } (-3, 3)" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Term-by-Term Differentiation", math: "\\displaystyle f(x) = \\frac{1}{(1+x)^2}", 
+                    steps: [
+                        { t: "Step 1: Identify Derivative", d: (<span>Notice that <Latex>{'1/(1+x)^2 = -d/dx[1/(1+x)]'}</Latex>.</span>), m: "\\displaystyle \\frac{1}{(1+x)^2} = -\\frac{d}{dx} \\left( \\frac{1}{1+x} \\right)" },
+                        { t: "Step 2: Differentiate", d: (<span>Differentiate <Latex>{'\\sum (-1)^n x^n'}</Latex> term by term.</span>), m: "\\displaystyle -\\sum_{n=1}^{\\infty} (-1)^n n x^{n-1} = \\sum_{n=1}^{\\infty} (-1)^{n-1} n x^{n-1}" },
+                        { t: "Step 3: Re-index", d: (<span>Shift index to start at 0.</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-1)^n (n+1) x^n = 1 - 2x + 3x^2 - \\dots" },
+                        { t: "Step 4: Conclusion", d: (<span>Radius of convergence remains R = 1.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } (-1, 1)" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Integration for ln(1-x)", math: "\\displaystyle f(x) = \\ln(1-x)", 
+                    steps: [
+                        { t: "Step 1: Integral Setup", d: (<span>Express as <Latex>{'-\\int 1/(1-x) dx'}</Latex>.</span>), m: "\\displaystyle \\ln(1-x) = -\\int \\left(\\sum_{n=0}^{\\infty} x^n\\right) dx" },
+                        { t: "Step 2: Term-by-Term Integration", d: (<span>Integrate each term; at x = 0, C = 0.</span>), m: "\\displaystyle -\\sum_{n=0}^{\\infty} \\frac{x^{n+1}}{n+1} = -x - \\frac{x^2}{2} - \\frac{x^3}{3} - \\dots" },
+                        { t: "Step 3: Endpoint Check", d: (<span>Converges at x = -1 by Alternating Series Test; diverges at x = 1.</span>), m: "\\displaystyle x = -1 \\implies \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{n+1} \\quad (\\text{Converges})" },
+                        { t: "Step 4: Conclusion", d: (<span>Left closed, right open interval.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } [-1, 1)" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "Inverse Tangent with Coefficient", math: "\\displaystyle f(x) = \\tan^{-1}(2x)", 
+                    steps: [
+                        { t: "Step 1: Integral Formulation", d: (<span>Represent as integral of <Latex>{'2/(1+(2t)^2)'}</Latex>.</span>), m: "\\displaystyle \\tan^{-1}(2x) = \\int_0^x \\frac{2}{1+(2t)^2}\\,dt" },
+                        { t: "Step 2: Expand Integrand", d: (<span>Expand geometric series with ratio <Latex>{'-4t^2'}</Latex>.</span>), m: "\\displaystyle 2 \\sum_{n=0}^{\\infty} (-1)^n 4^n t^{2n}" },
+                        { t: "Step 3: Integrate", d: (<span>Integrate term by term from 0 to x.</span>), m: "\\displaystyle \\sum_{n=0}^{\\infty} (-1)^n \\frac{2^{2n+1} x^{2n+1}}{2n+1}" },
+                        { t: "Step 4: Conclusion", d: (<span>Converges for <Latex>{'|2x| \\le 1'}</Latex>.</span>), m: "\\displaystyle R = \\frac{1}{2}, \\quad \\text{Interval: } \\left[-\\frac{1}{2}, \\frac{1}{2}\\right]" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_11_9.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_11_9.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_11_9.py
+node validate_11_9.js
+python3 check_11_9_math.py
+}
+}

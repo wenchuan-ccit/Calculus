@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 11.8 冪級數 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle \\sum_{n=0}^{\\infty} c_n (x-a)^n = c_0 + c_1(x-a) + c_2(x-a)^2 + \\dots"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>當代入特定的 <Latex>{'x'}</Latex> 值時，冪級數便轉化為一般的常數項無窮級數。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <div className="space-y-2 bg-pink-50/50 p-4 rounded-xl text-base md:text-lg">
+                                    <p>1. 級數只在中心點 <Latex>{'x = a'}</Latex> 處收斂（<Latex>{'R = 0'}</Latex>）。</p>
+                                    <p>2. 級數對所有實數 <Latex>{'x'}</Latex> 都收斂（<Latex>{'R = \\infty'}</Latex>，區間為 <Latex>{'(-\\infty, \\infty)'}</Latex>）。</p>
+                                    <p>3. 存在有限正數 <Latex>{'R > 0'}</Latex>，使得當 <Latex>{'|x-a| < R'}</Latex> 時收斂、<Latex>{'|x-a| > R'}</Latex> 時發散。</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "11.8",
+                unitTitle: "冪級數",
+                unitSub: "Power Series",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "冪級數、收斂半徑與收斂區間",
+                part1Desc: (
+                    <span>
+                        冪級數是變數 <Latex>{'x'}</Latex> 的無限多項式推廣，中心在 <Latex>{'a'}</Latex>。它建立了離散級數與連續函數之間的橋樑，是計算機逼近三角函數、對數與指數函數的底層核心。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：收斂的安全防護罩",
+                analogyDesc: (
+                    <span>
+                        若把中心點 <Latex>{'x = a'}</Latex> 當作安全基地，冪級數就像以 <Latex>{'a'}</Latex> 為中心向兩側展開的防護罩。半徑 <Latex>{'R'}</Latex> 即為防護罩的最大半徑：只要 <Latex>{'x'}</Latex> 落在防護罩內部（<Latex>{'|x-a| < R'}</Latex>），級數運算必定穩定收斂；若超出防護罩（<Latex>{'|x-a| > R'}</Latex>），數值將無限膨脹發散；至於邊界端點，則需逐一檢測防護力。
+                    </span>
+                ),
+                part1Step1: "冪級數之標準形式 (Definition of Power Series)",
+                part1Step1Desc: "中心在 a 之冪級數一般式：",
+                part1Step2: "收斂三部曲與端點檢定 (Convergence Radius & Interval)",
+                part1Step2Desc: "任意冪級數之收斂性質必恰好符合下列三種情況之一：",
+                theorem1Title: "收斂半徑的三種定理 (Theorem on Radius of Convergence)",
+                theorem1Desc: "收斂半徑 R 決定了收斂範圍：",
+                theorem2Title: "端點個別檢驗法則 (Testing Endpoints)",
+                theorem2Desc: "比值審斂法在端點處極限必為 1（失效），因此收斂區間的兩個邊界端點必須分別代入原式，改用交錯級數審斂法、積分審斂法或 p-級數審斂法逐一確認開閉區間。",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "11.8",
+                unitTitle: "Power Series",
+                unitSub: "Radius and Interval of Convergence",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Power Series, Radius and Interval of Convergence",
+                part1Desc: (
+                    <span>
+                        A power series is an infinite polynomial in <Latex>{'x'}</Latex> centered at <Latex>{'a'}</Latex>. It bridges infinite series and continuous functions, serving as the basis for function approximations.
+                    </span>
+                ),
+                analogyTitle: "Analogy: The Shield of Convergence",
+                analogyDesc: (
+                    <span>
+                        Think of the center <Latex>{'a'}</Latex> as the safe anchor. The radius <Latex>{'R'}</Latex> forms a protective shield: any <Latex>{'x'}</Latex> inside (<Latex>{'|x-a| < R'}</Latex>) converges reliably, while anything outside diverges. The boundary endpoints require individual inspection.
+                    </span>
+                ),
+                part1Step1: "Definition of a Power Series",
+                part1Step1Desc: "A power series centered at a is defined as:",
+                part1Step2: "Radius and Interval of Convergence",
+                part1Step2Desc: "For any power series, exactly one of three cases holds:",
+                theorem1Title: "The Three Possibilities for Radius R",
+                theorem1Desc: "The radius of convergence R falls into one of three cases:",
+                theorem2Title: "Testing Endpoints Separately",
+                theorem2Desc: "Because the Ratio Test is inconclusive at endpoints (|x-a| = R), each endpoint must be tested individually using p-series, Alternating Series Test, or Integral Test to determine open/closed brackets.",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "冪級數的收斂區間 (Interval of Convergence)", source: "p.782 Example 1",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{(x-3)^n}{n}",
+                    steps: [
+                        { t: "Step 1: 比值審斂法設立 (Ratio Test Setup)", d: (<span>計算相鄰項比值之絕對值。</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = \\left| \\frac{(x-3)^{n+1}}{n+1} \\cdot \\frac{n}{(x-3)^n} \\right| = |x-3| \\cdot \\frac{n}{n+1}" },
+                        { t: "Step 2: 取極限求收斂半徑 (Find Radius R)", d: (<span>求極限並令其小於 1。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} |x-3| \\frac{n}{n+1} = |x-3| < 1 \\implies 2 < x < 4, \\quad R = 1" },
+                        { t: "Step 3: 檢查右端點 x = 4 (Right Endpoint)", d: (<span>代入 <Latex>{'x = 4'}</Latex>，得調和級數。</span>), m: "\\displaystyle x = 4 \\implies \\sum_{n=1}^{\\infty} \\frac{1}{n} \\quad (\\text{調和級數，發散})" },
+                        { t: "Step 4: 檢查左端點 x = 2 (Left Endpoint)", d: (<span>代入 <Latex>{'x = 2'}</Latex>，得交錯調和級數。</span>), m: "\\displaystyle x = 2 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{n} \\quad (\\text{交錯級數，收斂})" },
+                        { t: "Step 5: 結論 (Conclusion)", d: (<span>綜合內部與端點結果。</span>), m: "\\displaystyle \\text{收斂半徑 } R = 1, \\quad \\text{收斂區間為 } [2, 4)" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "僅在中心點收斂 (Converges Only at Center)", source: "p.783 Example 2",
+                    math: "\\displaystyle \\sum_{n=0}^{\\infty} n! x^n",
+                    steps: [
+                        { t: "Step 1: 比值審斂法設立 (Ratio Setup)", d: (<span>計算相鄰項比值絕對值。</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = \\left| \\frac{(n+1)! x^{n+1}}{n! x^n} \\right| = (n+1)|x|" },
+                        { t: "Step 2: 取極限分析 (Evaluate Limit)", d: (<span>觀察當 <Latex>{'n \\to \\infty'}</Latex> 時之行為。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} (n+1)|x| = \\begin{cases} 0 < 1, & \\text{若 } x = 0 \\\\ \\infty > 1, & \\text{若 } x \\neq 0 \\end{cases}" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>級數僅在中心點處收斂。</span>), m: "\\displaystyle \\text{收斂半徑 } R = 0, \\quad \\text{收斂區間為 } \\{0\\}" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "對所有 x 皆收斂 (Converges for All x)", source: "p.783 Example 3",
+                    math: "\\displaystyle \\sum_{n=0}^{\\infty} \\frac{x^n}{(2n)!}",
+                    steps: [
+                        { t: "Step 1: 比值審斂法設立 (Ratio Setup)", d: (<span>計算相鄰項之絕對值比值。</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = \\left| \\frac{x^{n+1}}{(2n+2)!} \\cdot \\frac{(2n)!}{x^n} \\right| = \\frac{|x|}{(2n+2)(2n+1)}" },
+                        { t: "Step 2: 取極限 (Evaluate Limit)", d: (<span>分母次數高於分子，對任意有限實數 <Latex>{'x'}</Latex> 極限皆為 0。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{|x|}{(2n+2)(2n+1)} = 0 < 1 \\quad (\\text{對所有 } x \\in \\mathbb{R})" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>級數在整個實數線上收斂。</span>), m: "\\displaystyle \\text{收斂半徑 } R = \\infty, \\quad \\text{收斂區間為 } (-\\infty, \\infty)" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "尋找收斂半徑與區間 (Find Radius & Interval)", source: "p.784 Example 4",
+                    math: "\\displaystyle \\sum_{n=0}^{\\infty} \\frac{(-3)^n x^n}{\\sqrt{n+1}}",
+                    steps: [
+                        { t: "Step 1: 比值審斂法求 R (Ratio Test for R)", d: (<span>化簡相鄰項之比值。</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = \\left| \\frac{(-3)^{n+1} x^{n+1}}{\\sqrt{n+2}} \\cdot \\frac{\\sqrt{n+1}}{(-3)^n x^n} \\right| = 3|x| \\sqrt{\\frac{n+1}{n+2}}" },
+                        { t: "Step 2: 取極限得不等式 (Solve Interval)", d: (<span>令極限小於 1。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} 3|x| \\sqrt{\\frac{n+1}{n+2}} = 3|x| < 1 \\implies |x| < \\frac{1}{3}, \\quad R = \\frac{1}{3}" },
+                        { t: "Step 3: 檢查端點 x = 1/3 (Check Right Endpoint)", d: (<span>代入 <Latex>{'x = 1/3'}</Latex>，由交錯級數審斂法知其收斂。</span>), m: "\\displaystyle x = \\frac{1}{3} \\implies \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{\\sqrt{n+1}} \\quad (\\text{交錯級數，收斂})" },
+                        { t: "Step 4: 檢查端點 x = -1/3 (Check Left Endpoint)", d: (<span>代入 <Latex>{'x = -1/3'}</Latex>，得到發散之 p-級數。</span>), m: "\\displaystyle x = -\\frac{1}{3} \\implies \\sum_{n=0}^{\\infty} \\frac{1}{\\sqrt{n+1}} \\quad (p = 1/2 \\le 1, \\text{發散})" },
+                        { t: "Step 5: 結論 (Conclusion)", d: (<span>右端包含、左端不包含。</span>), m: "\\displaystyle \\text{收斂半徑 } R = \\frac{1}{3}, \\quad \\text{收斂區間為 } \\left(-\\frac{1}{3}, \\frac{1}{3}\\right]" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Interval of Convergence", source: "p.782 Example 1",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{(x-3)^n}{n}",
+                    steps: [
+                        { t: "Step 1: Ratio Test Setup", d: (<span>Set up the ratio of consecutive terms.</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = |x-3| \\frac{n}{n+1}" },
+                        { t: "Step 2: Radius of Convergence R", d: (<span>Take limit and set strictly less than 1.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} |x-3| \\frac{n}{n+1} = |x-3| < 1 \\implies 2 < x < 4, \\quad R = 1" },
+                        { t: "Step 3: Test Endpoint x = 4", d: (<span>Substitute x = 4 to get the harmonic series.</span>), m: "\\displaystyle x = 4 \\implies \\sum_{n=1}^{\\infty} \\frac{1}{n} \\quad (\\text{Harmonic, Diverges})" },
+                        { t: "Step 4: Test Endpoint x = 2", d: (<span>Substitute x = 2 to get the alternating harmonic series.</span>), m: "\\displaystyle x = 2 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{n} \\quad (\\text{Converges})" },
+                        { t: "Step 5: Conclusion", d: (<span>Combine interior and endpoint results.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval of Convergence: } [2, 4)" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Converges Only at Center", source: "p.783 Example 2",
+                    math: "\\displaystyle \\sum_{n=0}^{\\infty} n! x^n",
+                    steps: [
+                        { t: "Step 1: Ratio Test Setup", d: (<span>Form the ratio of consecutive terms.</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = (n+1)|x|" },
+                        { t: "Step 2: Evaluate Limit", d: (<span>Limit explodes to infinity unless x is zero.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} (n+1)|x| = \\begin{cases} 0 < 1, & x = 0 \\\\ \\infty > 1, & x \\neq 0 \\end{cases}" },
+                        { t: "Step 3: Conclusion", d: (<span>The series converges only at x = 0.</span>), m: "\\displaystyle R = 0, \\quad \\text{Interval: } \\{0\\}" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Converges for All x", source: "p.783 Example 3",
+                    math: "\\displaystyle \\sum_{n=0}^{\\infty} \\frac{x^n}{(2n)!}",
+                    steps: [
+                        { t: "Step 1: Ratio Test Setup", d: (<span>Compute ratio of absolute values.</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = \\frac{|x|}{(2n+2)(2n+1)}" },
+                        { t: "Step 2: Evaluate Limit", d: (<span>The limit is 0 for all real x.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{|x|}{(2n+2)(2n+1)} = 0 < 1 \\quad (\\forall x \\in \\mathbb{R})" },
+                        { t: "Step 3: Conclusion", d: (<span>The series converges everywhere.</span>), m: "\\displaystyle R = \\infty, \\quad \\text{Interval: } (-\\infty, \\infty)" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Find Radius and Interval", source: "p.784 Example 4",
+                    math: "\\displaystyle \\sum_{n=0}^{\\infty} \\frac{(-3)^n x^n}{\\sqrt{n+1}}",
+                    steps: [
+                        { t: "Step 1: Ratio Test for R", d: (<span>Form the ratio and simplify powers.</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = 3|x| \\sqrt{\\frac{n+1}{n+2}}" },
+                        { t: "Step 2: Solve Inequality", d: (<span>Set limit less than 1.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} 3|x| \\sqrt{\\frac{n+1}{n+2}} = 3|x| < 1 \\implies |x| < \\frac{1}{3}, \\quad R = \\frac{1}{3}" },
+                        { t: "Step 3: Test Endpoint x = 1/3", d: (<span>Yields convergent alternating series.</span>), m: "\\displaystyle x = \\frac{1}{3} \\implies \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{\\sqrt{n+1}} \\quad (\\text{Converges})" },
+                        { t: "Step 4: Test Endpoint x = -1/3", d: (<span>Yields divergent p-series with p = 1/2.</span>), m: "\\displaystyle x = -\\frac{1}{3} \\implies \\sum_{n=0}^{\\infty} \\frac{1}{\\sqrt{n+1}} \\quad (\\text{Diverges})" },
+                        { t: "Step 5: Conclusion", d: (<span>Right endpoint included, left excluded.</span>), m: "\\displaystyle R = \\frac{1}{3}, \\quad \\text{Interval: } \\left(-\\frac{1}{3}, \\frac{1}{3}\\right]" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "兩端點皆收斂型 (Quadratic Denominator)", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{(x-2)^n}{n^2}", 
+                    steps: [
+                        { t: "Step 1: 比值審斂法 (Ratio Test Setup)", d: (<span>計算相鄰項比值之絕對值。</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\left|\\frac{(x-2)^{n+1}}{(n+1)^2} \\cdot \\frac{n^2}{(x-2)^n}\\right| = |x-2|\\left(\\frac{n}{n+1}\\right)^2" },
+                        { t: "Step 2: 求收斂半徑 R (Find Radius R)", d: (<span>取極限求得不等式。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} |x-2|\\left(\\frac{n}{n+1}\\right)^2 = |x-2| < 1 \\implies 1 < x < 3, \\quad R = 1" },
+                        { t: "Step 3: 檢查端點 x = 3 (Endpoint x = 3)", d: (<span>代入 <Latex>{'x = 3'}</Latex>，得 <Latex>{'p = 2'}</Latex> 之收斂 p-級數。</span>), m: "\\displaystyle x = 3 \\implies \\sum_{n=1}^{\\infty} \\frac{1}{n^2} \\quad (p = 2 > 1, \\text{收斂})" },
+                        { t: "Step 4: 檢查端點 x = 1 (Endpoint x = 1)", d: (<span>代入 <Latex>{'x = 1'}</Latex>，級數絕對收斂。</span>), m: "\\displaystyle x = 1 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{n^2} \\quad (\\text{絕對收斂})" },
+                        { t: "Step 5: 結論 (Conclusion)", d: (<span>兩端點皆收斂，區間全閉。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } [1, 3]" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "分子階乘型 (Factorial in Numerator)", math: "\\displaystyle \\sum_{n=1}^{\\infty} (2n)! x^n", 
+                    steps: [
+                        { t: "Step 1: 比值審斂法 (Ratio Setup)", d: (<span>相鄰項比值展開。</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\frac{(2n+2)! |x|^{n+1}}{(2n)! |x|^n} = (2n+2)(2n+1)|x|" },
+                        { t: "Step 2: 取極限判定 (Evaluate Limit)", d: (<span>當 <Latex>{'n \\to \\infty'}</Latex>，除非 <Latex>{'x = 0'}</Latex> 否則極限為無窮大。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} (2n+2)(2n+1)|x| = \\begin{cases} 0 < 1, & x = 0 \\\\ \\infty > 1, & x \\neq 0 \\end{cases}" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>僅在中心點收斂。</span>), m: "\\displaystyle R = 0, \\quad \\text{收斂區間為 } \\{0\\}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "分母階乘型 (Factorial in Denominator)", math: "\\displaystyle \\sum_{n=0}^{\\infty} \\frac{x^n}{n!}", 
+                    steps: [
+                        { t: "Step 1: 比值審斂法 (Ratio Setup)", d: (<span>計算相鄰項之比值。</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\frac{|x|^{n+1}}{(n+1)!} \\cdot \\frac{n!}{|x|^n} = \\frac{|x|}{n+1}" },
+                        { t: "Step 2: 取極限 (Take Limit)", d: (<span>對任意實數 <Latex>{'x'}</Latex>，極限恆為 0。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{|x|}{n+1} = 0 < 1 \\quad (\\forall x \\in \\mathbb{R})" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>在全體實數軸上皆收斂（此為指數函數 <Latex>{'e^x'}</Latex> 之展開式）。</span>), m: "\\displaystyle R = \\infty, \\quad \\text{收斂區間為 } (-\\infty, \\infty)" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "幾何指數係數型 (Geometric Scaled)", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{x^n}{n 5^n}", 
+                    steps: [
+                        { t: "Step 1: 比值審斂法求 R (Ratio Setup)", d: (<span>計算相鄰項比值並化簡。</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\left|\\frac{x^{n+1}}{(n+1)5^{n+1}} \\cdot \\frac{n 5^n}{x^n}\\right| = \\frac{|x|}{5} \\cdot \\frac{n}{n+1}" },
+                        { t: "Step 2: 求收斂半徑 (Find Radius)", d: (<span>令極限小於 1。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{|x|}{5} \\frac{n}{n+1} = \\frac{|x|}{5} < 1 \\implies |x| < 5, \\quad R = 5" },
+                        { t: "Step 3: 檢查端點 x = 5 (Endpoint x = 5)", d: (<span>代入 <Latex>{'x = 5'}</Latex>，得到調和級數發散。</span>), m: "\\displaystyle x = 5 \\implies \\sum_{n=1}^{\\infty} \\frac{1}{n} \\quad (\\text{發散})" },
+                        { t: "Step 4: 檢查端點 x = -5 (Endpoint x = -5)", d: (<span>代入 <Latex>{'x = -5'}</Latex>，得到交錯調和級數收斂。</span>), m: "\\displaystyle x = -5 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{n} \\quad (\\text{收斂})" },
+                        { t: "Step 5: 結論 (Conclusion)", d: (<span>左閉右開區間。</span>), m: "\\displaystyle R = 5, \\quad \\text{收斂區間為 } [-5, 5)" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "平移與根式分母型 (Shifted Root Form)", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{(-1)^n (x+1)^n}{\\sqrt{n}}", 
+                    steps: [
+                        { t: "Step 1: 比值審斂法求 R (Ratio Setup)", d: (<span>消除負號計算比值。</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = |x+1| \\sqrt{\\frac{n}{n+1}}" },
+                        { t: "Step 2: 取極限得收斂範圍 (Solve Range)", d: (<span>令極限小於 1。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} |x+1|\\sqrt{\\frac{n}{n+1}} = |x+1| < 1 \\implies -2 < x < 0, \\quad R = 1" },
+                        { t: "Step 3: 檢查端點 x = 0 (Endpoint x = 0)", d: (<span>代入 <Latex>{'x = 0'}</Latex>，得交錯級數收斂。</span>), m: "\\displaystyle x = 0 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{\\sqrt{n}} \\quad (\\text{交錯級數，收斂})" },
+                        { t: "Step 4: 檢查端點 x = -2 (Endpoint x = -2)", d: (<span>代入 <Latex>{'x = -2'}</Latex>，負號相乘得發散之 p-級數。</span>), m: "\\displaystyle x = -2 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n (-1)^n}{\\sqrt{n}} = \\sum_{n=1}^{\\infty} \\frac{1}{\\sqrt{n}} \\quad (p=1/2 \\le 1, \\text{發散})" },
+                        { t: "Step 5: 結論 (Conclusion)", d: (<span>左開右閉區間。</span>), m: "\\displaystyle R = 1, \\quad \\text{收斂區間為 } (-2, 0]" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Both Endpoints Convergent", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{(x-2)^n}{n^2}", 
+                    steps: [
+                        { t: "Step 1: Ratio Test Setup", d: (<span>Compute ratio of absolute values.</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = |x-2|\\left(\\frac{n}{n+1}\\right)^2" },
+                        { t: "Step 2: Find Radius R", d: (<span>Set limit strictly less than 1.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} |x-2|\\left(\\frac{n}{n+1}\\right)^2 = |x-2| < 1 \\implies 1 < x < 3, \\quad R = 1" },
+                        { t: "Step 3: Test Endpoint x = 3", d: (<span>Yields convergent p-series with p = 2.</span>), m: "\\displaystyle x = 3 \\implies \\sum_{n=1}^{\\infty} \\frac{1}{n^2} \\quad (p = 2 > 1, \\text{Converges})" },
+                        { t: "Step 4: Test Endpoint x = 1", d: (<span>Yields absolutely convergent alternating series.</span>), m: "\\displaystyle x = 1 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{n^2} \\quad (\\text{Converges})" },
+                        { t: "Step 5: Conclusion", d: (<span>Both endpoints included.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } [1, 3]" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Factorial in Numerator", math: "\\displaystyle \\sum_{n=1}^{\\infty} (2n)! x^n", 
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Expand ratio of consecutive terms.</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = (2n+2)(2n+1)|x|" },
+                        { t: "Step 2: Evaluate Limit", d: (<span>Explodes to infinity unless x = 0.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} (2n+2)(2n+1)|x| = \\begin{cases} 0 < 1, & x = 0 \\\\ \\infty > 1, & x \\neq 0 \\end{cases}" },
+                        { t: "Step 3: Conclusion", d: (<span>Converges only at the center point.</span>), m: "\\displaystyle R = 0, \\quad \\text{Interval: } \\{0\\}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Factorial in Denominator", math: "\\displaystyle \\sum_{n=0}^{\\infty} \\frac{x^n}{n!}", 
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Compute ratio of absolute values.</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\frac{|x|}{n+1}" },
+                        { t: "Step 2: Evaluate Limit", d: (<span>Limit is 0 for all real x.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{|x|}{n+1} = 0 < 1 \\quad (\\forall x \\in \\mathbb{R})" },
+                        { t: "Step 3: Conclusion", d: (<span>Converges on the entire real line.</span>), m: "\\displaystyle R = \\infty, \\quad \\text{Interval: } (-\\infty, \\infty)" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Geometric Scaled Denominator", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{x^n}{n 5^n}", 
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Compute ratio and simplify.</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\frac{|x|}{5} \\cdot \\frac{n}{n+1}" },
+                        { t: "Step 2: Find Radius R", d: (<span>Set limit strictly less than 1.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{|x|}{5}\\frac{n}{n+1} = \\frac{|x|}{5} < 1 \\implies |x| < 5, \\quad R = 5" },
+                        { t: "Step 3: Test Endpoint x = 5", d: (<span>Yields divergent harmonic series.</span>), m: "\\displaystyle x = 5 \\implies \\sum_{n=1}^{\\infty} \\frac{1}{n} \\quad (\\text{Diverges})" },
+                        { t: "Step 4: Test Endpoint x = -5", d: (<span>Yields convergent alternating harmonic series.</span>), m: "\\displaystyle x = -5 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{n} \\quad (\\text{Converges})" },
+                        { t: "Step 5: Conclusion", d: (<span>Left endpoint included, right excluded.</span>), m: "\\displaystyle R = 5, \\quad \\text{Interval: } [-5, 5)" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Shifted Center with Radical", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{(-1)^n (x+1)^n}{\\sqrt{n}}", 
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Eliminate negative signs in absolute value.</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = |x+1| \\sqrt{\\frac{n}{n+1}}" },
+                        { t: "Step 2: Solve Range", d: (<span>Set limit strictly less than 1.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} |x+1|\\sqrt{\\frac{n}{n+1}} = |x+1| < 1 \\implies -2 < x < 0, \\quad R = 1" },
+                        { t: "Step 3: Test Endpoint x = 0", d: (<span>Yields convergent alternating series.</span>), m: "\\displaystyle x = 0 \\implies \\sum_{n=1}^{\\infty} \\frac{(-1)^n}{\\sqrt{n}} \\quad (\\text{Converges})" },
+                        { t: "Step 4: Test Endpoint x = -2", d: (<span>Yields divergent p-series with p = 1/2.</span>), m: "\\displaystyle x = -2 \\implies \\sum_{n=1}^{\\infty} \\frac{1}{\\sqrt{n}} \\quad (p = 1/2 \\le 1, \\text{Diverges})" },
+                        { t: "Step 5: Conclusion", d: (<span>Left endpoint open, right endpoint closed.</span>), m: "\\displaystyle R = 1, \\quad \\text{Interval: } (-2, 0]" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_11_8.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_11_8.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_11_8.py
+}

@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 10.3 極座標 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{'\\displaystyle (r, \\theta)'}</Latex>
+                            <div className="mt-2 text-lg text-gray-600">
+                                <Latex fontSize="0.95em">{t.radiusNote}</Latex>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.case1}</span> 
+                                <Latex block>{'\\displaystyle x = r\\cos\\theta, \\quad y = r\\sin\\theta'}</Latex>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.case2}</span> 
+                                <Latex block>{'\\displaystyle r^2 = x^2 + y^2, \\quad \\tan\\theta = \\frac{y}{x}'}</Latex>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-blue-800 mb-3">{activeEx.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "10.3",
+                unitTitle: "極座標",
+                unitSub: "Polar Coordinates",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "極座標系統介紹",
+                part1Desc: (
+                    <span>
+                        本章節介紹了一種不同於傳統直角座標的新系統——極座標。它使用距離 <Latex>{'r'}</Latex> 和角度 <Latex>{'\\theta'}</Latex> 來定位，對於描述圓形、旋轉對稱的圖形更為直觀。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：導航雷達",
+                analogyDesc: (
+                    <span>
+                        直角座標 <Latex>{'(x, y)'}</Latex> 像是城市街道導航（向東走 3 步，向北走 4 步）。而極座標 <Latex>{'(r, \\theta)'}</Latex> 就像是雷達指令：「目標在你的 2 點鐘方向（角度 <Latex>{'\\theta'}</Latex>），距離 5 公里處（半徑 <Latex>{'r'}</Latex>）」。
+                    </span>
+                ),
+                part1Step1: "點的表示法 (Representation)",
+                part1Step1Desc: (
+                    <span>
+                        平面上的一點 <Latex>{'P'}</Latex> 用 <Latex>{'(r, \\theta)'}</Latex> 表示。<Latex>{'r'}</Latex> 是到極點的距離，<Latex>{'\\theta'}</Latex> 是與極軸的夾角。
+                    </span>
+                ),
+                radiusNote: "r = distance, θ = angle",
+                part1Step2: "座標轉換公式 (Conversion Formulas)",
+                part1Step2Desc: (
+                    <span>
+                        利用三角函數進行轉換：
+                    </span>
+                ),
+                case1: "極座標轉直角 (Polar to Cartesian):",
+                case2: "直角轉極座標 (Cartesian to Polar):",
+                dsTitle: "特殊規則",
+                dsDesc: "極座標點有多重表示法，例如 (-r, θ) 代表反方向距離 r。",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "10.3",
+                unitTitle: "Polar Coordinates",
+                unitSub: "Polar Coordinates",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Introduction to Polar Coordinates",
+                part1Desc: (
+                    <span>
+                        This section introduces a new system different from Cartesian coordinates. It uses distance <Latex>{'r'}</Latex> and angle <Latex>{'\\theta'}</Latex>, making it ideal for circular or rotationally symmetric shapes.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Radar Navigation",
+                analogyDesc: (
+                    <span>
+                        Cartesian <Latex>{'(x, y)'}</Latex> is like city grid navigation (3 blocks East, 4 blocks North). Polar <Latex>{'(r, \\theta)'}</Latex> is like a radar command: "Target at 2 o'clock direction (angle <Latex>{'\\theta'}</Latex>), 5 km away (radius <Latex>{'r'}</Latex>)".
+                    </span>
+                ),
+                part1Step1: "Point Representation",
+                part1Step1Desc: (
+                    <span>
+                        A point <Latex>{'P'}</Latex> is represented by <Latex>{'(r, \\theta)'}</Latex>, where <Latex>{'r'}</Latex> is the distance from the pole and <Latex>{'\\theta'}</Latex> is the angle from the polar axis.
+                    </span>
+                ),
+                radiusNote: "r = distance, θ = angle",
+                part1Step2: "Conversion Formulas",
+                part1Step2Desc: (
+                    <span>
+                        Using trigonometry to convert between systems:
+                    </span>
+                ),
+                case1: "Polar to Cartesian:",
+                case2: "Cartesian to Polar:",
+                dsTitle: "Special Rules",
+                dsDesc: "Multiple representations exist, e.g., (-r, θ) means distance r in the opposite direction.",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "標註極座標點 (P.685)",
+                    math: "\\displaystyle (1, 5\\pi/4), \\quad (2, 3\\pi), \\quad (2, -2\\pi/3), \\quad (-3, 3\\pi/4)",
+                    steps: [
+                        { t: "Step 1: 點 (1, 5π/4)", d: (<span>從極軸逆時針旋轉 <Latex>{'225^\\circ'}</Latex>，前進 1 單位。 <br/><img src={"https://drive.google.com/thumbnail?id=1fGeGjTHWfstEUh_t5bOpzNfyYX1kjCsD&sz=w1000"} width="800" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\theta = 225^\\circ, r = 1" },
+                        { t: "Step 2: 點 (2, 3π)", d: (<span><Latex>{'3\\pi'}</Latex> 等同於 <Latex>{'\\pi'}</Latex> (轉一圈半)。向左前進 2 單位。 </span>), m: "\\displaystyle \\theta = \\pi, r = 2 \\quad (\\text{Negative x-axis})" },
+                        { t: "Step 3: 點 (2, -2π/3)", d: (<span>順時針旋轉 <Latex>{'120^\\circ'}</Latex>，前進 2 單位。 </span>), m: "\\displaystyle \\theta = -120^\\circ, r = 2" },
+                        { t: "Step 4: 點 (-3, 3π/4)", d: (<span>先轉到 <Latex>{'135^\\circ'}</Latex>，因 <Latex>{'r=-3'}</Latex>，向反方向（第四象限）延伸 3 單位。 </span>), m: "\\displaystyle \\theta = 135^\\circ, r = -3 \\implies \\text{4th Quadrant}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "極座標轉直角 (P.686)",
+                    math: "\\displaystyle \\text{Convert } (2, \\pi/3) \\text{ to Cartesian}",
+                    steps: [
+                        { t: "Step 1: 代入 x 公式 (Formula x)", d: (<span>使用 <Latex>{'x = r \\cos \\theta'}</Latex>。</span>), m: "\\displaystyle x = 2 \\cos(\\pi/3) = 2 \\cdot \\frac{1}{2} = 1" },
+                        { t: "Step 2: 代入 y 公式 (Formula y)", d: (<span>使用 <Latex>{'y = r \\sin \\theta'}</Latex>。</span>), m: "\\displaystyle y = 2 \\sin(\\pi/3) = 2 \\cdot \\frac{\\sqrt{3}}{2} = \\sqrt{3}" },
+                        { t: "Step 3: 結果 (Result)", d: (<span>寫出直角座標。</span>), m: "\\displaystyle (1, \\sqrt{3})" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "直角轉極座標 (P.686)",
+                    math: "\\displaystyle \\text{Convert } (1, -1) \\text{ to Polar}",
+                    steps: [
+                        { t: "Step 1: 計算半徑 r (Calculate r)", d: (<span>使用 <Latex>{'r^2 = x^2 + y^2'}</Latex>。</span>), m: "\\displaystyle r = \\sqrt{1^2 + (-1)^2} = \\sqrt{2}" },
+                        { t: "Step 2: 計算角度 θ (Calculate θ)", d: (<span>使用 <Latex>{'\\tan \\theta = y/x'}</Latex>。</span>), m: "\\displaystyle \\tan \\theta = \\frac{-1}{1} = -1" },
+                        { t: "Step 3: 判定象限 (Determine Quadrant)", d: (<span>點 <Latex>{'(1, -1)'}</Latex> 在第四象限。</span>), m: "\\displaystyle \\theta = -\\frac{\\pi}{4} \\quad \\text{or} \\quad \\frac{7\\pi}{4}" },
+                        { t: "Step 4: 結果 (Result)", d: (<span>極座標形式。</span>), m: "\\displaystyle (\\sqrt{2}, -\\frac{\\pi}{4})" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "識別方程式 r=2 (P.687)",
+                    math: "\\displaystyle r = 2",
+                    steps: [
+                        { t: "Step 1: 幾何意義 (Meaning)", d: (<span>到原點距離永遠為 2。</span>), m: "\\displaystyle \\text{Distance from origin is 2}" },
+                        { t: "Step 2: 轉換驗證 (Verify)", d: (<span>兩邊平方。</span>), m: "\\displaystyle r^2 = 4 \\implies x^2 + y^2 = 4" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>這是一個圓心在原點，半徑為 2 的圓。 <br/><img src={"https://drive.google.com/thumbnail?id=1rgjwudViTMoAeHGs68qMuzKaSU44RTi1&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\text{Circle with radius 2}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "識別方程式 θ=1 (P.687)",
+                    math: "\\displaystyle \\theta = 1",
+                    steps: [
+                        { t: "Step 1: 幾何意義 (Meaning)", d: (<span>角度固定為 1 弧度，半徑 <Latex>{'r'}</Latex> 可為任意值。</span>), m: "\\displaystyle \\text{Angle fixed at 1 radian}" },
+                        { t: "Step 2: 轉換驗證 (Verify)", d: (<span>取正切值。</span>), m: "\\displaystyle \\tan \\theta = \\tan 1 \\implies \\frac{y}{x} = \\tan 1 \\implies y = (\\tan 1)x" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>這是一條通過原點的直線。 <br/><img src={"https://drive.google.com/thumbnail?id=1TstO4tvg51wqNnp_CjhmpxPEFqyvzYD2&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\text{Line through origin}" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "繪製 r = 2cosθ (P.687)",
+                    math: "\\displaystyle r = 2 \\cos \\theta",
+                    steps: [
+                        { t: "Step 1: 列表繪圖 (Table)", d: (<span>計算 <Latex>{'\\theta = 0, \\pi/3, \\pi/2'}</Latex>。</span>), m: "\\displaystyle (2, 0), (1, \\pi/3), (0, \\pi/2)" },
+                        { t: "Step 2: 轉換方程式 (Convert)", d: (<span>同乘 <Latex>{'r'}</Latex>。</span>), m: "\\displaystyle r^2 = 2r \\cos \\theta \\implies x^2 + y^2 = 2x" },
+                        { t: "Step 3: 配方 (Complete Square)", d: (<span>整理成圓的標準式。</span>), m: "\\displaystyle (x^2 - 2x + 1) + y^2 = 1 \\implies (x-1)^2 + y^2 = 1" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>圓心 <Latex>{'(1, 0)'}</Latex>，半徑 1 的圓。 <br/><img src={"https://drive.google.com/thumbnail?id=19JAee9iF_5rMv8pIVlwxS6xjgELxatj3&sz=w1000"} width="600" style={{display: "block", margin: "8px auto"}}/> <br/><img src={"https://drive.google.com/thumbnail?id=1L9wep4fQCoXgfNggfDh_gxB8TvvUzMbm&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/>    </span>), m: "\\displaystyle \\text{Circle shifted right}" }
+                    ]
+                },
+                {
+                    id: 7, label: "Ex 7", title: "心形線 (Cardioid) (P.688)",
+                    math: "\\displaystyle r = 1 + \\sin \\theta",
+                    steps: [
+                        { t: "Step 1: 分析範圍 (Analyze Range)", d: (<span><Latex>{'\\sin \\theta'}</Latex> 在 -1 到 1 之間，故 <Latex>{'r'}</Latex> 在 0 到 2 之間。</span>), m: "\\displaystyle 0 \\le r \\le 2" },
+                        { t: "Step 2: 關鍵點 (Key Points)", d: (<span>代入 <Latex>{'0, \\pi/2, \\pi, 3\\pi/2'}</Latex>。</span>), m: "\\displaystyle (1,0), (2, \\pi/2), (1, \\pi), (0, 3\\pi/2)" },
+                        { t: "Step 3: 繪圖特徵 (Sketch)", d: (<span>在 <Latex>{'3\\pi/2'}</Latex> 處回到極點 (0)，形成凹陷。</span>), m: "\\displaystyle \\text{Cusp at pole}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>形狀像心臟，稱為心形線。 <br/><img src={"https://drive.google.com/thumbnail?id=1ybmvNO2UIonp6MwJHrc7TmznWWk5OJvo&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/> <br/><img src={"https://drive.google.com/thumbnail?id=162HELlzZ4JtEWMz2XHrX6wt_qq3kV5xa&sz=w1000"} width="800" style={{display: "block", margin: "8px auto"}}/>    </span>), m: "\\displaystyle \\text{Cardioid}" }
+                    ]
+                },
+                {
+                    id: 8, label: "Ex 8", title: "四葉玫瑰線 (P.688)",
+                    math: "\\displaystyle r = \\cos 2\\theta",
+                    steps: [
+                        { t: "Step 1: 判定週期 (Period)", d: (<span><Latex>{'2\\theta'}</Latex> 使得函數振盪頻率加倍。</span>), m: "\\displaystyle \\text{Oscillates between 1 and -1}" },
+                        { t: "Step 2: 尋找零點 (Find Zeros)", d: (<span><Latex>{'r=0'}</Latex> 當 <Latex>{'2\\theta = \\pi/2, 3\\pi/2'}</Latex>...</span>), m: "\\displaystyle \\theta = \\pi/4, 3\\pi/4, 5\\pi/4, 7\\pi/4" },
+                        { t: "Step 3: 葉片數量 (Leaves)", d: (<span>係數 <Latex>{'n=2'}</Latex> 為偶數，葉片數為 <Latex>{'2n = 4'}</Latex>。</span>), m: "\\displaystyle 4 \\text{ Leaves}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>四葉玫瑰線。 <br/><img src={"https://drive.google.com/thumbnail?id=1FU_YSrKOc941uKNbQGSvD6shZ9vCjiAm&sz=w1000"} width="800" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\text{Four-leaved Rose}" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Plotting Points (P.685)",
+                    math: "\\displaystyle (1, 5\\pi/4), \\quad (2, 3\\pi), \\quad (2, -2\\pi/3), \\quad (-3, 3\\pi/4)",
+                    steps: [
+                        { t: "Step 1: Point (1, 5π/4)", d: (<span>Rotate <Latex>{'225^\\circ'}</Latex> CCW, go out 1 unit. <br/><img src={"https://drive.google.com/thumbnail?id=1fGeGjTHWfstEUh_t5bOpzNfyYX1kjCsD&sz=w1000"} width="800" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\text{3rd Quadrant}" },
+                        { t: "Step 2: Point (2, 3π)", d: (<span><Latex>{'3\\pi'}</Latex> is same direction as <Latex>{'\\pi'}</Latex>. </span>), m: "\\displaystyle \\text{Negative x-axis}" },
+                        { t: "Step 3: Point (2, -2π/3)", d: (<span>Rotate <Latex>{'120^\\circ'}</Latex> CW. </span>), m: "\\displaystyle \\text{3rd Quadrant}" },
+                        { t: "Step 4: Point (-3, 3π/4)", d: (<span>Face <Latex>{'135^\\circ'}</Latex>, walk backwards 3 units. </span>), m: "\\displaystyle \\text{4th Quadrant}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Polar to Cartesian (P.686)",
+                    math: "\\displaystyle \\text{Convert } (2, \\pi/3)",
+                    steps: [
+                        { t: "Step 1: Formula x", d: (<span><Latex>{'x = r \\cos \\theta'}</Latex>.</span>), m: "\\displaystyle x = 2 \\cos(\\pi/3) = 1" },
+                        { t: "Step 2: Formula y", d: (<span><Latex>{'y = r \\sin \\theta'}</Latex>.</span>), m: "\\displaystyle y = 2 \\sin(\\pi/3) = \\sqrt{3}" },
+                        { t: "Step 3: Result", d: (<span>Cartesian coordinates.</span>), m: "\\displaystyle (1, \\sqrt{3})" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Cartesian to Polar (P.686)",
+                    math: "\\displaystyle \\text{Convert } (1, -1)",
+                    steps: [
+                        { t: "Step 1: Calculate r", d: (<span>Pythagoras theorem.</span>), m: "\\displaystyle r = \\sqrt{1^2 + (-1)^2} = \\sqrt{2}" },
+                        { t: "Step 2: Calculate θ", d: (<span>Inverse tangent.</span>), m: "\\displaystyle \\tan \\theta = -1" },
+                        { t: "Step 3: Quadrant", d: (<span>Point is in Q4.</span>), m: "\\displaystyle \\theta = -\\pi/4" },
+                        { t: "Step 4: Result", d: (<span>Polar coordinates.</span>), m: "\\displaystyle (\\sqrt{2}, -\\pi/4)" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Identify r=2 (P.687)",
+                    math: "\\displaystyle r = 2",
+                    steps: [
+                        { t: "Step 1: Meaning", d: (<span>Distance is always 2.</span>), m: "\\displaystyle \\text{Constant radius}" },
+                        { t: "Step 2: Verify", d: (<span>Square both sides.</span>), m: "\\displaystyle x^2 + y^2 = 4" },
+                        { t: "Step 3: Conclusion", d: (<span>Circle centered at origin. <br/><img src={"https://drive.google.com/thumbnail?id=1rgjwudViTMoAeHGs68qMuzKaSU44RTi1&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\text{Circle, r=2}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Identify θ=1 (P.687)",
+                    math: "\\displaystyle \\theta = 1",
+                    steps: [
+                        { t: "Step 1: Meaning", d: (<span>Angle is fixed.</span>), m: "\\displaystyle \\text{Constant angle}" },
+                        { t: "Step 2: Verify", d: (<span>Take tangent.</span>), m: "\\displaystyle y = (\\tan 1)x" },
+                        { t: "Step 3: Conclusion", d: (<span>Line through origin. <br/><img src={"https://drive.google.com/thumbnail?id=1TstO4tvg51wqNnp_CjhmpxPEFqyvzYD2&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\text{Line}" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "Graph r = 2cosθ (P.687)",
+                    math: "\\displaystyle r = 2 \\cos \\theta",
+                    steps: [
+                        { t: "Step 1: Table", d: (<span>Plot points.</span>), m: "\\displaystyle (2,0) \\to (0, \\pi/2)" },
+                        { t: "Step 2: Convert", d: (<span>Multiply by r.</span>), m: "\\displaystyle r^2 = 2r\\cos\\theta \\implies x^2+y^2=2x" },
+                        { t: "Step 3: Complete Square", d: (<span>Standard form.</span>), m: "\\displaystyle (x-1)^2 + y^2 = 1" },
+                        { t: "Step 4: Conclusion", d: (<span>Circle at (1,0). <br/><img src={"https://drive.google.com/thumbnail?id=19JAee9iF_5rMv8pIVlwxS6xjgELxatj3&sz=w1000"} width="600" style={{display: "block", margin: "8px auto"}}/> <br/><img src={"https://drive.google.com/thumbnail?id=1L9wep4fQCoXgfNggfDh_gxB8TvvUzMbm&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/>    </span>), m: "\\displaystyle \\text{Circle}" }
+                    ]
+                },
+                {
+                    id: 7, label: "Ex 7", title: "Cardioid (P.688)",
+                    math: "\\displaystyle r = 1 + \\sin \\theta",
+                    steps: [
+                        { t: "Step 1: Range", d: (<span>r varies from 0 to 2.</span>), m: "\\displaystyle 0 \\le r \\le 2" },
+                        { t: "Step 2: Key Points", d: (<span>Check quadrants.</span>), m: "\\displaystyle (1,0), (2, \\pi/2), (0, 3\\pi/2)" },
+                        { t: "Step 3: Sketch", d: (<span>Heart shape.</span>), m: "\\displaystyle \\text{Cusp at origin}" },
+                        { t: "Step 4: Conclusion", d: (<span>Cardioid. <br/><img src={"https://drive.google.com/thumbnail?id=1ybmvNO2UIonp6MwJHrc7TmznWWk5OJvo&sz=w1000"} width="300" style={{display: "block", margin: "8px auto"}}/> <br/><img src={"https://drive.google.com/thumbnail?id=162HELlzZ4JtEWMz2XHrX6wt_qq3kV5xa&sz=w1000"} width="800" style={{display: "block", margin: "8px auto"}}/>    </span>), m: "\\displaystyle \\text{Cardioid}" }
+                    ]
+                },
+                {
+                    id: 8, label: "Ex 8", title: "Four-leaved Rose (P.688)",
+                    math: "\\displaystyle r = \\cos 2\\theta",
+                    steps: [
+                        { t: "Step 1: Period", d: (<span>Frequency doubled.</span>), m: "\\displaystyle \\text{Faster oscillation}" },
+                        { t: "Step 2: Zeros", d: (<span>r=0 at pi/4 intervals.</span>), m: "\\displaystyle \\theta = \\pi/4, 3\\pi/4..." },
+                        { t: "Step 3: Leaves", d: (<span>n=2 (even) &rarr; 2n leaves.</span>), m: "\\displaystyle 4 \\text{ Leaves}" },
+                        { t: "Step 4: Conclusion", d: (<span>Rose curve. <br/><img src={"https://drive.google.com/thumbnail?id=1FU_YSrKOc941uKNbQGSvD6shZ9vCjiAm&sz=w1000"} width="800" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\text{Four-leaved Rose}" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "練習題 1 (仿 Ex 1)", math: "\\displaystyle A(2, \\pi/6), \\quad B(-2, \\pi/6)", 
+                    steps: [
+                        { t: "Step 1: 標註點 A (Plot A)", d: (<span>從極軸逆時針 <Latex>{'30^\\circ'}</Latex>，前進 2。</span>), m: "\\displaystyle \\text{1st Quadrant}" },
+                        { t: "Step 2: 標註點 B (Plot B)", d: (<span>角度同為 <Latex>{'30^\\circ'}</Latex>，但半徑負值，向後退（第三象限）。</span>), m: "\\displaystyle \\text{Opposite to A}" },
+                        { t: "Step 3: 觀察 (Observe)", d: (<span>點 B 實際座標等同於 <Latex>{'(2, 7\\pi/6)'}</Latex>。</span>), m: "\\displaystyle B = (2, 210^\\circ)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "練習題 2 (仿 Ex 2)", math: "\\displaystyle (4, 2\\pi/3) \\to (x, y)", 
+                    steps: [
+                        { t: "Step 1: 代入 x (Find x)", d: (<span><Latex>{'x = 4 \\cos(120^\\circ)'}</Latex>。</span>), m: "\\displaystyle x = 4(-1/2) = -2" },
+                        { t: "Step 2: 代入 y (Find y)", d: (<span><Latex>{'y = 4 \\sin(120^\\circ)'}</Latex>。</span>), m: "\\displaystyle y = 4(\\sqrt{3}/2) = 2\\sqrt{3}" },
+                        { t: "Step 3: 結果 (Result)", d: (<span>直角座標。</span>), m: "\\displaystyle (-2, 2\\sqrt{3})" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "練習題 3 (仿 Ex 3)", math: "\\displaystyle (-3, -3) \\to (r, \\theta), \\quad r \\gt 0", 
+                    steps: [
+                        { t: "Step 1: 計算 r (Calc r)", d: (<span>畢氏定理。</span>), m: "\\displaystyle r = \\sqrt{9+9} = \\sqrt{18} = 3\\sqrt{2}" },
+                        { t: "Step 2: 計算 θ (Calc θ)", d: (<span><Latex>{'\\tan \\theta = 1'}</Latex>。</span>), m: "\\displaystyle \\theta = \\pi/4 \\text{ or } 5\\pi/4" },
+                        { t: "Step 3: 修正象限 (Quadrant)", d: (<span>點在第三象限。</span>), m: "\\displaystyle \\theta = 5\\pi/4" },
+                        { t: "Step 4: 結果 (Result)", d: (<span>極座標。</span>), m: "\\displaystyle (3\\sqrt{2}, 5\\pi/4)" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "練習題 4 (仿 Ex 6)", math: "\\displaystyle r = 4 \\sin \\theta", 
+                    steps: [
+                        { t: "Step 1: 同乘 r (Multiply by r)", d: (<span>湊出轉換公式形式。</span>), m: "\\displaystyle r^2 = 4r \\sin \\theta" },
+                        { t: "Step 2: 代換 (Substitute)", d: (<span>轉換變數。</span>), m: "\\displaystyle x^2 + y^2 = 4y" },
+                        { t: "Step 3: 配方 (Complete Square)", d: (<span>整理 y 項。</span>), m: "\\displaystyle x^2 + (y^2 - 4y + 4) = 4 \\implies x^2 + (y-2)^2 = 4" },
+                        { t: "Step 4: 描述 (Describe)", d: (<span>圓心在 (0,2)，半徑為 2 的圓。</span>), m: "\\displaystyle \\text{Circle, Center (0,2)}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "練習題 5 (仿 Ex 7)", math: "\\displaystyle r = 1 + \\cos \\theta", 
+                    steps: [
+                        { t: "Step 1: 關鍵點 (Key Points)", d: (<span>計算特殊角度。</span>), m: "\\displaystyle (2,0), (1, \\pi/2), (0, \\pi)" },
+                        { t: "Step 2: 對稱性 (Symmetry)", d: (<span><Latex>{'\\cos(-\\theta) = \\cos \\theta'}</Latex>，對極軸對稱。</span>), m: "\\displaystyle \\text{Symmetric about x-axis}" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>橫向的心形線，尖點在左側原點。</span>), m: "\\displaystyle \\text{Horizontal Cardioid}" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "練習題 6 (仿 Ex 8)", math: "\\displaystyle r = \\sin 3\\theta", 
+                    steps: [
+                        { t: "Step 1: 觀察係數 (Check n)", d: (<span>係數 <Latex>{'n=3'}</Latex>。</span>), m: "\\displaystyle n = 3" },
+                        { t: "Step 2: 判定規則 (Rule)", d: (<span>若 n 為奇數，葉片數 = n。</span>), m: "\\displaystyle \\text{Odd n } \\implies n \\text{ leaves}" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>三葉玫瑰線。</span>), m: "\\displaystyle \\text{Three-leaved Rose}" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Practice 1 (Ref Ex 1)", math: "\\displaystyle A(2, \\pi/6), \\quad B(-2, \\pi/6)", 
+                    steps: [
+                        { t: "Step 1: Plot A", d: (<span>Standard point in Q1.</span>), m: "\\displaystyle (2, 30^\\circ)" },
+                        { t: "Step 2: Plot B", d: (<span>Negative radius, go opposite direction.</span>), m: "\\displaystyle \\text{Into Q3}" },
+                        { t: "Step 3: Observe", d: (<span>B is same as <Latex>{'(2, 7\\pi/6)'}</Latex>.</span>), m: "\\displaystyle (2, 210^\\circ)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Practice 2 (Ref Ex 2)", math: "\\displaystyle (4, 2\\pi/3) \\to (x, y)", 
+                    steps: [
+                        { t: "Step 1: Find x", d: (<span><Latex>{'x = 4\\cos(120^\\circ)'}</Latex>.</span>), m: "\\displaystyle -2" },
+                        { t: "Step 2: Find y", d: (<span><Latex>{'y = 4\\sin(120^\\circ)'}</Latex>.</span>), m: "\\displaystyle 2\\sqrt{3}" },
+                        { t: "Step 3: Result", d: (<span>Coordinates.</span>), m: "\\displaystyle (-2, 2\\sqrt{3})" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Practice 3 (Ref Ex 3)", math: "\\displaystyle (-3, -3) \\to (r, \\theta)", 
+                    steps: [
+                        { t: "Step 1: Calc r", d: (<span>Radius.</span>), m: "\\displaystyle 3\\sqrt{2}" },
+                        { t: "Step 2: Calc θ", d: (<span>Tan is 1.</span>), m: "\\displaystyle \\tan\\theta = 1" },
+                        { t: "Step 3: Quadrant", d: (<span>Q3 adjustment.</span>), m: "\\displaystyle 5\\pi/4" },
+                        { t: "Step 4: Result", d: (<span>Polar form.</span>), m: "\\displaystyle (3\\sqrt{2}, 5\\pi/4)" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Practice 4 (Ref Ex 6)", math: "\\displaystyle r = 4 \\sin \\theta", 
+                    steps: [
+                        { t: "Step 1: Multiply by r", d: (<span>Get <Latex>{'r^2'}</Latex> term.</span>), m: "\\displaystyle r^2 = 4r\\sin\\theta" },
+                        { t: "Step 2: Substitute", d: (<span>Convert variables.</span>), m: "\\displaystyle x^2+y^2 = 4y" },
+                        { t: "Step 3: Complete Square", d: (<span>Standard form.</span>), m: "\\displaystyle x^2+(y-2)^2=4" },
+                        { t: "Step 4: Describe", d: (<span>Circle at (0,2).</span>), m: "\\displaystyle \\text{Circle}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Practice 5 (Ref Ex 7)", math: "\\displaystyle r = 1 + \\cos \\theta", 
+                    steps: [
+                        { t: "Step 1: Points", d: (<span>Check axes.</span>), m: "\\displaystyle (2,0), (1, \\pi/2), (0, \\pi)" },
+                        { t: "Step 2: Symmetry", d: (<span>Even function.</span>), m: "\\displaystyle \\text{x-axis symmetry}" },
+                        { t: "Step 3: Conclusion", d: (<span>Horizontal cardioid.</span>), m: "\\displaystyle \\text{Cardioid}" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "Practice 6 (Ref Ex 8)", math: "\\displaystyle r = \\sin 3\\theta", 
+                    steps: [
+                        { t: "Step 1: Check n", d: (<span>Coefficient is 3.</span>), m: "\\displaystyle n=3" },
+                        { t: "Step 2: Rule", d: (<span>Odd n &rarr; n leaves.</span>), m: "\\displaystyle 3 \\text{ leaves}" },
+                        { t: "Step 3: Conclusion", d: (<span>Three-leaved rose.</span>), m: "\\displaystyle \\text{Rose Curve}" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

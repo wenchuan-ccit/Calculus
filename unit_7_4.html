@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 7.4 部分分式積分法 | Prof. Wu Wen-Chuan</title>
+    
+    <!-- 1. 核心樣式與庫載入 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            // 新增：處理頁面內平滑滾動的函數
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false); // 手機版點擊後自動收起選單
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            
+                            {t.menu.map((item, i) => (
+                                /* 將 a 標籤改為 button，並使用 handleScroll */
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">
+                                    {item}
+                                </button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            
+                            {t.menu.map((item, i) => (
+                                /* 手機版選單也一併修正 */
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">
+                                    {item}
+                                </button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.processTitle}</h4>
+                        <ul className="list-decimal pl-6 space-y-3 text-xl text-gray-700">
+                            <li><span className="font-bold">Step 1: </span> {t.processStep1}</li>
+                            <li><span className="font-bold">Step 2: </span> {t.processStep2}</li>
+                            <li><span className="font-bold">Step 3: </span> {t.processStep3}</li>
+                            <li><span className="font-bold">Step 4: </span> {t.processStep4}</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.casesTitle}</h4>
+                        <ul className="space-y-4 text-lg text-gray-700">
+                            <li><span className="font-bold">{t.case1}</span> <span className="ml-2"><Latex fontSize="0.9em">{'\\displaystyle \\frac{P(x)}{(ax+b)...} \\to \\frac{A}{ax+b}'}</Latex></span></li>
+                            <li><span className="font-bold">{t.case2}</span> <span className="ml-2"><Latex fontSize="0.9em">{'\\displaystyle \\frac{P(x)}{(ax+b)^r...} \\to \\frac{A_1}{ax+b} + \\dots + \\frac{A_r}{(ax+b)^r}'}</Latex></span></li>
+                            <li><span className="font-bold">{t.case3}</span> <span className="ml-2"><Latex fontSize="0.9em">{'\\displaystyle \\frac{P(x)}{(ax^2+bx+c)...} \\to \\frac{Ax+B}{ax^2+bx+c}'}</Latex></span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-blue-800 mb-3">{activeEx.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "7.4",
+                unitTitle: "部分分式積分法",
+                unitSub: "Partial Fractions",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "利用部分分式拆解有理函數積分",
+                part1Desc: <span>所謂「有理函數」是指兩個多項式相除的函數。當直接積分困難時，我們利用部分分式法將其拆解為數個簡單的分式。</span>,
+                analogyTitle: "觀念類比：樂高模型的拆解",
+                analogyDesc: <span>部分分式法就像是把一個巨大的樂高成品（複雜函數）拆解成一塊塊細小的積木（簡單分式）。雖然零件變多了，但每一塊都能輕鬆地分類並處理（積分）。</span>,
+                processTitle: "解題核心流程 (Standard Procedure)",
+                processStep1: "判斷分式類型：若分子次數 ≥ 分母次數，須先用長除法化簡。",
+                processStep2: "分母因式分解：將分母分解為線性因式或不可約二次因式。",
+                processStep3: "設定部分分式架構：根據分母類型設定待定係數 A, B, C。",
+                processStep4: "求解係數並積分：代入數值或比較係數求出未知數，最後套用積分公式。",
+                casesTitle: "拆解規則 (Decomposition Rules)",
+                case1: "Case I (相異線性因式):",
+                case2: "Case II (重根線性因式):",
+                case3: "Case III (不可約二次因式):",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "7.4",
+                unitTitle: "Partial Fractions",
+                unitSub: "Integration of Rational Functions",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Decomposing Rational Functions for Integration",
+                part1Desc: <span>Rational functions are quotients of polynomials. Partial fraction decomposition breaks complex rational functions into simpler sums that are easier to integrate.</span>,
+                analogyTitle: "Analogy: Dismantling a Lego Model",
+                analogyDesc: <span>Partial fraction decomposition is like taking apart a large Lego model (complex function) into individual bricks (simple fractions). Though there are more pieces, each one is standard and easy to handle (integrate).</span>,
+                processTitle: "Core Procedure",
+                processStep1: "Check Degree: Use long division if degree(Num) ≥ degree(Denom).",
+                processStep2: "Factor Denominator: Factor into linear or irreducible quadratic terms.",
+                processStep3: "Setup Decomposition: Set up partial fractions based on factors.",
+                processStep4: "Solve & Integrate: Find coefficients and integrate each term.",
+                casesTitle: "Decomposition Rules",
+                case1: "Case I (Distinct Linear):",
+                case2: "Case II (Repeated Linear):",
+                case3: "Case III (Irreducible Quadratic):",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "假分式 (Improper Fraction) (P.507)",
+                    math: "\\displaystyle \\int \\frac{x^3+x}{x-1} \\, dx",
+                    steps: [
+                        { t: "Step 1: 判斷分式類型 (Check Degree)", d: <span>分子次數 (3) <Latex>{'\\ge'}</Latex> 分母次數 (1)，為假分式，需先做長除法。</span>, m: "\\displaystyle \\text{Degree}(x^3+x) = 3 \\ge \\text{Degree}(x-1) = 1" },
+                        { t: "Step 2: 長除法 (Long Division)", d: <span>將 <Latex>{'x^3+x'}</Latex> 除以 <Latex>{'x-1'}</Latex>。商式為 <Latex>{'x^2+x+2'}</Latex>，餘式為 <Latex>{'2'}</Latex>。</span>, m: "\\displaystyle \\frac{x^3+x}{x-1} = x^2 + x + 2 + \\frac{2}{x-1}" },
+                        { t: "Step 3: 逐項積分 (Integrate)", d: <span>將原積分拆解為多項式積分與簡單分式積分。</span>, m: "\\displaystyle \\int (x^2 + x + 2 + \\frac{2}{x-1}) \\, dx" },
+                        { t: "Step 4: 計算結果 (Result)", d: <span>多項式用冪次法則，分式用對數法則。</span>, m: "\\displaystyle \\frac{1}{3}x^3 + \\frac{1}{2}x^2 + 2x + 2\\ln|x-1| + C" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "相異線性因式 (Distinct Linear) (P.508)",
+                    math: "\\displaystyle \\int \\frac{x^2+2x-1}{2x^3+3x^2-2x} \\, dx",
+                    steps: [
+                        { t: "Step 1: 分母因式分解 (Factor Denom)", d: <span>提出 <Latex>{'x'}</Latex> 後分解二次式。</span>, m: "\\displaystyle 2x^3+3x^2-2x = x(2x^2+3x-2) = x(2x-1)(x+2)" },
+                        { t: "Step 2: 設定架構 (Setup)", d: <span>分母為三個相異一次式，設定三個常數 <Latex>{'A, B, C'}</Latex>。</span>, m: "\\displaystyle \\frac{x^2+2x-1}{x(2x-1)(x+2)} = \\frac{A}{x} + \\frac{B}{2x-1} + \\frac{C}{x+2}" },
+                        { t: "Step 3: 通分比較 (Find Numerator)", d: <span>將右式通分，分子應等於左式分子。</span>, m: "\\displaystyle x^2+2x-1 = A(2x-1)(x+2) + Bx(x+2) + Cx(2x-1)" },
+                        { t: "Step 4: 求解係數 (Solve A, B, C)", d: <span>代入特殊值：<Latex>{'x=0'}</Latex> 求 A，<Latex>{'x=1/2'}</Latex> 求 B，<Latex>{'x=-2'}</Latex> 求 C。</span>, m: "\\displaystyle x=0 \\implies -1=A(-2) \\implies A=1/2 \\\\ x=1/2 \\implies 1/4=B(5/4) \\implies B=1/5 \\\\ x=-2 \\implies -1=C(10) \\implies C=-1/10" },
+                        { t: "Step 5: 積分 (Integrate)", d: <span>代回係數並積分。注意 <Latex>{'\\int \\frac{1}{2x-1} dx = \\frac{1}{2}\\ln|2x-1|'}</Latex>。</span>, m: "\\displaystyle \\int (\\frac{1/2}{x} + \\frac{1/5}{2x-1} - \\frac{1/10}{x+2}) dx = \\frac{1}{2}\\ln|x| + \\frac{1}{10}\\ln|2x-1| - \\frac{1}{10}\\ln|x+2| + K" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "重根線性因式 (Repeated Linear) (P.510)",
+                    math: "\\displaystyle \\int \\frac{x^4-2x^2+4x+1}{x^3-x^2-x+1} \\, dx",
+                    steps: [
+                        { t: "Step 1: 長除法 (Long Division)", d: <span>分子次數大於分母，先除。得到 <Latex>{'x+1'}</Latex> 與餘式 <Latex>{'4x'}</Latex>。</span>, m: "\\displaystyle \\frac{x^4-2x^2+4x+1}{x^3-x^2-x+1} = x+1 + \\frac{4x}{x^3-x^2-x+1}" },
+                        { t: "Step 2: 分母分解 (Factor Denom)", d: <span>觀察分母，可分解為 <Latex>{'(x-1)^2(x+1)'}</Latex>。</span>, m: "\\displaystyle x^3-x^2-x+1 = x^2(x-1)-(x-1) = (x^2-1)(x-1) = (x+1)(x-1)^2" },
+                        { t: "Step 3: 設定架構 (Setup)", d: <span>包含重根 <Latex>{'(x-1)^2'}</Latex>，需設兩項。</span>, m: "\\displaystyle \\frac{4x}{(x-1)^2(x+1)} = \\frac{A}{x-1} + \\frac{B}{(x-1)^2} + \\frac{C}{x+1}" },
+                        { t: "Step 4: 求解係數 (Solve)", d: <span>通分後代值。得 <Latex>{'A=1, B=2, C=-1'}</Latex>。</span>, m: "\\displaystyle 4x = A(x-1)(x+1) + B(x+1) + C(x-1)^2 \\\\ x=1 \\implies 4=2B \\implies B=2 \\\\ x=-1 \\implies -4=4C \\implies C=-1 \\\\ x=0 \\implies 0=-A+B+C \\implies A=1" },
+                        { t: "Step 5: 積分 (Integrate)", d: <span>多項式與分式分別積分。</span>, m: "\\displaystyle \\int (x+1 + \\frac{1}{x-1} + \\frac{2}{(x-1)^2} - \\frac{1}{x+1}) dx = \\frac{x^2}{2} + x + \\ln|x-1| - \\frac{2}{x-1} - \\ln|x+1| + K" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "不可約二次因式 (Irreducible Quadratic) (P.511)",
+                    math: "\\displaystyle \\int \\frac{2x^2-x+4}{x^3+4x} \\, dx",
+                    steps: [
+                        { t: "Step 1: 分母分解 (Factor)", d: <span>提出 <Latex>{'x'}</Latex>，<Latex>{'x^2+4'}</Latex> 無法再分解。</span>, m: "\\displaystyle x^3+4x = x(x^2+4)" },
+                        { t: "Step 2: 設定架構 (Setup)", d: <span>二次因式 <Latex>{'x^2+4'}</Latex> 上方需設一次式 <Latex>{'Bx+C'}</Latex>。</span>, m: "\\displaystyle \\frac{2x^2-x+4}{x(x^2+4)} = \\frac{A}{x} + \\frac{Bx+C}{x^2+4}" },
+                        { t: "Step 3: 通分求解 (Solve)", d: <span>通分並比較係數。</span>, m: "\\displaystyle 2x^2-x+4 = A(x^2+4) + (Bx+C)x \\\\ x=0 \\implies 4=4A \\implies A=1 \\\\ \\text{Coeff } x^2: 2=A+B \\implies B=1 \\\\ \\text{Coeff } x: -1=C" },
+                        { t: "Step 4: 拆解積分 (Split)", d: <span>將 <Latex>{'\\frac{x-1}{x^2+4}'}</Latex> 拆為兩項積分。</span>, m: "\\displaystyle \\int \\frac{1}{x} dx + \\int \\frac{x}{x^2+4} dx - \\int \\frac{1}{x^2+4} dx" },
+                        { t: "Step 5: 計算結果 (Result)", d: <span>分別利用對數與反正切公式。</span>, m: "\\displaystyle \\ln|x| + \\frac{1}{2}\\ln(x^2+4) - \\frac{1}{2}\\tan^{-1}\\left(\\frac{x}{2}\\right) + K" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "配方法 (Completing Square) (P.512)",
+                    math: "\\displaystyle \\int \\frac{4x^2-3x+2}{4x^2-4x+3} \\, dx",
+                    steps: [
+                        { t: "Step 1: 長除法 (Long Division)", d: <span>分子分母同次，先除。商為 1。</span>, m: "\\displaystyle \\frac{4x^2-3x+2}{4x^2-4x+3} = 1 + \\frac{x-1}{4x^2-4x+3}" },
+                        { t: "Step 2: 配方 (Complete Square)", d: <span>分母不可約，進行配方。</span>, m: "\\displaystyle 4x^2-4x+3 = (2x-1)^2 + 2" },
+                        { t: "Step 3: 變數代換 (Substitution)", d: <span>令 <Latex>{'u=2x-1, du=2dx'}</Latex>。分子 <Latex>{'x-1'}</Latex> 變為 <Latex>{'\\frac{u-1}{2}'}</Latex>。</span>, m: "\\displaystyle \\int \\frac{x-1}{(2x-1)^2+2} dx = \\frac{1}{2} \\int \\frac{u/2 - 1/2}{u^2+2} du = \\frac{1}{4} \\int \\frac{u-1}{u^2+2} du" },
+                        { t: "Step 4: 拆解積分 (Split)", d: <span>拆成 <Latex>{'\\frac{u}{u^2+2}'}</Latex> 和 <Latex>{'\\frac{1}{u^2+2}'}</Latex>。</span>, m: "\\displaystyle \\frac{1}{4} [\\frac{1}{2}\\ln(u^2+2) - \\frac{1}{\\sqrt{2}}\\tan^{-1}(\\frac{u}{\\sqrt{2}})]" },
+                        { t: "Step 5: 結果 (Result)", d: <span>合併整理。</span>, m: "\\displaystyle x + \\frac{1}{8}\\ln(4x^2-4x+3) - \\frac{1}{4\\sqrt{2}}\\tan^{-1}\\left(\\frac{2x-1}{\\sqrt{2}}\\right) + C" }
+                    ]
+                },
+                {
+                    id: 8, label: "Ex 8", title: "重根二次因式 (Repeated Quadratic) (P.513)",
+                    math: "\\displaystyle \\int \\frac{1-x+2x^2-x^3}{x(x^2+1)^2} \\, dx",
+                    steps: [
+                        { t: "Step 1: 設定架構 (Setup)", d: <span>分母含重根二次因式，需設兩項。</span>, m: "\\displaystyle \\frac{A}{x} + \\frac{Bx+C}{x^2+1} + \\frac{Dx+E}{(x^2+1)^2}" },
+                        { t: "Step 2: 求解係數 (Solve)", d: <span>比較係數法。</span>, m: "\\displaystyle A=1, B=-1, C=-1, D=1, E=0" },
+                        { t: "Step 3: 寫出積分式 (Write Integral)", d: <span>代入係數。</span>, m: "\\displaystyle \\int (\\frac{1}{x} - \\frac{x+1}{x^2+1} + \\frac{x}{(x^2+1)^2}) \\, dx" },
+                        { t: "Step 4: 逐項積分 (Integrate)", d: <span><Latex>{'\\frac{x+1}{x^2+1}'}</Latex> 拆兩項；<Latex>{'\\frac{x}{(x^2+1)^2}'}</Latex> 用代換法。</span>, m: "\\displaystyle \\ln|x| - (\\frac{1}{2}\\ln(x^2+1) + \\tan^{-1}x) + (-\\frac{1}{2(x^2+1)}) + K" },
+                        { t: "Step 5: 結果 (Result)", d: <span>整理。</span>, m: "\\displaystyle \\ln|x| - \\frac{1}{2}\\ln(x^2+1) - \\tan^{-1}x - \\frac{1}{2(x^2+1)} + K" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Improper Fraction (P.507)",
+                    math: "\\displaystyle \\int \\frac{x^3+x}{x-1} \\, dx",
+                    steps: [
+                        { t: "Step 1: Check Degree", d: <span>Num degree (3) <Latex>{'\\ge'}</Latex> Denom degree (1). Improper fraction.</span>, m: "\\displaystyle \\text{Perform Long Division.}" },
+                        { t: "Step 2: Long Division", d: <span>Divide <Latex>{'x^3+x'}</Latex> by <Latex>{'x-1'}</Latex>.</span>, m: "\\displaystyle \\frac{x^3+x}{x-1} = x^2 + x + 2 + \\frac{2}{x-1}" },
+                        { t: "Step 3: Integrate", d: <span>Integrate term by term.</span>, m: "\\displaystyle \\int (x^2 + x + 2 + \\frac{2}{x-1}) \\, dx" },
+                        { t: "Step 4: Result", d: <span>Apply power rule and log rule.</span>, m: "\\displaystyle \\frac{1}{3}x^3 + \\frac{1}{2}x^2 + 2x + 2\\ln|x-1| + C" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Distinct Linear Factors (P.508)",
+                    math: "\\displaystyle \\int \\frac{x^2+2x-1}{2x^3+3x^2-2x} \\, dx",
+                    steps: [
+                        { t: "Step 1: Factor Denom", d: <span>Factor out x and quadratic term.</span>, m: "\\displaystyle x(2x^2+3x-2) = x(2x-1)(x+2)" },
+                        { t: "Step 2: Setup", d: <span>Three distinct linear factors.</span>, m: "\\displaystyle \\frac{A}{x} + \\frac{B}{2x-1} + \\frac{C}{x+2}" },
+                        { t: "Step 3: Solve Coeffs", d: <span>Multiply by LCD and substitute roots.</span>, m: "\\displaystyle x=0 \\to A=1/2; \\quad x=1/2 \\to B=1/5; \\quad x=-2 \\to C=-1/10" },
+                        { t: "Step 4: Integrate", d: <span>Integrate each term. Watch the chain rule for <Latex>{'2x-1'}</Latex>.</span>, m: "\\displaystyle \\frac{1}{2}\\ln|x| + \\frac{1}{10}\\ln|2x-1| - \\frac{1}{10}\\ln|x+2| + K" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Repeated Linear Factors (P.510)",
+                    math: "\\displaystyle \\int \\frac{x^4-2x^2+4x+1}{x^3-x^2-x+1} \\, dx",
+                    steps: [
+                        { t: "Step 1: Long Division", d: <span>Divide first.</span>, m: "\\displaystyle x+1 + \\frac{4x}{(x-1)^2(x+1)}" },
+                        { t: "Step 2: Setup", d: <span>Include <Latex>{'(x-1)'}</Latex> and <Latex>{'(x-1)^2'}</Latex>.</span>, m: "\\displaystyle \\frac{A}{x-1} + \\frac{B}{(x-1)^2} + \\frac{C}{x+1}" },
+                        { t: "Step 3: Solve", d: <span>Find coefficients.</span>, m: "\\displaystyle A=1, B=2, C=-1" },
+                        { t: "Step 4: Integrate", d: <span>Combine results.</span>, m: "\\displaystyle \\frac{x^2}{2} + x + \\ln|x-1| - \\frac{2}{x-1} - \\ln|x+1| + K" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 5", title: "Irreducible Quadratic (P.511)",
+                    math: "\\displaystyle \\int \\frac{2x^2-x+4}{x^3+4x} \\, dx",
+                    steps: [
+                        { t: "Step 1: Factor", d: <span><Latex>{'x^2+4'}</Latex> cannot be factored further.</span>, m: "\\displaystyle x(x^2+4)" },
+                        { t: "Step 2: Setup", d: <span>Quadratic factor gets linear numerator.</span>, m: "\\displaystyle \\frac{A}{x} + \\frac{Bx+C}{x^2+4}" },
+                        { t: "Step 3: Solve", d: <span>Compare coefficients.</span>, m: "\\displaystyle A=1, \\quad B=1, \\quad C=-1" },
+                        { t: "Step 4: Split Integral", d: <span>Separate the quadratic part.</span>, m: "\\displaystyle \\int \\frac{1}{x} dx + \\int \\frac{x}{x^2+4} dx - \\int \\frac{1}{x^2+4} dx" },
+                        { t: "Step 5: Result", d: <span>Logarithm and Arctangent.</span>, m: "\\displaystyle \\ln|x| + \\frac{1}{2}\\ln(x^2+4) - \\frac{1}{2}\\tan^{-1}\\left(\\frac{x}{2}\\right) + K" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 6", title: "Completing Square (P.512)",
+                    math: "\\displaystyle \\int \\frac{4x^2-3x+2}{4x^2-4x+3} \\, dx",
+                    steps: [
+                        { t: "Step 1: Division", d: <span>Result is 1.</span>, m: "\\displaystyle 1 + \\frac{x-1}{4x^2-4x+3}" },
+                        { t: "Step 2: Complete Square", d: <span>Denominator becomes.</span>, m: "\\displaystyle (2x-1)^2 + 2" },
+                        { t: "Step 3: Substitution", d: <span><Latex>{'u=2x-1'}</Latex>.</span>, m: "\\displaystyle \\frac{1}{4} \\int \\frac{u-1}{u^2+2} du" },
+                        { t: "Step 4: Result", d: <span>Integrate split parts.</span>, m: "\\displaystyle x + \\frac{1}{8}\\ln(4x^2-4x+3) - \\frac{1}{4\\sqrt{2}}\\tan^{-1}\\left(\\frac{2x-1}{\\sqrt{2}}\\right) + C" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 8", title: "Repeated Quadratic (P.513)",
+                    math: "\\displaystyle \\int \\frac{1-x+2x^2-x^3}{x(x^2+1)^2} \\, dx",
+                    steps: [
+                        { t: "Step 1: Setup", d: <span>Repeated quadratic factor.</span>, m: "\\displaystyle \\frac{A}{x} + \\frac{Bx+C}{x^2+1} + \\frac{Dx+E}{(x^2+1)^2}" },
+                        { t: "Step 2: Solve", d: <span>Find coefficients.</span>, m: "\\displaystyle A=1, B=-1, C=-1, D=1, E=0" },
+                        { t: "Step 3: Integrate", d: <span>Term by term.</span>, m: "\\displaystyle \\ln|x| - \\frac{1}{2}\\ln(x^2+1) - \\tan^{-1}x - \\frac{1}{2(x^2+1)} + K" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "練習題 1 (Ref Ex 1)", math: "\\displaystyle \\int \\frac{x^2}{x+1} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 檢查次數 (Check Degree)", d: <span>分子次數 (2) &gt; 分母次數 (1)，為假分式。</span>, m: "\\displaystyle \\text{Degree } 2 > 1 \\implies \\text{Long Division}" },
+                        { t: "Step 2: 長除法 (Long Division)", d: <span><Latex>{'x^2 \\div (x+1) = x-1'}</Latex>，餘數為 1。</span>, m: "\\displaystyle \\frac{x^2}{x+1} = x - 1 + \\frac{1}{x+1}" },
+                        { t: "Step 3: 重寫與積分 (Rewrite & Integrate)", d: <span>逐項積分。</span>, m: "\\displaystyle \\int (x - 1 + \\frac{1}{x+1}) \\, dx" },
+                        { t: "Step 4: 結果 (Result)", d: <span>多項式與對數積分。</span>, m: "\\displaystyle \\frac{1}{2}x^2 - x + \\ln|x+1| + C" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "練習題 2 (Ref Ex 2)", math: "\\displaystyle \\int \\frac{5x-3}{(x-1)(x-3)} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 設定部分分式 (Setup)", d: <span>分母已分解為兩個相異線性因子。</span>, m: "\\displaystyle \\frac{5x-3}{(x-1)(x-3)} = \\frac{A}{x-1} + \\frac{B}{x-3}" },
+                        { t: "Step 2: 求解係數 (Solve)", d: <span>通分後代入特殊值。令 <Latex>{'x=1 \\to A=-1'}</Latex>。令 <Latex>{'x=3 \\to B=6'}</Latex>。</span>, m: "\\displaystyle 5x-3 = A(x-3) + B(x-1) \\implies A=-1, \\quad B=6" },
+                        { t: "Step 3: 積分 (Integrate)", d: <span>代回係數並積分。</span>, m: "\\displaystyle \\int \\left( \\frac{-1}{x-1} + \\frac{6}{x-3} \\right) \\, dx" },
+                        { t: "Step 4: 結果 (Result)", d: <span>對數形式。</span>, m: "\\displaystyle -\\ln|x-1| + 6\\ln|x-3| + C" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "練習題 3 (Ref Ex 4)", math: "\\displaystyle \\int \\frac{x}{(x-1)^2} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 設定架構 (Case II)", d: <span>重根 <Latex>{'(x-1)^2'}</Latex> 需包含一次方與二次方項。</span>, m: "\\displaystyle \\frac{x}{(x-1)^2} = \\frac{A}{x-1} + \\frac{B}{(x-1)^2}" },
+                        { t: "Step 2: 求解係數 (Solve)", d: <span>通分：<Latex>{'x = A(x-1) + B'}</Latex>。代入 <Latex>{'x=1 \\to B=1'}</Latex>。比較係數 <Latex>{'A=1'}</Latex>。</span>, m: "\\displaystyle A=1, \\quad B=1" },
+                        { t: "Step 3: 重寫積分 (Rewrite)", d: <span>代回係數。</span>, m: "\\displaystyle \\int \\left( \\frac{1}{x-1} + \\frac{1}{(x-1)^2} \\right) \\, dx" },
+                        { t: "Step 4: 結果 (Result)", d: <span><Latex>{'1/u^2'}</Latex> 的積分為 <Latex>{'-1/u'}</Latex>。</span>, m: "\\displaystyle \\ln|x-1| - \\frac{1}{x-1} + C" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "練習題 4 (Ref Ex 5)", math: "\\displaystyle \\int \\frac{1}{x(x^2+1)} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 設定架構 (Case III)", d: <span><Latex>{'x^2+1'}</Latex> 為不可約二次，分子設 <Latex>{'Bx+C'}</Latex>。</span>, m: "\\displaystyle \\frac{1}{x(x^2+1)} = \\frac{A}{x} + \\frac{Bx+C}{x^2+1}" },
+                        { t: "Step 2: 求解係數 (Solve)", d: <span><Latex>{'1 = A(x^2+1) + (Bx+C)x'}</Latex>。代入 <Latex>{'x=0 \\to A=1'}</Latex>。比較 <Latex>{'x^2'}</Latex> 係數 <Latex>{'0=A+B \\to B=-1'}</Latex>。比較 <Latex>{'x'}</Latex> 係數 <Latex>{'C=0'}</Latex>。</span>, m: "\\displaystyle A=1, \\quad B=-1, \\quad C=0" },
+                        { t: "Step 3: 重寫積分 (Rewrite)", d: <span>拆解為兩項。</span>, m: "\\displaystyle \\int \\left( \\frac{1}{x} - \\frac{x}{x^2+1} \\right) \\, dx" },
+                        { t: "Step 4: 結果 (Result)", d: <span>第二項用代換法 <Latex>{'u=x^2+1'}</Latex>。</span>, m: "\\displaystyle \\ln|x| - \\frac{1}{2}\\ln(x^2+1) + C" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "練習題 5 (Ref Ex 6)", math: "\\displaystyle \\int \\frac{x^2}{x^2-2x+5} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 長除法 (Long Division)", d: <span>分子分母同次。除法得商 1，餘式 <Latex>{'2x-5'}</Latex>。</span>, m: "\\displaystyle \\frac{x^2}{x^2-2x+5} = 1 + \\frac{2x-5}{x^2-2x+5}" },
+                        { t: "Step 2: 配方 (Complete Square)", d: <span>分母配方。</span>, m: "\\displaystyle x^2-2x+5 = (x-1)^2 + 4" },
+                        { t: "Step 3: 拆解分子 (Split Numerator)", d: <span>將 <Latex>{'2x-5'}</Latex> 湊成 <Latex>{'2(x-1) - 3'}</Latex> 以便積分。</span>, m: "\\displaystyle \\int 1 dx + \\int \\frac{2(x-1)}{(x-1)^2+4} dx - \\int \\frac{3}{(x-1)^2+4} dx" },
+                        { t: "Step 4: 積分 (Integrate)", d: <span>分別為：常數、對數、反正切。</span>, m: "\\displaystyle x + \\ln(x^2-2x+5) - \\frac{3}{2}\\tan^{-1}\\left(\\frac{x-1}{2}\\right) + C" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "練習題 6 (Ref Ex 8)", math: "\\displaystyle \\int \\frac{x^2}{(x^2+1)^2} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 設定架構 (Case IV)", d: <span>重根二次因式。</span>, m: "\\displaystyle \\frac{Ax+B}{x^2+1} + \\frac{Cx+D}{(x^2+1)^2}" },
+                        { t: "Step 2: 求解係數 (Solve)", d: <span>解得 <Latex>{'A=0, B=1, C=0, D=-1'}</Latex>。</span>, m: "\\displaystyle \\frac{1}{x^2+1} - \\frac{1}{(x^2+1)^2}" },
+                        { t: "Step 3: 積分第一項 (Integrate 1)", d: <span>基本公式。</span>, m: "\\displaystyle \\tan^{-1}x" },
+                        { t: "Step 4: 積分第二項 (Integrate 2)", d: <span>需使用三角代換 <Latex>{'x=\\tan\\theta'}</Latex>，得 <Latex>{'\\frac{1}{2}x + \\frac{1}{2}\\sin x \\cos x'}</Latex> 形式，或利用遞迴公式。最終結果如下：</span>, m: "\\displaystyle \\frac{1}{2}\\tan^{-1}x - \\frac{x}{2(x^2+1)} + C" }
+                    ]
+                },
+                { 
+                    id: 7, label: "Q 7", title: "練習題 2 (Ref Ex 2)", math: "\\displaystyle \\int \\frac{1}{x^2-1} \\, dx", 
+                    steps: [
+                        { t: "Step 1: 因式分解 (Factor)", d: <span>平方差公式。</span>, m: "\\displaystyle x^2-1 = (x-1)(x+1)" },
+                        { t: "Step 2: 設定部分分式 (Setup)", d: <span>兩個相異線性因子。</span>, m: "\\displaystyle \\frac{1}{(x-1)(x+1)} = \\frac{A}{x-1} + \\frac{B}{x+1}" },
+                        { t: "Step 3: 求解係數 (Solve)", d: <span>代入 <Latex>{'x=1, x=-1'}</Latex>。</span>, m: "\\displaystyle 1 = A(x+1) + B(x-1) \\implies A=1/2, B=-1/2" },
+                        { t: "Step 4: 積分 (Integrate)", d: <span>代入並積分。</span>, m: "\\displaystyle \\frac{1}{2}\\ln|x-1| - \\frac{1}{2}\\ln|x+1| + C = \\frac{1}{2}\\ln\\left|\\frac{x-1}{x+1}\\right| + C" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Practice 1 (Ref Ex 1)", math: "\\displaystyle \\int \\frac{x^2}{x+1} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Check Degree", d: <span>Degree 2 &gt; 1, Improper fraction.</span>, m: "\\displaystyle \\text{Perform Long Division.}" },
+                        { t: "Step 2: Long Division", d: <span>Divide to get polynomial + remainder.</span>, m: "\\displaystyle \\frac{x^2}{x+1} = x - 1 + \\frac{1}{x+1}" },
+                        { t: "Step 3: Rewrite", d: <span>Setup integral.</span>, m: "\\displaystyle \\int (x - 1 + \\frac{1}{x+1}) \\, dx" },
+                        { t: "Step 4: Result", d: <span>Integrate term by term.</span>, m: "\\displaystyle \\frac{1}{2}x^2 - x + \\ln|x+1| + C" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Practice 2 (Ref Ex 2)", math: "\\displaystyle \\int \\frac{5x-3}{(x-1)(x-3)} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Setup", d: <span>Already factored.</span>, m: "\\displaystyle \\frac{5x-3}{(x-1)(x-3)} = \\frac{A}{x-1} + \\frac{B}{x-3}" },
+                        { t: "Step 2: Solve", d: <span>Substitute x=1, x=3.</span>, m: "\\displaystyle A=-1, \\quad B=6" },
+                        { t: "Step 3: Integrate", d: <span>Logarithmic integration.</span>, m: "\\displaystyle -\\ln|x-1| + 6\\ln|x-3| + C" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Practice 3 (Ref Ex 4)", math: "\\displaystyle \\int \\frac{x}{(x-1)^2} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Setup", d: <span>Case II Repeated Linear.</span>, m: "\\displaystyle \\frac{x}{(x-1)^2} = \\frac{A}{x-1} + \\frac{B}{(x-1)^2}" },
+                        { t: "Step 2: Solve", d: <span>Find coefficients.</span>, m: "\\displaystyle A=1, \\quad B=1" },
+                        { t: "Step 3: Rewrite", d: <span>Prepare for integration.</span>, m: "\\displaystyle \\int (\\frac{1}{x-1} + (x-1)^{-2}) \\, dx" },
+                        { t: "Step 4: Result", d: <span>Power rule for second term.</span>, m: "\\displaystyle \\ln|x-1| - \\frac{1}{x-1} + C" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Practice 4 (Ref Ex 5)", math: "\\displaystyle \\int \\frac{1}{x(x^2+1)} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Setup", d: <span>Case III Irreducible Quadratic.</span>, m: "\\displaystyle \\frac{1}{x(x^2+1)} = \\frac{A}{x} + \\frac{Bx+C}{x^2+1}" },
+                        { t: "Step 2: Solve", d: <span>Compare coefficients.</span>, m: "\\displaystyle A=1, \\quad B=-1, \\quad C=0" },
+                        { t: "Step 3: Split", d: <span>Two integrals.</span>, m: "\\displaystyle \\int \\frac{1}{x} dx - \\int \\frac{x}{x^2+1} dx" },
+                        { t: "Step 4: Result", d: <span>u-sub for second part.</span>, m: "\\displaystyle \\ln|x| - \\frac{1}{2}\\ln(x^2+1) + C" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Practice 5 (Ref Ex 6)", math: "\\displaystyle \\int \\frac{x^2}{x^2-2x+5} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Long Division", d: <span>Degree 2 = 2. Divide first.</span>, m: "\\displaystyle 1 + \\frac{2x-5}{x^2-2x+5}" },
+                        { t: "Step 2: Complete Square", d: <span>Denominator.</span>, m: "\\displaystyle (x-1)^2+4" },
+                        { t: "Step 3: Split Numerator", d: <span>Match u-sub and arctan forms.</span>, m: "\\displaystyle \\int 1 dx + \\int \\frac{2(x-1)}{(x-1)^2+4} dx - \\int \\frac{3}{(x-1)^2+4} dx" },
+                        { t: "Step 4: Result", d: <span>Combine results.</span>, m: "\\displaystyle x + \\ln(x^2-2x+5) - \\frac{3}{2}\\tan^{-1}\\left(\\frac{x-1}{2}\\right) + C" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "Practice 6 (Ref Ex 8)", math: "\\displaystyle \\int \\frac{x^2}{(x^2+1)^2} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Setup", d: <span>Case IV Repeated Quadratic.</span>, m: "\\displaystyle \\frac{Ax+B}{x^2+1} + \\frac{Cx+D}{(x^2+1)^2}" },
+                        { t: "Step 2: Solve", d: <span>Coefficients found.</span>, m: "\\displaystyle \\frac{1}{x^2+1} - \\frac{1}{(x^2+1)^2}" },
+                        { t: "Step 3: Integrate", d: <span>Using trig sub or reduction formula for 2nd term.</span>, m: "\\displaystyle \\frac{1}{2}\\tan^{-1}x - \\frac{x}{2(x^2+1)} + C" }
+                    ]
+                },
+                { 
+                    id: 7, label: "Q 7", title: "Practice 2 (Ref Ex 2)", math: "\\displaystyle \\int \\frac{1}{x^2-1} \\, dx", 
+                    steps: [
+                        { t: "Step 1: Factor", d: <span>Difference of squares.</span>, m: "\\displaystyle x^2-1 = (x-1)(x+1)" },
+                        { t: "Step 2: Setup", d: <span>Partial fractions.</span>, m: "\\displaystyle \\frac{1}{(x-1)(x+1)} = \\frac{A}{x-1} + \\frac{B}{x+1}" },
+                        { t: "Step 3: Solve", d: <span>Find A and B.</span>, m: "\\displaystyle A=1/2, \\quad B=-1/2" },
+                        { t: "Step 4: Integrate", d: <span>Result.</span>, m: "\\displaystyle \\frac{1}{2}\\ln|x-1| - \\frac{1}{2}\\ln|x+1| + C" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

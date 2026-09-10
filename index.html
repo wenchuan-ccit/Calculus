@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分教學課程 | Prof. Wu Wen-Chuan</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background-color: #fefce8; /* yellow-50 */
+        }
+        .container { max-width: 860px; }
+        .link-item {
+            border-left: 5px solid #10b981;
+            transition: all 0.2s ease-in-out;
+        }
+        .link-item:hover {
+            border-left-color: #059669;
+            transform: translateX(6px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+        }
+        .tool-item {
+            border-left: 5px solid #8b5cf6;
+            transition: all 0.2s ease-in-out;
+        }
+        .tool-item:hover {
+            border-left-color: #6d28d9;
+            transform: translateX(6px);
+            box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen py-10 px-4">
+    <div class="container mx-auto">
+        <div class="bg-white shadow-xl rounded-3xl p-6 sm:p-10 border border-amber-100">
+            <!-- 標題與教師資訊 -->
+            <div class="mb-4 text-center sm:text-left sm:flex sm:justify-between sm:items-end border-b border-gray-100 pb-4">
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
+                        微積分重補修班課程
+                    </h1>
+                    <p class="text-base text-gray-500 mt-1 font-medium">
+                        Calculus Course Platform (GitHub Pages)
+                    </p>
+                </div>
+                <div class="mt-2 sm:mt-0 text-right">
+                    <span class="inline-block bg-pink-100 text-pink-800 text-sm font-bold px-3 py-1 rounded-full">
+                        授課老師：吳文銓 (Prof. Wu Wen-Chuan)
+                    </span>
+                </div>
+            </div>
+
+            <p class="text-gray-500 mb-8 text-sm font-medium">
+                📖 參考書目：Calculus Early Transcendentals 9th Edition Metric Edition by James Stewart, Daniel Clegg, Saleem Watson
+            </p>
+
+            <!-- 微積分 (I) -->
+            <div class="mb-10">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-amber-400 flex items-center gap-2">
+                    <span>📘</span> 微積分 (I)
+                </h2>
+                <div class="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/60 text-center">
+                    <p class="text-gray-500 text-sm font-medium">即將推出，敬請期待。</p>
+                </div>
+            </div>
+
+            <!-- 微積分 (II) 單元清單 -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-emerald-500 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span>📗</span> 微積分 (II)
+                    </div>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-bold">點擊單元進入</span>
+                </h2>
+
+                <ul class="space-y-3">
+                    <li>
+                        <a href="unit_7_4.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">7.4 Integration of Rational Functions by Partial Fractions (有理函數的積分-部分分式法)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_7_8.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">7.8 Improper Integrals (瑕積分)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_8_1.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">8.1 Arc Length (弧長)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_8_2.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">8.2 Area of a Surface of Revolution (旋轉曲面的面積)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_10_1.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">10.1 Curves Defined by Parametric Equations (參數方程式定義的曲線)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_10_2.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">10.2 Calculus with Parametric Curves (參數曲線微積分)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_10_3.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">10.3 Polar Coordinates (極坐標)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_10_4.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">10.4 Calculus in Polar Coordinates (極坐標微積分)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_11_1.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">11.1 Sequences (數列)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_11_2.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">11.2 Series (級數)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_11_6.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">11.6 The Ratio Tests (比例檢驗法)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_11_8.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">11.8 Power Series (冪級數)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_11_9.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">11.9 Representations of Functions as Power Series (函數的冪級數表示法)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_11_10.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">11.10 Taylor and Maclaurin Series (泰勒和麥克勞林級數)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_12_4.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">12.4 The Cross Product (向量外積)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_14_1.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">14.1 Functions of Several Variables (多變數函數)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_14_2.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">14.2 Limits and Continuity (極限與連續)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_14_3.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">14.3 Partial Derivatives (偏導數)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_14_4.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">14.4 Tangent Planes and Linear Approximations (切平面與線性逼近)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_14_5.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">14.5 The Chain Rule (鏈鎖律)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_14_6.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">14.6 Directional Derivatives and the Gradient Vector (方向導數與梯度向量)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_14_7.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">14.7 Maximum and Minimum Values (極大與極小值)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_15_1.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">15.1 Double Integrals over Rectangles (矩形區域上的重積分)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_15_2.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">15.2 Double Integrals over General Regions (一般區域上的重積分)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="unit_15_3.html" class="link-item block p-4 rounded-xl bg-gray-50/70 hover:bg-emerald-50/40 border border-gray-200">
+                            <span class="text-base sm:text-lg font-bold text-gray-800">15.3 Double Integrals in Polar Coordinates (極坐標下的重積分)</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 教學工具區塊 -->
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-purple-500 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span>🛠️</span> 教學工具
+                    </div>
+                    <span class="text-xs bg-purple-100 text-purple-800 px-2.5 py-1 rounded-full font-bold">互動工具與測驗</span>
+                </h2>
+
+                <ul class="space-y-3">
+                    <li>
+                        <a href="工程數學之微積分技巧.html" class="tool-item block p-4 rounded-xl bg-purple-50/40 hover:bg-purple-50 border border-purple-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-base sm:text-lg font-bold text-purple-900">📐 工程數學之微積分技巧</span>
+                                <span class="text-xs sm:text-sm bg-pink-100 text-pink-800 px-3 py-1 rounded-full font-semibold">公式與技巧指南</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="微積分綜合能力測驗.html" class="tool-item block p-4 rounded-xl bg-purple-50/40 hover:bg-purple-50 border border-purple-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-base sm:text-lg font-bold text-purple-900">📝 微積分綜合能力測驗 (專業版)</span>
+                                <span class="text-xs sm:text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-semibold">60 題隨機抽測</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="組別題目隨機配對.html" class="tool-item block p-4 rounded-xl bg-purple-50/40 hover:bg-purple-50 border border-purple-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-base sm:text-lg font-bold text-purple-900">🎲 組別題目隨機配對</span>
+                                <span class="text-xs sm:text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold">報告題目分組</span>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

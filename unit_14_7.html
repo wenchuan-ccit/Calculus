@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 14.7 最大值與最小值 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle \\nabla f(a, b) = \\langle f_x(a, b), f_y(a, b) \\rangle = \\langle 0, 0 \\rangle"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>若一階偏導數皆為 0（或偏導數不存在），則點 <Latex>{'(a, b)'}</Latex> 稱為函數的臨界點。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <Latex block>{"\\displaystyle D(a, b) = f_{xx}(a, b)f_{yy}(a, b) - [f_{xy}(a, b)]^2"}</Latex>
+                                <div className="mt-2 space-y-1 text-base text-gray-600">
+                                    <div>• 若 <Latex>{'D > 0'}</Latex> 且 <Latex>{'f_{xx} > 0'}</Latex>：<Latex>{'f(a, b)'}</Latex> 為<strong>局部極小值 (Local Minimum)</strong>。</div>
+                                    <div>• 若 <Latex>{'D > 0'}</Latex> 且 <Latex>{'f_{xx} < 0'}</Latex>：<Latex>{'f(a, b)'}</Latex> 為<strong>局部極大值 (Local Maximum)</strong>。</div>
+                                    <div>• 若 <Latex>{'D < 0'}</Latex>：<Latex>{'(a, b)'}</Latex> 為<strong>鞍點 (Saddle Point)</strong>，非極值。</div>
+                                    <div>• 若 <Latex>{'D = 0'}</Latex>：檢定失效，需由更高階或局部幾何判定。</div>
+                                </div>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                                <span className="mt-2 block text-gray-600">在閉有界區域上，比較內部臨界點的函數值與邊界曲線上的極值，最大者為絕對最大值，最小者為絕對最小值。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                            {step.img && (
+                                                <div className="mt-4 flex justify-center">
+                                                    <img src={step.img} alt="極值與鞍點圖形" className="rounded-xl shadow-md max-w-full md:max-w-md border border-blue-200" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "14.7",
+                unitTitle: "最大值與最小值",
+                unitSub: "Maximum and Minimum Values",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "二元極值、二階偏導判別式與邊界極值定理",
+                part1Desc: (
+                    <span>
+                        一元微積分中，極值發生在導數為零的點；而在二元空間中，極值候選點（臨界點）必須同時滿足兩個方向的偏導數皆為零。由於曲面可能在某一方向向上彎曲、另一方向向下彎曲（形成鞍點），我們必須依賴「二階偏導數判別式 D」來精確分類。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：山谷、山峰與馬鞍",
+                analogyDesc: (
+                    <span>
+                        站在地勢平坦的臨界點（切平面呈水平）：若四周往任何方向走都是上坡，那你正處於「山谷底部的局部極小點」；若四周往任何方向走都是下坡，你就在「山頂最高處的局部極大點」；若朝正前方是下坡、朝左右兩側卻是上坡，你坐在一座「馬鞍的中心點（鞍點）」——此處坡度雖為零，但不是極值。
+                    </span>
+                ),
+                part1Step1: "臨界點 (Critical Point) 定義",
+                part1Step1Desc: "梯度向量為零向量之水平切點：",
+                part1Step2: "二階導數判別法與極值定理",
+                part1Step2Desc: "分類極大值、極小值與鞍點的判別標準：",
+                theorem1Title: "二階判別式 D (Second Derivatives Test)",
+                theorem1Desc: "計算 Hessian 行列式判定曲面局部凹凸曲率：",
+                theorem2Title: "閉有界區域絕對極值定理 (Extreme Value Theorem)",
+                theorem2Desc: "連續函數在有界閉區間必存在絕對極值：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "14.7",
+                unitTitle: "Maximum and Minimum Values",
+                unitSub: "Extrema, Saddle Points & Second Derivatives Test",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Local & Absolute Extrema of Multivariable Functions",
+                part1Desc: (
+                    <span>
+                        Extrema in multivariable calculus occur at critical points where the gradient is zero. Because surfaces can bend in opposite directions concurrently, the discriminant D (Hessian determinant) is essential to distinguish local extrema from saddle points.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Peak, Basin, and Horse Saddle",
+                analogyDesc: (
+                    <span>
+                        At a flat critical point: if every direction rises, you are at a basin bottom (local minimum); if every direction slopes down, you are at a peak (local maximum); if you rise in one direction while falling in another, you are perched on a horse saddle (saddle point).
+                    </span>
+                ),
+                part1Step1: "Definition of Critical Points",
+                part1Step1Desc: "Horizontal tangent plane where both partial derivatives vanish:",
+                part1Step2: "Second Derivatives Test & Global Extrema",
+                part1Step2Desc: "Classification criteria using the discriminant D:",
+                theorem1Title: "Second Derivatives Test (Discriminant D)",
+                theorem1Desc: "Evaluate curvature determinant to classify critical points:",
+                theorem2Title: "Extreme Value Theorem on Closed Bounded Sets",
+                theorem2Desc: "Compare interior critical points against boundary curves:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "配方法求局部與絕對極小值", source: "p.1009 Example 1",
+                    math: "\\displaystyle f(x,y) = x^2 + y^2 - 2x - 6y + 14",
+                    steps: [
+                        { t: "Step 1: 偏導數求唯一臨界點", d: (<span>令一階偏導皆為 0。</span>), m: "\\displaystyle f_x = 2x - 2 = 0 \\implies x = 1, \\quad f_y = 2y - 6 = 0 \\implies y = 3 \\implies (1, 3)" },
+                        { t: "Step 2: 配方法分析全域幾何性質", d: (<span>將函數改寫為平方和形式。</span>), m: "\\displaystyle f(x,y) = (x-1)^2 + (y-3)^2 + 4 \\ge 4" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>平方項恆大於等於 0，得局部與絕對極小值。</span>), m: "\\displaystyle f(1,3) = 4 \\text{ 為局部極小值，亦為絕對極小值 (Absolute Minimum)}", img: "https://drive.google.com/thumbnail?id=1oqPd5MTpc4TdxgjRuoXV44SmW5rw8Wqn&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "雙曲拋物面之鞍點檢定", source: "p.1009 Example 2",
+                    math: "\\displaystyle f(x,y) = y^2 - x^2",
+                    steps: [
+                        { t: "Step 1: 求臨界點", d: (<span>計算一階偏導數。</span>), m: "\\displaystyle f_x = -2x = 0 \\implies x = 0, \\quad f_y = 2y = 0 \\implies y = 0 \\implies (0, 0)" },
+                        { t: "Step 2: 計算二階偏導與判別式 D", d: (<span>求 D(0, 0) 之正負號。</span>), m: "\\displaystyle f_{xx} = -2, \\, f_{yy} = 2, \\, f_{xy} = 0 \\implies D = (-2)(2) - 0^2 = -4 < 0" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>因 <Latex>{"D < 0"}</Latex>，該臨界點為鞍點而非極值。</span>), m: "\\displaystyle D < 0 \\implies (0, 0) \\text{ 為鞍點 (Saddle Point)}", img: "https://drive.google.com/thumbnail?id=1vtlg2wehC79cGc2lQQ3idYHVNpnPAP22&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "多個臨界點之二階導數分類", source: "p.1010 Example 3",
+                    math: "\\displaystyle f(x,y) = x^4 + y^4 - 4xy + 1",
+                    steps: [
+                        { t: "Step 1: 聯立方程求解所有臨界點", d: (<span>解 f_x = 0 與 f_y = 0。</span>), m: "\\displaystyle 4x^3 - 4y = 0 \\implies y = x^3 \\implies 4(x^3)^3 - 4x = 0 \\implies x(x^8-1) = 0" },
+                        { t: "Step 2: 求出三個臨界座標", d: (<span>解得 x = 0, 1, -1。</span>), m: "\\displaystyle (0, 0), \\quad (1, 1), \\quad (-1, -1)" },
+                        { t: "Step 3: 建立二階偏導數判別式", d: (<span>計算 D(x, y)。</span>), m: "\\displaystyle f_{xx} = 12x^2, \\, f_{yy} = 12y^2, \\, f_{xy} = -4 \\implies D(x,y) = 144x^2y^2 - 16" },
+                        { t: "Step 4: 分類判定與結論", d: (<span>代入各點進行分類。</span>), m: "\\displaystyle D(0,0)=-16<0 \\implies \\text{鞍點}; \\quad D(\\pm 1, \\pm 1)=128>0, f_{xx}>0 \\implies f(\\pm 1, \\pm 1)=-1 \\text{ 局部極小}", img: "https://drive.google.com/thumbnail?id=1HQRvpBOdIjeNqB_IenVCTr9FHfmWXKUd&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "幾何應用－點到平面最短距離", source: "p.1013 Example 5",
+                    math: "\\displaystyle (1, 0, -2) \\text{ 到平面 } x + 2y + z = 4 \\text{ 之最短距離}",
+                    steps: [
+                        { t: "Step 1: 建立距離平方函數", d: (<span>以平面方程式消去 z = 4 - x - 2y。</span>), m: "\\displaystyle f(x,y) = d^2 = (x-1)^2 + y^2 + (6-x-2y)^2" },
+                        { t: "Step 2: 一階偏導令為零解聯立", d: (<span>展開偏導並整理。</span>), m: "\\displaystyle 2x + 2y = 7, \\quad 2x + 5y = 12 \\implies y = \\frac{5}{3}, \\quad x = \\frac{11}{6}" },
+                        { t: "Step 3: 求 z 座標與距離值", d: (<span>計算垂直投影點座標與距離。</span>), m: "\\displaystyle z = 4 - \\frac{11}{6} - \\frac{10}{3} = -\\frac{7}{6} \\implies d = \\sqrt{\\left(\\frac{5}{6}\\right)^2 + \\left(\\frac{10}{6}\\right)^2 + \\left(\\frac{5}{6}\\right)^2} = \\frac{5\\sqrt{6}}{6}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "閉有界矩形區域之絕對極值", source: "p.1015 Example 7",
+                    math: "\\displaystyle f(x,y) = x^2 - 2xy + 2y, \\quad D = [0, 3] \\times [0, 2]",
+                    steps: [
+                        { t: "Step 1: 內部臨界點檢驗", d: (<span>解內部臨界點。</span>), m: "\\displaystyle f_x = 2x - 2y = 0, \\, f_y = -2x + 2 = 0 \\implies (1, 1) \\in D, \\quad f(1,1) = 1" },
+                        { t: "Step 2: 四條邊界曲線極值檢查", d: (<span>分別在四條邊界單變數化。</span>), m: "\\displaystyle L_1(y=0): f=x^2 \\in [0,9]; \\, L_2(x=3): f=9-4y \\in [1,9]; \\, L_3(y=2): (x-2)^2 \\in [0,4]; \\, L_4(x=0): 2y \\in [0,4]" },
+                        { t: "Step 3: 綜合比較得出絕對極值", d: (<span>比較內部與所有邊界候選值。</span>), m: "\\displaystyle \\text{絕對最大值 } 9 \\text{ 在 } (3, 0); \\quad \\text{絕對最小值 } 0 \\text{ 在 } (0, 0) \\text{ 與 } (2, 2)", img: "https://drive.google.com/thumbnail?id=1SZq3rd5z2bbTJdmDq2hVXv9b_50UW4g9&sz=w1000" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Local and Absolute Minimum via Completing Square", source: "p.1009 Example 1",
+                    math: "\\displaystyle f(x,y) = x^2 + y^2 - 2x - 6y + 14",
+                    steps: [
+                        { t: "Step 1: Critical Point", d: (<span>f_x = 2x - 2 = 0, f_y = 2y - 6 = 0 yields (1, 3).</span>), m: "\\displaystyle f_x = 2x - 2 = 0, \\, f_y = 2y - 6 = 0 \\implies (1, 3)" },
+                        { t: "Step 2: Complete the Square", d: (<span>f(x,y) = (x-1)^2 + (y-3)^2 + 4.</span>), m: "\\displaystyle f(x,y) = (x-1)^2 + (y-3)^2 + 4 \\ge 4" },
+                        { t: "Step 3: Conclusion", d: (<span>Minimum value is 4 at (1, 3).</span>), m: "\\displaystyle f(1, 3) = 4 \\text{ is local and absolute minimum}", img: "https://drive.google.com/thumbnail?id=1oqPd5MTpc4TdxgjRuoXV44SmW5rw8Wqn&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Saddle Point of Hyperbolic Paraboloid", source: "p.1009 Example 2",
+                    math: "\\displaystyle f(x,y) = y^2 - x^2",
+                    steps: [
+                        { t: "Step 1: Critical Point", d: (<span>f_x = -2x = 0, f_y = 2y = 0 yields (0, 0).</span>), m: "\\displaystyle (0, 0) \\text{ is the unique critical point}" },
+                        { t: "Step 2: Discriminant D", d: (<span>f_xx = -2, f_yy = 2, f_xy = 0 gives D = -4.</span>), m: "\\displaystyle D = f_{xx}f_{yy} - (f_{xy})^2 = -4 < 0" },
+                        { t: "Step 3: Conclusion", d: (<span>(0,0) is a saddle point.</span>), m: "\\displaystyle D < 0 \\implies (0, 0) \\text{ is a saddle point}", img: "https://drive.google.com/thumbnail?id=1vtlg2wehC79cGc2lQQ3idYHVNpnPAP22&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Classification of Multiple Critical Points", source: "p.1010 Example 3",
+                    math: "\\displaystyle f(x,y) = x^4 + y^4 - 4xy + 1",
+                    steps: [
+                        { t: "Step 1: Solve System", d: (<span>y = x^3 and x = y^3 gives three solutions.</span>), m: "\\displaystyle (0, 0), \\quad (1, 1), \\quad (-1, -1)" },
+                        { t: "Step 2: Discriminant Formula", d: (<span>D(x,y) = 144 x^2 y^2 - 16.</span>), m: "\\displaystyle D(x,y) = 144x^2y^2 - 16" },
+                        { t: "Step 3: Classify Points", d: (<span><Latex>{"D(0,0) < 0"}</Latex> is saddle; <Latex>{"D(\\pm 1, \\pm 1) > 0"}</Latex> are local minima.</span>), m: "\\displaystyle (0,0): \\text{Saddle}; \\quad (\\pm 1, \\pm 1): \\text{Local Minima } f = -1", img: "https://drive.google.com/thumbnail?id=1HQRvpBOdIjeNqB_IenVCTr9FHfmWXKUd&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Shortest Distance to Plane", source: "p.1013 Example 5",
+                    math: "\\displaystyle (1, 0, -2) \\text{ to plane } x + 2y + z = 4",
+                    steps: [
+                        { t: "Step 1: Squared Distance Function", d: (<span>Substitute z = 4 - x - 2y.</span>), m: "\\displaystyle f(x,y) = (x-1)^2 + y^2 + (6-x-2y)^2" },
+                        { t: "Step 2: Solve Critical Point", d: (<span>Linear system gives x = 11/6, y = 5/3.</span>), m: "\\displaystyle x = 11/6, \\quad y = 5/3, \\quad z = -7/6" },
+                        { t: "Step 3: Distance Calculation", d: (<span>Evaluate Euclidean distance.</span>), m: "\\displaystyle d = \\frac{5\\sqrt{6}}{6}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Absolute Extrema on Closed Rectangle", source: "p.1015 Example 7",
+                    math: "\\displaystyle f(x,y) = x^2 - 2xy + 2y, \\quad D = [0, 3] \\times [0, 2]",
+                    steps: [
+                        { t: "Step 1: Interior Critical Point", d: (<span>(1, 1) in D with value f(1,1)=1.</span>), m: "\\displaystyle f(1, 1) = 1" },
+                        { t: "Step 2: Boundary Analysis", d: (<span>Values on 4 edges range between 0 and 9.</span>), m: "\\displaystyle L_1 \\in [0, 9], \\, L_2 \\in [1, 9], \\, L_3 \\in [0, 4], \\, L_4 \\in [0, 4]" },
+                        { t: "Step 3: Conclusion", d: (<span>Absolute max is 9 at (3,0); absolute min is 0 at (0,0) and (2,2).</span>), m: "\\displaystyle \\text{Absolute Max } 9 \\text{ at } (3,0); \\quad \\text{Absolute Min } 0 \\text{ at } (0,0), (2,2)", img: "https://drive.google.com/thumbnail?id=1SZq3rd5z2bbTJdmDq2hVXv9b_50UW4g9&sz=w1000" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "二次多項式配方法求極小值", math: "\\displaystyle f(x,y) = 2x^2 + y^2 + 4x - 6y + 11", 
+                    steps: [
+                        { t: "Step 1: 一階偏導數求臨界點", d: (<span>解 f_x = 0 與 f_y = 0。</span>), m: "\\displaystyle f_x = 4x + 4 = 0 \\implies x = -1, \\quad f_y = 2y - 6 = 0 \\implies y = 3 \\implies (-1, 3)" },
+                        { t: "Step 2: 配方法檢驗", d: (<span>整理成完全平方和。</span>), m: "\\displaystyle f(x,y) = 2(x+1)^2 + (y-3)^2 \\ge 0" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>求得局部極小值與絕對極小值。</span>), m: "\\displaystyle f(-1, 3) = 0 \\text{ 為局部極小值 (亦為絕對極小值)}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "二階判別式判別鞍點", math: "\\displaystyle f(x,y) = 3x^2 - 2y^2 + 6x + 8y - 5", 
+                    steps: [
+                        { t: "Step 1: 求臨界點", d: (<span>計算一階偏導。</span>), m: "\\displaystyle f_x = 6x + 6 = 0 \\implies x = -1, \\quad f_y = -4y + 8 = 0 \\implies y = 2 \\implies (-1, 2)" },
+                        { t: "Step 2: 計算二階偏導與判別式 D", d: (<span>D = f_xx f_yy - (f_xy)^2。</span>), m: "\\displaystyle f_{xx} = 6, \\, f_{yy} = -4, \\, f_{xy} = 0 \\implies D = (6)(-4) - 0 = -24 < 0" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span><Latex>{"D < 0"}</Latex> 判定為鞍點。</span>), m: "\\displaystyle D < 0 \\implies (-1, 2) \\text{ 為鞍點 (Saddle Point)，無極值}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "多臨界點與二階導數分類", math: "\\displaystyle f(x,y) = x^3 - 3xy + y^3", 
+                    steps: [
+                        { t: "Step 1: 聯立求解臨界點", d: (<span>y = x^2 代入 x = y^2。</span>), m: "\\displaystyle f_x = 3x^2 - 3y = 0, \\, f_y = 3y^2 - 3x = 0 \\implies (0, 0), \\quad (1, 1)" },
+                        { t: "Step 2: 計算二階判別式 D(x,y)", d: (<span>D = 36xy - 9。</span>), m: "\\displaystyle f_{xx} = 6x, \\, f_{yy} = 6y, \\, f_{xy} = -3 \\implies D(x,y) = 36xy - 9" },
+                        { t: "Step 3: 分類與結論", d: (<span>分別代入點 (0,0) 與 (1,1)。</span>), m: "\\displaystyle D(0,0)=-9<0 \\implies \\text{鞍點}; \\quad D(1,1)=27>0, f_{xx}>0 \\implies f(1,1)=-1 \\text{ 局部極小值}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "空間原點至平面最短距離", math: "\\displaystyle (0, 0, 0) \\text{ 到平面 } 2x - y + 2z = 9 \\text{ 之最短距離}", 
+                    steps: [
+                        { t: "Step 1: 建立距離平方函數", d: (<span>消去 y = 2x + 2z - 9。</span>), m: "\\displaystyle f(x,z) = x^2 + (2x + 2z - 9)^2 + z^2" },
+                        { t: "Step 2: 一階偏導求極小點", d: (<span>解聯立方程式。</span>), m: "\\displaystyle f_x = 10x + 8z - 36 = 0, \\, f_z = 8x + 10z - 36 = 0 \\implies x = 2, \\, z = 2, \\, y = -1" },
+                        { t: "Step 3: 計算最短距離", d: (<span>開根號求距離。</span>), m: "\\displaystyle d = \\sqrt{2^2 + (-1)^2 + 2^2} = \\sqrt{9} = 3" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "封閉三角形區域之絕對極值", math: "\\displaystyle f(x,y) = 2x^2 + y^2 - 4x - 2y + 5, \\quad x \\ge 0, y \\ge 0, x+y \\le 4", 
+                    steps: [
+                        { t: "Step 1: 內部臨界點", d: (<span>解內部偏導為 0 的點。</span>), m: "\\displaystyle f_x = 4x - 4 = 0, \\, f_y = 2y - 2 = 0 \\implies (1, 1), \\quad f(1,1) = 2" },
+                        { t: "Step 2: 邊界極值分析", d: (<span>分別檢驗三邊 L1(y=0), L2(x=0), L3(y=4-x)。</span>), m: "\\displaystyle L_1: f \\in [3, 21]; \\quad L_2: f \\in [4, 13]; \\quad L_3: f(5/3, 7/3) = 14/3 \\approx 4.67" },
+                        { t: "Step 3: 綜合比較得出絕對極值", d: (<span>比較所有候選值。</span>), m: "\\displaystyle \\text{絕對最大值 } 21 \\text{ 於 } (4, 0); \\quad \\text{絕對最小值 } 2 \\text{ 於內部點 } (1, 1)" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Local and Absolute Minimum via Completing the Square", math: "\\displaystyle f(x,y) = 2x^2 + y^2 + 4x - 6y + 11", 
+                    steps: [
+                        { t: "Step 1: Critical Point", d: (<span>f_x = 4x + 4 = 0, f_y = 2y - 6 = 0 yields (-1, 3).</span>), m: "\\displaystyle (-1, 3) \\text{ is the unique critical point}" },
+                        { t: "Step 2: Complete the Square", d: (<span><Latex>{"f(x,y) = 2(x+1)^2 + (y-3)^2 \\ge 0"}</Latex>.</span>), m: "\\displaystyle f(x,y) = 2(x+1)^2 + (y-3)^2 \\ge 0" },
+                        { t: "Step 3: Conclusion", d: (<span>Minimum value is 0 at (-1, 3).</span>), m: "\\displaystyle f(-1, 3) = 0 \\text{ is local and absolute minimum}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Saddle Point Verification", math: "\\displaystyle f(x,y) = 3x^2 - 2y^2 + 6x + 8y - 5", 
+                    steps: [
+                        { t: "Step 1: Critical Point", d: (<span>Critical point is (-1, 2).</span>), m: "\\displaystyle (-1, 2) \\text{ is the unique critical point}" },
+                        { t: "Step 2: Discriminant D", d: (<span><Latex>{"D = -24 < 0"}</Latex>.</span>), m: "\\displaystyle D = -24 < 0" },
+                        { t: "Step 3: Conclusion", d: (<span>(-1,2) is a saddle point.</span>), m: "\\displaystyle D < 0 \\implies (-1, 2) \\text{ is a saddle point}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Classify Multiple Critical Points", math: "\\displaystyle f(x,y) = x^3 - 3xy + y^3", 
+                    steps: [
+                        { t: "Step 1: Critical Points", d: (<span>Critical points at (0, 0) and (1, 1).</span>), m: "\\displaystyle (0, 0), \\quad (1, 1)" },
+                        { t: "Step 2: Discriminant", d: (<span>D(x,y) = 36xy - 9.</span>), m: "\\displaystyle D(x,y) = 36xy - 9" },
+                        { t: "Step 3: Classify", d: (<span>(0,0) is saddle; (1,1) is local minimum.</span>), m: "\\displaystyle (0,0): \\text{Saddle}; \\quad (1,1): \\text{Local minimum } f=-1" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Shortest Distance from Origin to Plane", math: "\\displaystyle (0, 0, 0) \\text{ to plane } 2x - y + 2z = 9", 
+                    steps: [
+                        { t: "Step 1: Squared Distance Function", d: (<span>Substitute y = 2x + 2z - 9.</span>), m: "\\displaystyle f(x,z) = x^2 + (2x + 2z - 9)^2 + z^2" },
+                        { t: "Step 2: Critical Point", d: (<span>x = 2, z = 2, y = -1.</span>), m: "\\displaystyle x = 2, \\, z = 2, \\, y = -1" },
+                        { t: "Step 3: Distance", d: (<span>Evaluate Euclidean distance.</span>), m: "\\displaystyle d = \\sqrt{4 + 1 + 4} = 3" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Absolute Extrema on Closed Triangle", math: "\\displaystyle f(x,y) = 2x^2 + y^2 - 4x - 2y + 5, \\quad x \\ge 0, y \\ge 0, x+y \\le 4", 
+                    steps: [
+                        { t: "Step 1: Interior Critical Point", d: (<span>(1, 1) with f(1, 1) = 2.</span>), m: "\\displaystyle f(1, 1) = 2" },
+                        { t: "Step 2: Boundary Extremes", d: (<span>L1 in [3, 21], L2 in [4, 13], L3 min is 14/3.</span>), m: "\\displaystyle L_1 \\in [3, 21], \\, L_2 \\in [4, 13], \\, L_3 \\ge 14/3" },
+                        { t: "Step 3: Global Extrema", d: (<span>Absolute maximum is 21 at (4,0); absolute minimum is 2 at (1,1).</span>), m: "\\displaystyle \\text{Absolute Max } 21 \\text{ at } (4, 0); \\quad \\text{Absolute Min } 2 \\text{ at } (1, 1)" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_14_7.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_14_7.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_14_7.py
+node validate_14_7.js
+python3 check_all_jsx.py
+python3 check_14_7_math.py
+}
+}

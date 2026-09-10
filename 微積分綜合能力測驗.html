@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分綜合能力測驗 (專業版) | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        chtml: { matchFontHeight: true }
+    };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .quiz-container {
+            max-width: 860px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .question-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            border: 3px solid;
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        .question-card:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        }
+        .option-label {
+            display: block;
+            padding: 1rem 1.25rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            margin-top: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: #ffffff;
+        }
+        .option-label:hover {
+            background-color: #faf5ff;
+            border-color: #c084fc;
+            transform: translateX(4px);
+        }
+        input[type="radio"]:checked + .option-label {
+            background-color: #f3e8ff;
+            border-color: #9333ea;
+            font-weight: 700;
+            color: #6b21a8;
+            box-shadow: 0 4px 6px -1px rgba(147, 51, 234, 0.15);
+        }
+        input[type="radio"] {
+            display: none;
+        }
+        .concept-box {
+            margin-top: 1rem;
+            padding: 0.875rem 1rem;
+            background-color: #fffbeb;
+            border-left: 4px solid #facc15;
+            color: #92400e;
+            border-radius: 0.5rem;
+        }
+        .action-button {
+            background-color: #8b5cf6;
+            color: white;
+            font-weight: 700;
+            padding: 0.875rem 2.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s;
+            font-size: 1.125rem;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.39);
+        }
+        .action-button:hover {
+            background-color: #7c3aed;
+            box-shadow: 0 6px 20px 0 rgba(139, 92, 246, 0.23);
+            transform: translateY(-1px);
+        }
+        .action-button:active {
+            transform: scale(0.98);
+        }
+        .math-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+    </style>
+</head>
+<body class="bg-yellow-50 text-gray-800 selection:bg-pink-200 min-h-screen">
+
+
+    <!-- 頂部導航列 (GAS 串流導航) -->
+    <nav class="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md">
+        <div class="flex items-center justify-between max-w-5xl mx-auto">
+            <div class="flex flex-col">
+                <h1 class="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-2xl font-black text-transparent md:text-3xl">
+                    微積分教學工具
+                </h1>
+                <span class="text-sm font-medium text-gray-500 md:text-base">
+                    授課老師: 吳文銓 (Prof. Wu Wen-Chuan)
+                </span>
+            </div>
+            <div>
+                <a href="index.html" target="_top" class="flex items-center gap-2 rounded-full bg-purple-50 px-5 py-2.5 text-base font-bold text-purple-700 transition-all hover:bg-purple-100 hover:shadow-md active:scale-95 border border-purple-200">
+                    🏠 回主選單
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 pb-20">
+        <div class="quiz-container border border-purple-100">
+            <!-- 初始畫面 -->
+            <div id="start-screen" class="text-center">
+                <header class="mb-8">
+                    <div class="inline-block bg-purple-100 text-purple-800 px-4 py-1.5 rounded-full font-bold text-sm mb-3">
+                        題庫自適應抽題系統
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-black text-gray-800">
+                        微積分綜合能力測驗 (專業版)
+                    </h2>
+                    <p class="text-gray-600 mt-2 text-lg">點擊下方按鈕，開始您的隨機挑戰！</p>
+                </header>
+
+                <div class="bg-purple-50/70 p-6 sm:p-8 rounded-2xl border border-purple-200 text-left">
+                    <h3 class="text-xl font-bold text-purple-800 mb-4 flex items-center gap-2">
+                        <span>📋</span> 測驗規則說明
+                    </h3>
+                    <ul class="list-disc list-inside text-purple-900 space-y-2.5 text-base sm:text-lg">
+                        <li>題庫共 <strong class="text-purple-700 font-black">60</strong> 題，涵蓋微積分完整微分與積分核心領域。</li>
+                        <li>每次測驗將由系統動態隨機抽取 <strong class="text-purple-700 font-black">15</strong> 題。</li>
+                        <li>抽題黃金比例：<strong>簡單 10 題</strong>、<strong>中等 3 題</strong>、<strong>困難 2 題</strong>。</li>
+                        <li>本測驗<strong>沒有時間限制</strong>，請沉著冷靜作答，並於提交後檢閱詳細觀念詳解。</li>
+                    </ul>
+                </div>
+
+                <div class="mt-8">
+                    <button id="start-btn" class="action-button text-xl px-12 py-4 shadow-lg">
+                        🚀 開始測驗
+                    </button>
+                </div>
+            </div>
+
+            <!-- 測驗畫面 -->
+            <div id="quiz-screen" class="hidden">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                    <div>
+                        <h3 class="text-2xl font-black text-gray-800">隨機抽取 15 題試卷</h3>
+                        <p class="text-sm text-gray-500 mt-0.5">請選取最佳答案，作答完成後點擊最下方按鈕交卷</p>
+                    </div>
+                    <span class="bg-purple-100 text-purple-800 font-bold px-3 py-1 rounded-full text-sm">
+                        共 15 題
+                    </span>
+                </div>
+
+                <form id="quiz-form">
+                    <div id="questions-container"></div>
+                    <div class="text-center mt-12">
+                        <button type="submit" class="action-button text-xl px-12 py-4">
+                            📤 提交試卷
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 結果畫面 -->
+            <div id="results-screen" class="hidden">
+                <div class="text-center border-b border-gray-100 pb-6 mb-8">
+                    <div class="inline-block bg-purple-100 text-purple-800 px-4 py-1 rounded-full font-bold text-sm mb-2">
+                        測驗完成
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-black text-gray-800">測驗結算成績</h2>
+                    <div id="score" class="text-5xl font-black my-4"></div>
+                </div>
+
+                <h4 class="text-xl font-bold text-gray-800 mb-6">各題作答結果與重點觀念解析：</h4>
+                <div id="feedback" class="space-y-6"></div>
+
+                <div class="text-center mt-12 pt-6 border-t border-gray-100">
+                    <button id="restart-btn" class="action-button text-lg">
+                        🔄 重新抽題測驗
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    
+    // =================================================================
+    // 1. 資料模組 (Data Module) - 60 題完整題庫
+    // =================================================================
+    const quizData = {
+        easy: [
+            // 簡單題 30 題
+            { question: "求常數函數 $f(x) = 10$ 的導函數 $f'(x)$。", options: ["$10$", "$1$", "$0$", "$x$"], answer: "$0$", concept: "常數的微分恆為 0。" },
+            { question: "求函數 $f(x) = x$ 的導函數 $f'(x)$。", options: ["$1$", "$0$", "$x^2/2$", "$-1$"], answer: "$1$", concept: "使用冪次法則 $(x^n)'=nx^{n-1}$，此處 n=1。" },
+            { question: "求不定積分 $\\int 5 \\, dx$。", options: ["$5x + C$", "$5+C$", "$0$", "$5x^2/2 + C$"], answer: "$5x + C$", concept: "常數的積分等於常數乘以 x，再加積分常數 C。" },
+            { question: "求不定積分 $\\int \\cos(x) \\, dx$。", options: ["$\\sin(x) + C$", "$-\\sin(x) + C$", "$\\cos(x) + C$", "$\\tan(x) + C$"], answer: "$\\sin(x) + C$", concept: "三角函數積分基本公式：$\\int \\cos(x) \\, dx = \\sin(x) + C$。" },
+            { question: "求函數 $f(x) = 7x^4$ 的導函數 $f'(x)$。", options: ["$28x^3$", "$7x^3$", "$28x^4$", "$4x^3$"], answer: "$28x^3$", concept: "使用冪次法則 $(cx^n)' = c \\cdot nx^{n-1}$。" },
+            { question: "求函數 $f(x) = 5x^3 - 2x + 7$ 的導函數 $f'(x)$。", options: ["$15x^2 - 2$", "$15x^2 - 2x$", "$5x^2 - 2$", "$3x^2 - 2$"], answer: "$15x^2 - 2$", concept: "多項式微分。對每一項使用冪次法則 $(x^n)' = nx^{n-1}$，常數項的微分為 0。" },
+            { question: "求不定積分 $\\int (4x+1) \\, dx$。", options: ["$4x^2 + x + C$", "$2x^2 + x + C$", "$4$", "$2x^2 + C$"], answer: "$2x^2 + x + C$", concept: "多項式積分。對每一項使用冪次法則 $\\int x^n \\, dx = \\frac{x^{n+1}}{n+1}$，並記得加上積分常數 C。" },
+            { question: "求函數 $f(x) = \\cos(x)$ 的導函數 $f'(x)$。", options: ["$\\sin(x)$", "$-\\sin(x)$", "$-\\cos(x)$", "$\\tan(x)$"], answer: "$-\\sin(x)$", concept: "三角函數微分基本公式：$(\\cos(x))' = -\\sin(x)$。" },
+            { question: "求不定積分 $\\int \\sin(x) \\, dx$。", options: ["$\\cos(x) + C$", "$-\\cos(x) + C$", "$-\\sin(x) + C$", "$\\sec^2(x) + C$"], answer: "$-\\cos(x) + C$", concept: "三角函數積分基本公式：$\\int \\sin(x) \\, dx = -\\cos(x) + C$。" },
+            { question: "求函數 $f(x) = e^x$ 的導函數 $f'(x)$。", options: ["$e^x$", "$xe^{x-1}$", "$\\ln(x)$", "$0$"], answer: "$e^x$", concept: "指數函數微分基本公式：$(e^x)' = e^x$。" },
+            { question: "求不定積分 $\\int \\frac{1}{x} \\, dx$。", options: ["$\\ln|x| + C$", "$x^{-2} + C$", "$-x^{-2} + C$", "$1$"], answer: "$\\ln|x| + C$", concept: "對數積分基本公式：$\\int \\frac{1}{x} \\, dx = \\ln|x| + C$。" },
+            { question: "求函數 $f(x) = \\ln(x)$ 的導函數 $f'(x)$。", options: ["$e^x$", "$\\frac{1}{x}$", "$x\\ln(x)-x$", "$|x|$"], answer: "$\\frac{1}{x}$", concept: "對數函數微分基本公式：$(\\ln(x))' = \\frac{1}{x}$。" },
+            { question: "求函數 $f(x) = \\tan(x)$ 的導函數 $f'(x)$。", options: ["$\\sec^2(x)$", "$\\cot(x)$", "$-\\sec^2(x)$", "$1$"], answer: "$\\sec^2(x)$", concept: "三角函數微分基本公式：$(\\tan(x))' = \\sec^2(x)$。" },
+            { question: "求不定積分 $\\int \\sec^2(x) \\, dx$。", options: ["$\\tan(x) + C$", "$2\\sec(x)\\tan(x) + C$", "$\\cot(x) + C$", "$2\\sec^2(x)\\tan(x) + C$"], answer: "$\\tan(x) + C$", concept: "三角函數積分基本公式：$\\int \\sec^2(x) \\, dx = \\tan(x) + C$。" },
+            { question: "求函數 $f(x) = x^{-1}$ 的導函數 $f'(x)$。", options: ["$-x^{-2}$", "$\\ln|x|$", "$x^{-2}$", "$-1$"], answer: "$-x^{-2}$", concept: "使用冪次法則 $(x^n)'=nx^{n-1}$，此處 n=-1。" },
+            { question: "求不定積分 $\\int 0 \\, dx$。", options: ["$0$", "$C$", "$x+C$", "不存在"], answer: "$C$", concept: "0 的不定積分為任意常數 C。" },
+            { question: "求函數 $f(x) = 3x - 4$ 的導函數 $f'(x)$。", options: ["$3$", "$3x$", "$-4$", "$0$"], answer: "$3$", concept: "一次函數的斜率即為其導函數值。" },
+            { question: "求不定積分 $\\int 2x \\, dx$。", options: ["$x^2 + C$", "$2x^2 + C$", "$2 + C$", "$x + C$"], answer: "$x^2 + C$", concept: "使用冪次積分法則 $\\int x \\, dx = x^2/2$。" },
+            { question: "求函數 $f(x) = -5x^2$ 的導函數 $f'(x)$。", options: ["$-10x$", "$-5x$", "$10x$", "$-10$"], answer: "$$-10x$$", concept: "使用冪次法則 $(-5 \\cdot 2)x^{2-1} = -10x$。" },
+            { question: "求不定積分 $\\int e^x \\, dx$。", options: ["$e^x + C$", "$xe^{x-1} + C$", "$\\frac{e^{x+1}}{x+1} + C$", "$e^{x+1} + C$"], answer: "$e^x + C$", concept: "指數函數的積分等於其自身加上常數 C。" },
+            { question: "求函數 $f(x) = \\sqrt{x}$ 的導函數 $f'(x)$。", options: ["$\\frac{1}{2\\sqrt{x}}$", "$\\frac{1}{\\sqrt{x}}$", "$2\\sqrt{x}$", "$\\frac{1}{2}x^{3/2}$"], answer: "$\\frac{1}{2\\sqrt{x}}$", concept: "改寫為 $x^{1/2}$，使用冪次法則 $\\frac{1}{2}x^{-1/2}$。" },
+            { question: "求不定積分 $\\int x^3 \\, dx$。", options: ["$\\frac{x^4}{4} + C$", "$3x^2 + C$", "$4x^4 + C$", "$\\frac{x^3}{3} + C$"], answer: "$\\frac{x^4}{4} + C$", concept: "使用冪次積分法則 $\\int x^n \\, dx = \\frac{x^{n+1}}{n+1} + C$。" },
+            { question: "求函數 $f(x) = \\pi^2$ 的導函數 $f'(x)$。", options: ["$0$", "$2\\pi$", "$\\pi$", "$2$"], answer: "$0$", concept: "$\\pi^2$ 是常數，常數的微分為 0。" },
+            { question: "求不定積分 $\\int \\frac{1}{x^2} \\, dx$。", options: ["$-\\frac{1}{x} + C$", "$\\frac{1}{x} + C$", "$\\ln|x^2| + C$", "$-\\frac{2}{x^3} + C$"], answer: "$-\\frac{1}{x} + C$", concept: "改寫為 $x^{-2}$ 進行積分：$\\frac{x^{-1}}{-1} = -\\frac{1}{x}$。" },
+            { question: "求函數 $f(x) = 2^x$ 的導函數 $f'(x)$。", options: ["$2^x \\ln(2)$", "$x 2^{x-1}$", "$\\frac{2^x}{\\ln(2)}$", "$2^x$"], answer: "$2^x \\ln(2)$", concept: "一般底數指數微分公式：$(a^x)' = a^x \\ln(a)$。" },
+            { question: "求不定積分 $\\int 3 \\, dt$。", options: ["$3t + C$", "$3x + C$", "$0$", "$3 + C$"], answer: "$3t + C$", concept: "注意積分變數為 t，常數積分等於常數乘以變數。" },
+            { question: "求函數 $f(x) = 4 - x$ 的導函數 $f'(x)$。", options: ["$-1$", "$1$", "$4$", "$-x$"], answer: "$-1$", concept: "常數項微分為 0，$-x$ 的微分為 $-1$。" },
+            { question: "求不定積分 $\\int (1 + x) \\, dx$。", options: ["$x + \\frac{x^2}{2} + C$", "$x + x^2 + C$", "$1 + x^2 + C$", "$x + C$"], answer: "$x + \\frac{x^2}{2} + C$", concept: "逐項積分：$\\int 1 \\, dx = x$ 且 $\\int x \\, dx = x^2/2$。" },
+            { question: "求函數 $f(x) = \\frac{x^5}{5}$ 的導函數 $f'(x)$。", options: ["$x^4$", "$5x^4$", "$\\frac{x^4}{5}$", "$x^5$"], answer: "$x^4$", concept: "係數為 $1/5$，微分得 $(1/5) \\cdot 5x^4 = x^4$。" },
+            { question: "求不定積分 $\\int \\sec(x)\\tan(x) \\, dx$。", options: ["$\\sec(x) + C$", "$\\tan(x) + C$", "$\\sec^2(x) + C$", "$-\\sec(x) + C$"], answer: "$\\sec(x) + C$", concept: "三角函數基本積分公式：$(\\sec(x))' = \\sec(x)\\tan(x)$。" }
+        ],
+        medium: [
+            // 中等題 20 題
+            { question: "求函數 $f(x) = \\sin(5x)$ 的導函數 $f'(x)$。", options: ["$\\cos(5x)$", "$5\\cos(5x)$", "$-5\\cos(5x)$", "$\\frac{1}{5}\\cos(5x)$"], answer: "$5\\cos(5x)$", concept: "連鎖律：先對外層 $\\sin(u)$ 微分得 $\\cos(u)$，再乘以內層 $(5x)$ 的微分 5。" },
+            { question: "求不定積分 $\\int e^{3x} \\, dx$。", options: ["$3e^{3x} + C$", "$e^{3x} + C$", "$\\frac{1}{3}e^{3x} + C$", "$e^{x^3} + C$"], answer: "$\\frac{1}{3}e^{3x} + C$", concept: "變數變換法：令 $u = 3x$，則 $du = 3dx$。積分結果需除以 3。" },
+            { question: "求函數 $f(x) = (x^2+1)^4$ 的導函數 $f'(x)$。", options: ["$4(x^2+1)^3$", "$8x(x^2+1)^3$", "$4(2x)^3$", "$2x(x^2+1)^4$"], answer: "$8x(x^2+1)^3$", concept: "連鎖律：先對外層 $u^4$ 微分得 $4u^3$，再乘以內層 $(x^2+1)$ 的微分 $2x$。" },
+            { question: "求不定積分 $\\int (2x+3)^5 \\, dx$。", options: ["$\\frac{(2x+3)^6}{6} + C$", "$10(2x+3)^4 + C$", "$\\frac{(2x+3)^6}{12} + C$", "$5(2x+3)^4 + C$"], answer: "$\\frac{(2x+3)^6}{12} + C$", concept: "變數變換法：令 $u=2x+3$，則 $du=2dx$。積分後需除以內層的微分 2。" },
+            { question: "求函數 $f(x) = e^{x^2}$ 的導函數 $f'(x)$。", options: ["$e^{x^2}$", "$2xe^{x^2}$", "$e^{2x}$", "$x^2e^{x^2-1}$"], answer: "$2xe^{x^2}$", concept: "連鎖律：先對外層 $e^u$ 微分得 $e^u$，再乘以內層 $(x^2)$ 的微分 $2x$。" },
+            { question: "求不定積分 $\\int \\frac{2x}{x^2+1} \\, dx$。", options: ["$\\ln(x^2+1) + C$", "$2\\ln(x^2+1) + C$", "$\\arctan(x) + C$", "$2x \\ln(x^2+1) + C$"], answer: "$\\ln(x^2+1) + C$", concept: "變數變換法：令 $u = x^2+1$，則 $du = 2x dx$。此為 $\\int \\frac{1}{u} du$ 的形式。" },
+            { question: "求函數 $f(x) = x \\ln(x)$ 的導函數 $f'(x)$。", options: ["$1$", "$\\ln(x)$", "$1 + \\ln(x)$", "$\\frac{1}{x}$"], answer: "$1 + \\ln(x)$", concept: "乘法法則：$(uv)' = u'v + uv'$。令 $u=x, v=\\ln(x)$。" },
+            { question: "求函數 $f(x) = \\cos(x^3)$ 的導函數 $f'(x)$。", options: ["$-\\sin(x^3)$", "$\\sin(x^3) \\cdot 3x^2$", "$-3x^2\\sin(x^3)$", "$-3\\sin(x^2)$"], answer: "$-3x^2\\sin(x^3)$", concept: "連鎖律：外層 $(\\cos(u))' = -\\sin(u)$，內層 $(x^3)' = 3x^2$。" },
+            { question: "求不定積分 $\\int x(x^2+3)^2 \\, dx$。", options: ["$\\frac{(x^2+3)^3}{6} + C$", "$\\frac{(x^2+3)^3}{3} + C$", "$2x(x^2+3) + C$", "$\\frac{x^2(x^2+3)^3}{6} + C$"], answer: "$\\frac{(x^2+3)^3}{6} + C$", concept: "變數變換法：令 $u = x^2+3$，則 $du = 2x dx$。" },
+            { question: "求函數 $f(x) = \\ln(x^2+1)$ 的導函數 $f'(x)$。", options: ["$\\frac{1}{x^2+1}$", "$\\frac{2x}{x^2+1}$", "$2x\\ln(x^2+1)$", "$\\frac{1}{2x}$"], answer: "$\\frac{2x}{x^2+1}$", concept: "連鎖律：外層 $(\\ln(u))' = 1/u$，內層 $(x^2+1)' = 2x$。" },
+            { question: "求不定積分 $\\int \\sin(x)\\cos(x) \\, dx$。", options: ["$\\frac{\\sin^2(x)}{2} + C$", "$-\\frac{\\cos^2(x)}{2} + C$", "兩者皆是", "兩者皆非"], answer: "兩者皆是", concept: "變數變換法：可令 $u=\\sin(x)$ 或 $u=\\cos(x)$，兩者皆為正確形式（僅差一個常數）。" },
+            { question: "求函數 $f(x) = xe^x$ 的導函數 $f'(x)$。", options: ["$e^x$", "$xe^x$", "$e^x + xe^x$", "$e^x + 1$"], answer: "$e^x + xe^x$", concept: "乘法法則：$(uv)' = u'v + uv'$。令 $u=x, v=e^x$。" },
+            { question: "求不定積分 $\\int \\frac{1}{5x-4} \\, dx$。", options: ["$\\ln|5x-4| + C$", "$5\\ln|5x-4| + C$", "$\\frac{1}{5}\\ln|5x-4| + C$", "$-(5x-4)^{-2} + C$"], answer: "$\\frac{1}{5}\\ln|5x-4| + C$", concept: "變數變換法：令 $u=5x-4$，則 $du=5dx$。" },
+            { question: "求函數 $f(x) = \\sqrt{3x+1}$ 的導函數 $f'(x)$。", options: ["$\\frac{1}{2\\sqrt{3x+1}}$", "$\\frac{3}{2\\sqrt{3x+1}}$", "$\\frac{3}{2}(3x+1)^{3/2}$", "$3\\sqrt{3x+1}$"], answer: "$\\frac{3}{2\\sqrt{3x+1}}$", concept: "連鎖律：將函數視為 $(3x+1)^{1/2}$，再進行微分。" },
+            { question: "求不定積分 $\\int x \\cos(x) \\, dx$。", options: ["$x\\sin(x) + \\cos(x) + C$", "$x\\sin(x) - \\cos(x) + C$", "$\\frac{x^2}{2}\\sin(x) + C$", "$-x\\sin(x) + \\cos(x) + C$"], answer: "$x\\sin(x) + \\cos(x) + C$", concept: "分部積分法：令 $u = x$, $dv = \\cos(x)dx$。套用公式 $\\int u \\, dv = uv - \\int v \\, du$。" },
+            { question: "求函數 $f(x) = \\frac{x}{x+1}$ 的導函數 $f'(x)$。", options: ["$\\frac{1}{(x+1)^2}$", "$\\frac{-1}{(x+1)^2}$", "$1$", "$\\frac{2x+1}{(x+1)^2}$"], answer: "$\\frac{1}{(x+1)^2}$", concept: "商法則：$(\\frac{u}{v})' = \\frac{u'v - uv'}{v^2}$，分子為 $1(x+1) - x(1) = 1$。" },
+            { question: "求不定積分 $\\int \\frac{x}{\\sqrt{x^2+1}} \\, dx$。", options: ["$\\sqrt{x^2+1} + C$", "$2\\sqrt{x^2+1} + C$", "$\\frac{1}{2}\\sqrt{x^2+1} + C$", "$\\ln|x^2+1| + C$"], answer: "$\\sqrt{x^2+1} + C$", concept: "代換法：令 $u = x^2+1$，則 $du = 2xdx$。原式變成 $\\int \\frac{1}{2} u^{-1/2} du = u^{1/2} + C$。" },
+            { question: "求函數 $f(x) = \\ln(\\cos(x))$ 的導函數 $f'(x)$。", options: ["$-\\tan(x)$", "$\\tan(x)$", "$\\frac{1}{\\cos(x)}$", "$-\\cot(x)$"], answer: "$-\\tan(x)$", concept: "連鎖律：$\\frac{1}{\\cos(x)} \\cdot (-\\sin(x)) = -\\tan(x)$。" },
+            { question: "求不定積分 $\\int \\tan(x) \\, dx$。", options: ["$\\ln|\\sec(x)| + C$", "$-\\ln|\\cos(x)| + C$", "兩者皆是", "兩者皆非"], answer: "兩者皆是", concept: "將 $\\tan(x)$ 寫成 $\\frac{\\sin(x)}{\\cos(x)}$ 後使用代換法，兩者形式等價。" },
+            { question: "求函數 $f(x) = x^2 e^{3x}$ 的導函數 $f'(x)$。", options: ["$e^{3x}(2x + 3x^2)$", "$2x e^{3x}$", "$3x^2 e^{3x}$", "$6x e^{3x}$"], answer: "$e^{3x}(2x + 3x^2)$", concept: "乘法法則結合連鎖律：$(x^2)' e^{3x} + x^2 (e^{3x})' = 2x e^{3x} + 3x^2 e^{3x}$。" }
+        ],
+        hard: [
+            // 困難題 10 題
+            { question: "求不定積分 $\\int \\ln(x) \\, dx$。", options: ["$\\frac{1}{x} + C$", "$x\\ln(x) - x + C$", "$x\\ln(x) + x + C$", "$\\frac{(\\ln(x))^2}{2} + C$"], answer: "$x\\ln(x) - x + C$", concept: "分部積分法：令 $u = \\ln(x)$，並將 $dv$ 視為 $1 \\, dx$。" },
+            { question: "求函數 $f(x) = \\tan^2(x)$ 的導函數 $f'(x)$。", options: ["$2\\tan(x)$", "$2\\tan(x)\\sec^2(x)$", "$2\\sec^2(x)$", "$\\sec^4(x)$"], answer: "$2\\tan(x)\\sec^2(x)$", concept: "連鎖律：外層 $u^2$ 的微分是 $2u$，內層 $\\tan(x)$ 的微分是 $\\sec^2(x)$。" },
+            { question: "求函數 $f(x) = \\frac{\\sin(x)}{x}$ 的導函數 $f'(x)$。", options: ["$\\frac{x\\cos(x) - \\sin(x)}{x^2}$", "$\\frac{\\cos(x)}{1}$", "$\\frac{x\\cos(x) + \\sin(x)}{x^2}$", "$\\frac{\\sin(x) - x\\cos(x)}{x^2}$"], answer: "$\\frac{x\\cos(x) - \\sin(x)}{x^2}$", concept: "除法法則：$(\\frac{u}{v})' = \\frac{u'v - uv'}{v^2}$。令 $u=\\sin(x), v=x$。" },
+            { question: "求不定積分 $\\int \\sin^2(x) \\, dx$。", options: ["$\\frac{1}{3}\\sin^3(x) + C$", "$\\frac{x}{2} - \\frac{1}{4}\\sin(2x) + C$", "$\\frac{x}{2} + \\frac{1}{4}\\sin(2x) + C$", "$-2\\sin(x)\\cos(x) + C$"], answer: "$\\frac{x}{2} - \\frac{1}{4}\\sin(2x) + C$", concept: "降冪公式：利用 $\\sin^2(x) = \\frac{1 - \\cos(2x)}{2}$ 將二次方降為一次方再積分。" },
+            { question: "求不定積分 $\\int x^2 e^x \\, dx$。", options: ["$(x^2 - 2x + 2)e^x + C$", "$(x^2 + 2x + 2)e^x + C$", "$2xe^x + C$", "$\\frac{x^3}{3}e^x + C$"], answer: "$(x^2 - 2x + 2)e^x + C$", concept: "需連續使用兩次分部積分法（或表格法求解）。" },
+            { question: "求函數 $f(x) = x^x$ 的導函數 $f'(x)$。", options: ["$x \\cdot x^{x-1}$", "$x^x$", "$x^x (\\ln(x) + 1)$", "$x^x \\ln(x)$"], answer: "$x^x (\\ln(x) + 1)$", concept: "對數微分法：先取自然對數 $\\ln(y) = x\\ln(x)$，兩邊對 x 微分得到 $y'/y = \\ln(x) + 1$。" },
+            { question: "求不定積分 $\\int \\arctan(x) \\, dx$。", options: ["$x\\arctan(x) - \\frac{1}{2}\\ln(1+x^2) + C$", "$x\\arctan(x) + \\frac{1}{2}\\ln(1+x^2) + C$", "$\\frac{1}{1+x^2} + C$", "$x\\arctan(x) - \\ln(1+x^2) + C$"], answer: "$x\\arctan(x) - \\frac{1}{2}\\ln(1+x^2) + C$", concept: "分部積分法：令 $u=\\arctan(x), dv=dx$，後續搭配變數變換法。" },
+            { question: "求定積分 $\\int_{0}^{1} x e^{x^2} \\, dx$。", options: ["$\\frac{e-1}{2}$", "$\\frac{e}{2}$", "$e-1$", "$e$"], answer: "$\\frac{e-1}{2}$", concept: "代換法：令 $u=x^2$，上下限變為 $0$ 到 $1$，原式為 $\\frac{1}{2}(e^1 - e^0)$。" },
+            { question: "求不定積分 $\\int e^x \\sin(x) \\, dx$。", options: ["$\\frac{1}{2}e^x(\\sin(x) - \\cos(x)) + C$", "$\\frac{1}{2}e^x(\\sin(x) + \\cos(x)) + C$", "$e^x(\\sin(x) - \\cos(x)) + C$", "$-e^x\\cos(x) + C$"], answer: "$\\frac{1}{2}e^x(\\sin(x) - \\cos(x)) + C$", concept: "循環分部積分法：兩次分部積分後將同型項移至等號左側合併求解。" },
+            { question: "求不定積分 $\\int \\sec(x) \\, dx$。", options: ["$\\ln|\\sec(x) + \\tan(x)| + C$", "$\\ln|\\sec(x) - \\tan(x)| + C$", "$\\sec(x)\\tan(x) + C$", "$\\tan^2(x) + C$"], answer: "$\\ln|\\sec(x) + \\tan(x)| + C$", concept: "分子分母同乘 $(\\sec(x)+\\tan(x))$ 後使用代換積分法。" }
+        ]
+    };
+
+    // =================================================================
+    // 2. UI 模組 (UI Module)
+    // =================================================================
+    const UIModule = {
+        getDOMElements: () => ({
+            startScreen: document.getElementById('start-screen'),
+            quizScreen: document.getElementById('quiz-screen'),
+            resultsScreen: document.getElementById('results-screen'),
+            startBtn: document.getElementById('start-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            quizForm: document.getElementById('quiz-form'),
+            questionsContainer: document.getElementById('questions-container'),
+            scoreElement: document.getElementById('score'),
+            feedbackElement: document.getElementById('feedback')
+        }),
+        
+        showScreen: (screenId) => {
+            const { startScreen, quizScreen, resultsScreen } = UIModule.getDOMElements();
+            startScreen.classList.add('hidden');
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        },
+
+        renderQuestions: (questions) => {
+            const { questionsContainer } = UIModule.getDOMElements();
+            const macaronColors = [
+                '#fecaca', '#fed7aa', '#fef08a', '#bbf7d0', '#a5f3fc', '#bfdbfe', '#d8b4fe'
+            ];
+            let questionHTML = '';
+            questions.forEach((item, index) => {
+                const borderColor = macaronColors[Math.floor(Math.random() * macaronColors.length)];
+                questionHTML += `
+                    <div class="question-card shadow-sm" style="border-color: ${borderColor}">
+                        <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                            <span class="font-black text-purple-700 text-base">第 ${index + 1} 題</span>
+                            <span class="text-xs bg-purple-100 text-purple-800 font-bold px-2.5 py-0.5 rounded-full">四選一</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-gray-800 mb-4 math-display">${item.question}</h4>
+                        <div class="space-y-2">
+                `;
+                item.options.forEach((option, i) => {
+                    questionHTML += `
+                        <div>
+                            <input type="radio" name="question${index}" id="q${index}o${i}" value="${option.replace(/"/g, '&quot;')}">
+                            <label for="q${index}o${i}" class="option-label text-base text-gray-700 math-display">${option}</label>
+                        </div>
+                    `;
+                });
+                questionHTML += `</div></div>`;
+            });
+            questionsContainer.innerHTML = questionHTML;
+        },
+
+        renderResults: (score, total, userAnswers, questions) => {
+            const { scoreElement, feedbackElement } = UIModule.getDOMElements();
+            const percentage = (score / total) * 100;
+            let scoreColor = 'text-green-600';
+            let comment = '恭喜！掌握度非常優秀！';
+            if (percentage < 80) {
+                scoreColor = 'text-blue-600';
+                comment = '表現不錯，部分觀念可再精進！';
+            }
+            if (percentage < 60) {
+                scoreColor = 'text-amber-600';
+                comment = '建議複習連鎖律與進階積分技巧！';
+            }
+            if (percentage < 40) {
+                scoreColor = 'text-rose-600';
+                comment = '請加強微積分基礎公式與運算法則。';
+            }
+
+            scoreElement.innerHTML = `
+                <div class="${scoreColor}">${score} / ${total}</div>
+                <div class="text-lg font-bold text-gray-600 mt-2">${comment}</div>
+            `;
+
+            let feedbackHTML = '';
+            questions.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = userAnswer === item.answer;
+                const borderClass = isCorrect ? 'border-green-300 bg-green-50/50' : 'border-rose-300 bg-rose-50/50';
+
+                feedbackHTML += `
+                    <div class="p-5 rounded-2xl border-2 ${borderClass}">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-gray-700">第 ${index + 1} 題</span>
+                            <span class="${isCorrect ? 'bg-green-100 text-green-800' : 'bg-rose-100 text-rose-800'} text-xs font-black px-2.5 py-0.5 rounded-full">
+                                ${isCorrect ? '答對' : '答錯'}
+                            </span>
+                        </div>
+                        <h4 class="font-semibold text-gray-800 mb-3 math-display">${item.question}</h4>
+                `;
+
+                if (isCorrect) {
+                    feedbackHTML += `
+                        <p class="text-green-700 font-bold math-display">✔️ 您答對了！答案是：${item.answer}</p>
+                    `;
+                } else {
+                    feedbackHTML += `
+                        <div class="space-y-1 text-sm">
+                            <p class="text-gray-700">您的答案：<span class="font-bold text-rose-600 math-display">${userAnswer || '未作答'}</span></p>
+                            <p class="text-gray-700">正確答案：<span class="font-bold text-green-700 math-display">${item.answer}</span></p>
+                        </div>
+                        <div class="concept-box text-sm">
+                            <p><strong class="font-bold">重點觀念：</strong>${item.concept}</p>
+                        </div>
+                    `;
+                }
+                feedbackHTML += `</div>`;
+            });
+            feedbackElement.innerHTML = feedbackHTML;
+        }
+    };
+
+    // =================================================================
+    // 3. 測驗核心邏輯 (Quiz Logic Module)
+    // =================================================================
+    const QuizLogic = {
+        currentQuizQuestions: [],
+
+        getRandomSubarray: (arr, size) => {
+            const shuffled = arr.slice(0);
+            let i = arr.length;
+            let temp, index;
+            while (i--) {
+                index = Math.floor((i + 1) * Math.random());
+                temp = shuffled[index];
+                shuffled[index] = shuffled[i];
+                shuffled[i] = temp;
+            }
+            return shuffled.slice(0, size);
+        },
+
+        generateQuiz: () => {
+            // 抽題比例：簡單 10 題、中等 3 題、困難 2 題
+            const easyQuestions = QuizLogic.getRandomSubarray(quizData.easy, 10);
+            const mediumQuestions = QuizLogic.getRandomSubarray(quizData.medium, 3);
+            const hardQuestions = QuizLogic.getRandomSubarray(quizData.hard, 2);
+
+            const allSelected = [...easyQuestions, ...mediumQuestions, ...hardQuestions];
+            // 打亂題目呈現順序
+            QuizLogic.currentQuizQuestions = QuizLogic.getRandomSubarray(allSelected, allSelected.length);
+            return QuizLogic.currentQuizQuestions;
+        },
+
+        calculateScore: (userAnswers) => {
+            let score = 0;
+            QuizLogic.currentQuizQuestions.forEach((item, index) => {
+                if (userAnswers[index] === item.answer) {
+                    score++;
+                }
+            });
+            return score;
+        }
+    };
+
+    // =================================================================
+    // 4. 事件與控制器 (Controller / Event Handlers)
+    // =================================================================
+    const AppController = {
+        init: () => {
+            const { startBtn, restartBtn, quizForm } = UIModule.getDOMElements();
+
+            startBtn.addEventListener('click', AppController.handleStartQuiz);
+            restartBtn.addEventListener('click', AppController.handleRestartQuiz);
+            quizForm.addEventListener('submit', AppController.handleSubmitQuiz);
+        },
+
+        handleStartQuiz: () => {
+            const questions = QuizLogic.generateQuiz();
+            UIModule.renderQuestions(questions);
+            UIModule.showScreen('quiz-screen');
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        handleSubmitQuiz: (event) => {
+            event.preventDefault();
+            const userAnswers = [];
+            QuizLogic.currentQuizQuestions.forEach((_, index) => {
+                const selectedOption = document.querySelector(`input[name="question${index}"]:checked`);
+                userAnswers.push(selectedOption ? selectedOption.value : null);
+            });
+
+            const score = QuizLogic.calculateScore(userAnswers);
+            UIModule.renderResults(score, QuizLogic.currentQuizQuestions.length, userAnswers, QuizLogic.currentQuizQuestions);
+            UIModule.showScreen('results-screen');
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        handleRestartQuiz: () => {
+            const { quizForm } = UIModule.getDOMElements();
+            quizForm.reset();
+            AppController.handleStartQuiz();
+        }
+    };
+
+    // 啟動 App
+    AppController.init();
+});
+    </script>
+</body>
+</html>

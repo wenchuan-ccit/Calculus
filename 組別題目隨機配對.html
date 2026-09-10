@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>組別題目隨機配對 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- PDF Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .input-field {
+            background-color: #f9fafb;
+            border: 1.5px solid #d1d5db;
+            color: #111827;
+            transition: all 0.2s ease-in-out;
+        }
+        .input-field:focus {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-yellow-50 text-gray-800 selection:bg-pink-200 min-h-screen">
+
+
+    <!-- 頂部導航列 (GAS 串流導航) -->
+    <nav class="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md">
+        <div class="flex items-center justify-between max-w-5xl mx-auto">
+            <div class="flex flex-col">
+                <h1 class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-2xl font-black text-transparent md:text-3xl">
+                    微積分教學工具
+                </h1>
+                <span class="text-sm font-medium text-gray-500 md:text-base">
+                    授課老師: 吳文銓 (Prof. Wu Wen-Chuan)
+                </span>
+            </div>
+            <div>
+                <a href="index.html" target="_top" class="flex items-center gap-2 rounded-full bg-purple-50 px-5 py-2.5 text-base font-bold text-purple-700 transition-all hover:bg-purple-100 hover:shadow-md active:scale-95 border border-purple-200">
+                    🏠 回主選單
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-4xl pb-24">
+        <header class="text-center my-8">
+            <div class="inline-block bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full font-bold text-sm mb-3">
+                工程數學之微積分技巧分組
+            </div>
+            <h2 class="text-3xl md:text-4xl font-black text-gray-900">
+                組別題目隨機配對系統
+            </h2>
+            <p class="text-lg text-gray-600 mt-2 font-medium">
+                依據組別、題目數量與各組人數，自動執行智慧均勻配對。
+            </p>
+        </header>
+
+        <main>
+            <!-- 步驟 1: 設定數量 -->
+            <div id="setup-section" class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 mx-auto transition-all">
+                <h3 class="text-2xl font-bold mb-6 border-b border-gray-100 pb-3 text-blue-700 flex items-center gap-2">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-black">1</span>
+                    第一步：設定組數與題數
+                </h3>
+                
+                <div class="mb-6">
+                    <label for="num-groups" class="block mb-2 font-bold text-lg text-gray-700">總共有幾組？</label>
+                    <input type="number" id="num-groups" min="1" class="w-full p-3.5 rounded-xl input-field text-lg focus:outline-none" placeholder="例如：11">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-100 pt-6">
+                    <!-- 區塊 A -->
+                    <div class="bg-blue-50/60 p-5 rounded-2xl border border-blue-200">
+                        <h4 class="text-xl font-bold mb-4 text-center text-blue-700">第一區塊題目 (Block A)</h4>
+                        <div>
+                            <label for="num-examples-a" class="block mb-2 font-medium text-gray-700">例題題數：</label>
+                            <input type="number" id="num-examples-a" min="0" value="0" class="w-full p-3 rounded-xl input-field text-lg bg-white">
+                        </div>
+                        <div class="mt-4">
+                            <label for="num-exercises-a" class="block mb-2 font-medium text-gray-700">習題題數：</label>
+                            <input type="number" id="num-exercises-a" min="0" value="0" class="w-full p-3 rounded-xl input-field text-lg bg-white">
+                        </div>
+                    </div>
+
+                    <!-- 區塊 B -->
+                    <div class="bg-green-50/60 p-5 rounded-2xl border border-green-200">
+                        <h4 class="text-xl font-bold mb-4 text-center text-green-700">第二區塊題目 (Block B)</h4>
+                        <div>
+                            <label for="num-examples-b" class="block mb-2 font-medium text-gray-700">例題題數：</label>
+                            <input type="number" id="num-examples-b" min="0" value="0" class="w-full p-3 rounded-xl input-field text-lg bg-white">
+                        </div>
+                        <div class="mt-4">
+                            <label for="num-exercises-b" class="block mb-2 font-medium text-gray-700">習題題數：</label>
+                            <input type="number" id="num-exercises-b" min="0" value="0" class="w-full p-3 rounded-xl input-field text-lg bg-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button id="setup-topics-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-10 rounded-xl text-lg shadow-md hover:shadow-lg transition-all active:scale-95">
+                        下一步：輸入題目名稱 ➜
+                    </button>
+                </div>
+            </div>
+
+            <!-- 步驟 2: 輸入題目 -->
+            <div id="topics-section" class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 mt-8 hidden mx-auto">
+                <h3 class="text-2xl font-bold mb-6 border-b border-gray-100 pb-3 text-blue-700 flex items-center gap-2">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-black">2</span>
+                    第二步：輸入題目名稱
+                </h3>
+                <div id="topic-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="setup-members-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-10 rounded-xl text-lg shadow-md hover:shadow-lg transition-all active:scale-95">
+                        下一步：設定組員人數 ➜
+                    </button>
+                    <button id="reset-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3.5 px-8 rounded-xl text-lg transition-all">
+                        全部重設
+                    </button>
+                </div>
+            </div>
+
+            <!-- 步驟 3: 設定組員人數 -->
+            <div id="members-section" class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 mt-8 hidden mx-auto">
+                <h3 class="text-2xl font-bold mb-6 border-b border-gray-100 pb-3 text-blue-700 flex items-center gap-2">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-black">3</span>
+                    第三步：輸入各組人數
+                </h3>
+                <div id="member-inputs" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="generate-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-10 rounded-xl text-lg shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <span>🎲</span> 開始自動配對
+                    </button>
+                    <button id="reset-btn-2" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3.5 px-8 rounded-xl text-lg transition-all">
+                        全部重設
+                    </button>
+                </div>
+            </div>
+
+            <!-- 步驟 4: 配對結果 -->
+            <div id="results-section" class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 mt-8 hidden mx-auto">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
+                    <h3 class="text-2xl sm:text-3xl font-black text-gray-900 flex items-center gap-2">
+                        <span>📋</span> 配對結果出爐
+                    </h3>
+                    <button id="export-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-xl text-base shadow transition-all flex items-center gap-2 active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        匯出結果 (PDF)
+                    </button>
+                </div>
+                
+                <div id="result-display" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                
+                <div class="mt-8 text-center border-t border-gray-100 pt-6">
+                    <button id="reset-btn-3" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-xl text-lg transition-all">
+                        重新配對 / 調整設定
+                    </button>
+                </div>
+            </div>
+
+            <!-- 錯誤提示訊息 -->
+            <div id="error-message" class="hidden bg-red-50 border-2 border-red-400 text-red-800 p-4 rounded-2xl relative mt-6 text-base font-semibold max-w-4xl mx-auto shadow-sm" role="alert">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">⚠️</span>
+                    <span id="error-text"></span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const setupSection = document.getElementById('setup-section');
+        const topicsSection = document.getElementById('topics-section');
+        const membersSection = document.getElementById('members-section');
+        const resultsSection = document.getElementById('results-section');
+        
+        const setupTopicsBtn = document.getElementById('setup-topics-btn');
+        const setupMembersBtn = document.getElementById('setup-members-btn');
+        const generateBtn = document.getElementById('generate-btn');
+        const exportPdfBtn = document.getElementById('export-pdf-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const resetBtn2 = document.getElementById('reset-btn-2');
+        const resetBtn3 = document.getElementById('reset-btn-3');
+        
+        const numGroupsInput = document.getElementById('num-groups');
+        const numExamplesAInput = document.getElementById('num-examples-a');
+        const numExercisesAInput = document.getElementById('num-exercises-a');
+        const numExamplesBInput = document.getElementById('num-examples-b');
+        const numExercisesBInput = document.getElementById('num-exercises-b');
+        
+        const topicInputsContainer = document.getElementById('topic-inputs');
+        const memberInputsContainer = document.getElementById('member-inputs');
+        const resultDisplay = document.getElementById('result-display');
+        
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        
+        const defaultMemberCounts = { 1: 2, 2: 3, 3: 4, 4: 3, 5: 3, 6: 3, 7: 3, 8: 2, 9: 2, 10: 3, 11: 4 };
+
+        const showError = (message) => {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        };
+        const hideError = () => errorMessage.classList.add('hidden');
+
+        function resetApp() {
+            numGroupsInput.value = '';
+            numExamplesAInput.value = '0';
+            numExercisesAInput.value = '0';
+            numExamplesBInput.value = '0';
+            numExercisesBInput.value = '0';
+            
+            setupSection.classList.remove('hidden');
+            topicsSection.classList.add('hidden');
+            membersSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            hideError();
+            
+            topicInputsContainer.innerHTML = '';
+            memberInputsContainer.innerHTML = '';
+            resultDisplay.innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        setupTopicsBtn.addEventListener('click', () => {
+            hideError();
+            const numGroups = parseInt(numGroupsInput.value);
+            const numExamplesA = parseInt(numExamplesAInput.value) || 0;
+            const numExercisesA = parseInt(numExercisesAInput.value) || 0;
+            const numExamplesB = parseInt(numExamplesBInput.value) || 0;
+            const numExercisesB = parseInt(numExercisesBInput.value) || 0;
+            const totalTopics = numExamplesA + numExercisesA + numExamplesB + numExercisesB;
+
+            if (isNaN(numGroups) || numGroups <= 0) return showError('組別數量必須是大於 0 的正整數。');
+            if (totalTopics <= 0) return showError('總題目數量 (所有區塊的例題 + 習題) 必須大於 0。');
+
+            topicInputsContainer.innerHTML = '';
+            let topicCounter = 1;
+
+            const generateInputsFor = (count, type, blockLabel) => {
+                for (let i = 1; i <= count; i++) {
+                    const inputDiv = document.createElement('div');
+                    inputDiv.innerHTML = `
+                        <label for="topic-${topicCounter}" class="block mb-1.5 font-semibold text-sm text-gray-700">
+                            ${blockLabel} - ${type} ${i}
+                        </label>
+                        <input type="text" id="topic-${topicCounter}" class="w-full p-2.5 rounded-xl input-field text-base" placeholder="例如：7.4 例題 ${i}">
+                    `;
+                    topicInputsContainer.appendChild(inputDiv);
+                    topicCounter++;
+                }
+            };
+
+            if (numExamplesA > 0 || numExercisesA > 0) {
+                topicInputsContainer.innerHTML += `<div class="md:col-span-2 text-lg font-bold text-blue-700 border-b border-blue-200 pb-1 mt-2">第一區塊題目 (Block A)</div>`;
+                if (numExamplesA > 0) generateInputsFor(numExamplesA, '例題', '區塊A');
+                if (numExercisesA > 0) generateInputsFor(numExercisesA, '習題', '區塊A');
+            }
+
+            if (numExamplesB > 0 || numExercisesB > 0) {
+                topicInputsContainer.innerHTML += `<div class="md:col-span-2 text-lg font-bold text-green-700 border-b border-green-200 pb-1 mt-4">第二區塊題目 (Block B)</div>`;
+                if (numExamplesB > 0) generateInputsFor(numExamplesB, '例題', '區塊B');
+                if (numExercisesB > 0) generateInputsFor(numExercisesB, '習題', '區塊B');
+            }
+
+            setupSection.classList.add('hidden');
+            topicsSection.classList.remove('hidden');
+            window.scrollTo({ top: topicsSection.offsetTop - 80, behavior: 'smooth' });
+        });
+
+        setupMembersBtn.addEventListener('click', () => {
+            hideError();
+            const numExamplesA = parseInt(numExamplesAInput.value) || 0;
+            const numExercisesA = parseInt(numExercisesAInput.value) || 0;
+            const numExamplesB = parseInt(numExamplesBInput.value) || 0;
+            const numExercisesB = parseInt(numExercisesBInput.value) || 0;
+            const totalTopics = numExamplesA + numExercisesA + numExamplesB + numExercisesB;
+            
+            for (let i = 1; i <= totalTopics; i++) {
+                const el = document.getElementById(`topic-${i}`);
+                if (!el || !el.value.trim()) return showError('請確保所有題目名稱皆已填寫完整。');
+            }
+
+            const numGroups = parseInt(numGroupsInput.value);
+            memberInputsContainer.innerHTML = '';
+            for (let i = 1; i <= numGroups; i++) {
+                const memberInputDiv = document.createElement('div');
+                const defaultValue = defaultMemberCounts[i] || 2;
+                memberInputDiv.className = 'bg-gray-50 p-3 rounded-xl border border-gray-200';
+                memberInputDiv.innerHTML = `
+                    <label for="group-members-${i}" class="block mb-1 font-bold text-sm text-gray-700">第 ${i} 組人數</label>
+                    <input type="number" id="group-members-${i}" min="1" value="${defaultValue}" class="w-full p-2 rounded-lg input-field text-base font-bold bg-white text-center">
+                `;
+                memberInputsContainer.appendChild(memberInputDiv);
+            }
+
+            topicsSection.classList.add('hidden');
+            membersSection.classList.remove('hidden');
+            window.scrollTo({ top: membersSection.offsetTop - 80, behavior: 'smooth' });
+        });
+
+        generateBtn.addEventListener('click', () => {
+            hideError();
+            const numGroups = parseInt(numGroupsInput.value);
+            const numExamplesA = parseInt(numExamplesAInput.value) || 0;
+            const numExercisesA = parseInt(numExercisesAInput.value) || 0;
+            const numExamplesB = parseInt(numExamplesBInput.value) || 0;
+            const numExercisesB = parseInt(numExercisesBInput.value) || 0;
+
+            let topicCounter = 1;
+            const examplesA = [];
+            const exercisesA = [];
+            const examplesB = [];
+            const exercisesB = [];
+
+            for (let i = 0; i < numExamplesA; i++) { examplesA.push(document.getElementById(`topic-${topicCounter++}`).value.trim()); }
+            for (let i = 0; i < numExercisesA; i++) { exercisesA.push(document.getElementById(`topic-${topicCounter++}`).value.trim()); }
+            for (let i = 0; i < numExamplesB; i++) { examplesB.push(document.getElementById(`topic-${topicCounter++}`).value.trim()); }
+            for (let i = 0; i < numExercisesB; i++) { exercisesB.push(document.getElementById(`topic-${topicCounter++}`).value.trim()); }
+
+            const groupMembers = [];
+            for (let i = 1; i <= numGroups; i++) {
+                const count = parseInt(document.getElementById(`group-members-${i}`).value);
+                if (isNaN(count) || count < 1) return showError(`第 ${i} 組人數必須是大於 0 的正整數。`);
+                groupMembers.push({ name: `第 ${i} 組`, count });
+            }
+
+            if (examplesA.length === 0 && examplesB.length === 0) {
+                return showError('配對失敗：每組至少需分配 1 題例題，但未設定任何例題。');
+            }
+
+            const assignments = {};
+            const shuffledGroups = [...groupMembers].sort(() => 0.5 - Math.random());
+            shuffledGroups.forEach(g => assignments[g.name] = []);
+
+            const totalUniqueTopicsA = examplesA.length + exercisesA.length;
+            const totalUniqueTopicsB = examplesB.length + exercisesB.length;
+            const totalUniqueTopics = totalUniqueTopicsA + totalUniqueTopicsB;
+
+            let groupsForACount = 0;
+            if (totalUniqueTopics > 0) {
+                groupsForACount = Math.round(numGroups * (totalUniqueTopicsA / totalUniqueTopics));
+            }
+            if (examplesA.length === 0 && examplesB.length > 0) { groupsForACount = 0; }
+            if (examplesB.length === 0 && examplesA.length > 0) { groupsForACount = numGroups; }
+
+            const groupsForA = shuffledGroups.slice(0, groupsForACount);
+            const groupsForB = shuffledGroups.slice(groupsForACount);
+
+            let exampleACounter = 0;
+            let availableExercisesA = [...exercisesA].sort(() => 0.5 - Math.random());
+
+            groupsForA.forEach(group => {
+                const groupAssignments = [];
+                if (examplesA.length > 0) {
+                    groupAssignments.push({ type: '例題', title: examplesA[exampleACounter % examplesA.length] });
+                    exampleACounter++;
+                }
+                const neededExercises = group.count - 1;
+                for (let i = 0; i < neededExercises; i++) {
+                    if (exercisesA.length === 0) break;
+                    if (availableExercisesA.length === 0) availableExercisesA = [...exercisesA].sort(() => 0.5 - Math.random());
+                    groupAssignments.push({ type: '習題', title: availableExercisesA.pop() });
+                }
+                assignments[group.name] = groupAssignments;
+            });
+
+            let exampleBCounter = 0;
+            let availableExercisesB = [...exercisesB].sort(() => 0.5 - Math.random());
+
+            groupsForB.forEach(group => {
+                const groupAssignments = [];
+                if (examplesB.length > 0) {
+                    groupAssignments.push({ type: '例題', title: examplesB[exampleBCounter % examplesB.length] });
+                    exampleBCounter++;
+                }
+                const neededExercises = group.count - 1;
+                for (let i = 0; i < neededExercises; i++) {
+                    if (exercisesB.length === 0) break;
+                    if (availableExercisesB.length === 0) availableExercisesB = [...exercisesB].sort(() => 0.5 - Math.random());
+                    groupAssignments.push({ type: '習題', title: availableExercisesB.pop() });
+                }
+                assignments[group.name] = groupAssignments;
+            });
+
+            resultDisplay.innerHTML = '';
+            groupMembers.forEach(group => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm';
+
+                const groupTitle = document.createElement('div');
+                groupTitle.className = 'flex items-center justify-between mb-3 border-b border-slate-200 pb-2';
+                groupTitle.innerHTML = `
+                    <h4 class="text-xl font-black text-blue-700">${group.name}</h4>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">${group.count} 人</span>
+                `;
+                resultCard.appendChild(groupTitle);
+
+                const topicList = document.createElement('ul');
+                topicList.className = 'space-y-2';
+
+                const assignedTopics = assignments[group.name] || [];
+                if (assignedTopics.length > 0) {
+                    assignedTopics.forEach(item => {
+                        const li = document.createElement('li');
+                        const isEx = item.type === '例題';
+                        li.className = 'flex items-center gap-2 text-base font-medium';
+                        li.innerHTML = `
+                            <span class="${isEx ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} text-xs font-bold px-2 py-0.5 rounded">
+                                ${item.type}
+                            </span>
+                            <span class="text-gray-800">${item.title}</span>
+                        `;
+                        topicList.appendChild(li);
+                    });
+                } else {
+                    topicList.innerHTML = '<li class="text-sm text-gray-400">未分配到題目</li>';
+                }
+
+                resultCard.appendChild(topicList);
+                resultDisplay.appendChild(resultCard);
+            });
+
+            membersSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            window.scrollTo({ top: resultsSection.offsetTop - 80, behavior: 'smooth' });
+        });
+
+        exportPdfBtn.addEventListener('click', () => {
+            exportPdfBtn.textContent = '產生 PDF 中...';
+            exportPdfBtn.disabled = true;
+
+            const resultsContainer = document.getElementById('result-display');
+            const { jsPDF } = window.jspdf;
+
+            html2canvas(resultsContainer, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 10;
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const aspectRatio = canvasWidth / canvasHeight;
+
+                const pdfImageWidth = pageWidth - (margin * 2);
+                const pdfImageHeight = pdfImageWidth / aspectRatio;
+
+                let heightLeft = pdfImageHeight;
+                let position = 0;
+
+                doc.setFontSize(16);
+                doc.text("微積分組別題目隨機配對結果", margin, margin);
+                doc.addImage(imgData, 'PNG', margin, position + margin + 6, pdfImageWidth, pdfImageHeight);
+                heightLeft -= (pageHeight - margin * 2);
+
+                while (heightLeft > 0) {
+                    position -= (pageHeight - margin * 2);
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', margin, position + margin, pdfImageWidth, pdfImageHeight);
+                    heightLeft -= (pageHeight - margin * 2);
+                }
+
+                doc.save('微積分組別配對結果.pdf');
+                exportPdfBtn.textContent = '匯出結果 (PDF)';
+                exportPdfBtn.disabled = false;
+            }).catch(err => {
+                console.error("PDF 匯出失敗:", err);
+                showError("PDF 匯出失敗，請重試。");
+                exportPdfBtn.textContent = '匯出結果 (PDF)';
+                exportPdfBtn.disabled = false;
+            });
+        });
+
+        resetBtn.addEventListener('click', resetApp);
+        resetBtn2.addEventListener('click', resetApp);
+        resetBtn3.addEventListener('click', resetApp);

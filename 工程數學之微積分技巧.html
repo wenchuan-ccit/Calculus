@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程數學之微積分技巧 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        },
+        chtml: { matchFontHeight: true }
+    };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .technique-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .technique-btn.active {
+            background-color: #ec4899;
+            color: white;
+            font-weight: 700;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.3);
+            border-color: #db2777;
+        }
+        .technique-btn:not(.active):hover {
+            background-color: #fdf2f8;
+            border-color: #f472b6;
+        }
+        .formula-card {
+            background-color: #fffbeb;
+            padding: 1.25rem;
+            border-radius: 0.875rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid #fef3c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #1c1917;
+            font-size: 1.125rem;
+            transition: all 0.2s ease;
+        }
+        .formula-card:hover {
+            box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+            border-color: #fde68a;
+        }
+        .math-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+    </style>
+</head>
+<body class="bg-yellow-50 text-gray-800 selection:bg-pink-200 min-h-screen">
+
+
+    <!-- 頂部導航列 (GAS 串流導航) -->
+    <nav class="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex flex-col">
+                <h1 class="bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-2xl font-black text-transparent md:text-3xl">
+                    工程數學教學工具
+                </h1>
+                <span class="text-sm font-medium text-gray-500 md:text-base">
+                    授課老師: 吳文銓 (Prof. Wu Wen-Chuan)
+                </span>
+            </div>
+            <div>
+                <a href="index.html" target="_top" class="flex items-center gap-2 rounded-full bg-purple-50 px-5 py-2.5 text-base font-bold text-purple-700 transition-all hover:bg-purple-100 hover:shadow-md active:scale-95 border border-purple-200">
+                    🏠 回主選單
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto max-w-6xl p-4 sm:p-8 pb-24">
+        <header class="text-center my-8">
+            <div class="inline-block bg-rose-100 text-rose-800 px-4 py-1.5 rounded-full font-bold text-sm mb-3">
+                工程數學 (Engineering Mathematics)
+            </div>
+            <h2 class="text-3xl md:text-5xl font-black text-gray-900">
+                微積分常用技巧總整理
+            </h2>
+            <p class="mt-3 text-lg text-gray-600 font-medium max-w-3xl mx-auto">
+                微分與積分是工程數學的核心基石。本互動指南整理了必備公式與逐步詳解範例，點擊即可即時切換學習。
+            </p>
+        </header>
+
+        <!-- 切換微分 / 積分標籤頁 -->
+        <div class="flex justify-center space-x-3 mb-0">
+            <button id="diff-tab" class="px-8 py-3.5 font-bold text-xl rounded-t-2xl transition-all duration-200 shadow-sm">
+                微分 (Differentiation)
+            </button>
+            <button id="int-tab" class="px-8 py-3.5 font-bold text-xl rounded-t-2xl transition-all duration-200 shadow-sm">
+                積分 (Integration)
+            </button>
+        </div>
+
+        <main id="content-area" class="bg-white rounded-b-2xl md:rounded-tr-2xl shadow-lg p-6 sm:p-10 border border-rose-100">
+            <!-- 微分內容 -->
+            <section id="differentiation-content">
+                <div class="bg-rose-50 p-6 rounded-2xl border border-rose-200 mb-8">
+                    <h3 class="text-2xl font-bold text-rose-800 mb-2">第一部分：微分</h3>
+                    <p class="text-gray-700 text-base leading-relaxed">
+                        微分的核心是求出函數的「導函數」(Derivative)，代表特定點上的瞬間變化率或切線斜率。在工程與動態系統分析中為核心工具。
+                    </p>
+                </div>
+
+                <h4 class="text-xl font-bold text-gray-800 mb-4">基礎微分公式</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+                    <div class="formula-card font-bold math-display">$(c)' = 0$</div>
+                    <div class="formula-card font-bold math-display">$(x^n)' = n x^{n-1}$</div>
+                    <div class="formula-card font-bold math-display">$(e^x)' = e^x$</div>
+                    <div class="formula-card font-bold math-display">$(a^x)' = a^x \ln a$</div>
+                    <div class="formula-card font-bold math-display">$(\ln |x|)' = \frac{1}{x}$</div>
+                    <div class="formula-card font-bold math-display">$(\log_a |x|)' = \frac{1}{x \ln a}$</div>
+                    <div class="formula-card font-bold math-display">$(\sin x)' = \cos x$</div>
+                    <div class="formula-card font-bold math-display">$(\cos x)' = -\sin x$</div>
+                    <div class="formula-card font-bold math-display">$(\tan x)' = \sec^2 x$</div>
+                    <div class="formula-card font-bold math-display">$(\cot x)' = -\csc^2 x$</div>
+                    <div class="formula-card font-bold math-display">$(\sec x)' = \sec x \tan x$</div>
+                    <div class="formula-card font-bold math-display">$(\csc x)' = -\csc x \cot x$</div>
+                    <div class="formula-card font-bold math-display">$(\arcsin x)' = \frac{1}{\sqrt{1-x^2}}$</div>
+                    <div class="formula-card font-bold math-display">$(\arccos x)' = -\frac{1}{\sqrt{1-x^2}}$</div>
+                    <div class="formula-card font-bold math-display">$(\arctan x)' = \frac{1}{1+x^2}$</div>
+                </div>
+
+                <h4 class="text-xl font-bold text-gray-800 mb-4">重要微分技巧探索</h4>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div id="diff-technique-buttons" class="md:w-1/3 flex flex-col space-y-2"></div>
+                    <div id="diff-technique-display" class="md:w-2/3 bg-slate-50 p-6 rounded-2xl border border-slate-200"></div>
+                </div>
+            </section>
+
+            <!-- 積分內容 -->
+            <section id="integration-content" class="hidden">
+                <div class="bg-cyan-50 p-6 rounded-2xl border border-cyan-200 mb-8">
+                    <h3 class="text-2xl font-bold text-cyan-800 mb-2">第二部分：積分</h3>
+                    <p class="text-gray-700 text-base leading-relaxed">
+                        積分是微分的逆運算（反導函數），也是計算曲線下面積、總累積量、平均值與能量的核心方法。
+                    </p>
+                </div>
+
+                <h4 class="text-xl font-bold text-gray-800 mb-4">基礎積分公式</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+                    <div class="formula-card font-bold math-display">$\int k \, dx = kx + C$</div>
+                    <div class="formula-card font-bold math-display">$\int x^n \, dx = \frac{x^{n+1}}{n+1} + C \ (n \neq -1)$</div>
+                    <div class="formula-card font-bold math-display">$\int \frac{1}{x} \, dx = \ln |x| + C$</div>
+                    <div class="formula-card font-bold math-display">$\int e^x \, dx = e^x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int a^x \, dx = \frac{a^x}{\ln a} + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \cos x \, dx = \sin x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \sin x \, dx = -\cos x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \sec^2 x \, dx = \tan x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \csc^2 x \, dx = -\cot x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \sec x \tan x \, dx = \sec x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \csc x \cot x \, dx = -\csc x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \frac{1}{1+x^2} \, dx = \arctan x + C$</div>
+                    <div class="formula-card font-bold math-display">$\int \frac{1}{\sqrt{1-x^2}} \, dx = \arcsin x + C$</div>
+                </div>
+
+                <h4 class="text-xl font-bold text-gray-800 mb-4">重要積分技巧探索</h4>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div id="int-technique-buttons" class="md:w-1/3 flex flex-col space-y-2"></div>
+                    <div id="int-technique-display" class="md:w-2/3 bg-slate-50 p-6 rounded-2xl border border-slate-200"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="bg-white py-8 text-center text-gray-400 border-t border-gray-100">
+        <p>© 2026 Engineering Mathematics & Calculus. Prof. Wu Wen-Chuan.</p>
+    </footer>
+
+    <script>
+        const CalculusApp = {
+            data: {
+                differentiation: {
+                    productRule: {
+                        name: '乘法規則 (Product Rule)',
+                        description: '用於計算兩個函數相乘後的微分。',
+                        formula: '$$\\frac{d}{dx} [f(x)g(x)] = f\'(x)g(x) + f(x)g\'(x)$$',
+                        examples: [
+                            {
+                                question: '求 $y = x^2 \\sin x$ 的導函數。',
+                                steps: [
+                                    '$\\text{令 } f(x) = x^2, g(x) = \\sin x$',
+                                    '$\\text{則 } f\'(x) = 2x, g\'(x) = \\cos x$',
+                                    '$\\text{代入公式: } y\' = (2x)(\\sin x) + (x^2)(\\cos x)$',
+                                    '<strong>答案: $y\' = 2x \\sin x + x^2 \\cos x$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求 $y = e^x \\cos x$ 的導函數。',
+                                steps: [
+                                    '$\\text{令 } f(x) = e^x, g(x) = \\cos x$',
+                                    '$\\text{則 } f\'(x) = e^x, g\'(x) = -\\sin x$',
+                                    '$\\text{代入公式: } y\' = (e^x)(\\cos x) + (e^x)(-\\sin x)$',
+                                    '<strong>答案: $y\' = e^x(\\cos x - \\sin x)$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求 $y = (x^3 + 2x) \\ln x$ 的導函數。',
+                                steps: [
+                                    '$\\text{令 } f(x) = x^3 + 2x, g(x) = \\ln x$',
+                                    '$\\text{則 } f\'(x) = 3x^2 + 2, g\'(x) = 1/x$',
+                                    '$\\text{代入公式: } y\' = (3x^2 + 2)(\\ln x) + (x^3 + 2x)(\\frac{1}{x})$',
+                                    '$\\text{化簡: } y\' = (3x^2 + 2)\\ln x + x^2 + 2$',
+                                    '<strong>答案: $y\' = (3x^2 + 2)\\ln x + x^2 + 2$</strong>'
+                                ]
+                            }
+                        ]
+                    },
+                    quotientRule: {
+                        name: '除法規則 (Quotient Rule)',
+                        description: '用於計算兩個函數相除後的微分。',
+                        formula: '$$\\frac{d}{dx} \\left[ \\frac{f(x)}{g(x)} \\right] = \\frac{f\'(x)g(x) - f(x)g\'(x)}{[g(x)]^2}$$',
+                        examples: [
+                            {
+                                question: '求 $y = \\frac{e^x}{x^3}$ 的導函數。',
+                                steps: [
+                                    '$\\text{令 } f(x) = e^x, g(x) = x^3$',
+                                    '$\\text{則 } f\'(x) = e^x, g\'(x) = 3x^2$',
+                                    '$\\text{代入公式: } y\' = \\frac{(e^x)(x^3) - (e^x)(3x^2)}{(x^3)^2}$',
+                                    '<strong>答案: $y\' = \\frac{e^x(x - 3)}{x^4}$</strong>'
+                                ]
+                            },
+                             {
+                                question: '求 $y = \\frac{\\sin x}{x}$ 的導函數。',
+                                steps: [
+                                    '$\\text{令 } f(x) = \\sin x, g(x) = x$',
+                                    '$\\text{則 } f\'(x) = \\cos x, g\'(x) = 1$',
+                                    '$\\text{代入公式: } y\' = \\frac{(\\cos x)(x) - (\\sin x)(1)}{x^2}$',
+                                    '<strong>答案: $y\' = \\frac{x \\cos x - \\sin x}{x^2}$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求 $y = \\frac{x^2 - 1}{x^2 + 1}$ 的導函數。',
+                                steps: [
+                                    '$\\text{令 } f(x) = x^2 - 1, g(x) = x^2 + 1$',
+                                    '$\\text{則 } f\'(x) = 2x, g\'(x) = 2x$',
+                                    '$\\text{代入公式: } y\' = \\frac{(2x)(x^2 + 1) - (x^2 - 1)(2x)}{(x^2 + 1)^2}$',
+                                    '$\\text{分子展開: } 2x^3 + 2x - (2x^3 - 2x) = 4x$',
+                                    '<strong>答案: $y\' = \\frac{4x}{(x^2 + 1)^2}$</strong>'
+                                ]
+                            }
+                        ]
+                    },
+                    chainRule: {
+                        name: '連鎖律 (Chain Rule)',
+                        description: '用於計算複合函數的微分。外層函數微分乘以內層函數微分。',
+                        formula: '$$\\frac{d}{dx} [f(g(x))] = f\'(g(x)) \\cdot g\'(x)$$',
+                        examples: [
+                            {
+                                question: '求 $y = \\sin(x^3)$ 的導函數。',
+                                steps: [
+                                    '$\\text{外層函數: } f(u) = \\sin u, \\text{ 內層函數: } u = g(x) = x^3$',
+                                    '$\\text{外層微分: } f\'(u) = \\cos u = \\cos(x^3)$',
+                                    '$\\text{內層微分: } g\'(x) = 3x^2$',
+                                    '<strong>答案: $y\' = \\cos(x^3) \\cdot 3x^2 = 3x^2 \\cos(x^3)$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求 $y = (2x + 1)^5$ 的導函數。',
+                                steps: [
+                                    '$\\text{外層函數: } f(u) = u^5, \\text{ 內層: } u = 2x + 1$',
+                                    '$\\text{外層微分: } 5u^4 = 5(2x + 1)^4$',
+                                    '$\\text{內層微分: } 2$',
+                                    '<strong>答案: $y\' = 5(2x + 1)^4 \\cdot 2 = 10(2x + 1)^4$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求 $y = e^{\\tan x}$ 的導函數。',
+                                steps: [
+                                    '$\\text{外層函數: } f(u) = e^u, \\text{ 內層: } u = \\tan x$',
+                                    '$\\text{外層微分: } e^u = e^{\\tan x}$',
+                                    '$\\text{內層微分: } \\sec^2 x$',
+                                    '<strong>答案: $y\' = e^{\\tan x} \\sec^2 x$</strong>'
+                                ]
+                            }
+                        ]
+                    },
+                     powerRule: {
+                        name: '一般冪次規則 (Generalized Power Rule)',
+                        description: '連鎖律的一種特例，用於一個函數的任意實數次方的微分。',
+                        formula: '$$\\frac{d}{dx} [u(x)]^n = n[u(x)]^{n-1} \\cdot u\'(x)$$',
+                        examples: [
+                            {
+                                question: '求 $y = (x^3 - 1)^{100}$ 的導函數。',
+                                steps: [
+                                    '$\\text{令 } u = x^3 - 1, n = 100$',
+                                    '$\\text{公式: } y\' = 100(x^3 - 1)^{99} \\cdot \\frac{d}{dx}(x^3 - 1)$',
+                                    '<strong>答案: $y\' = 100(x^3 - 1)^{99} \\cdot (3x^2) = 300x^2(x^3 - 1)^{99}$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求 $y = \\sqrt{x^2 + 1}$ 的導函數。',
+                                steps: [
+                                    '$\\text{改寫為指數形式: } y = (x^2 + 1)^{1/2}$',
+                                    '$\\text{公式: } y\' = \\frac{1}{2}(x^2 + 1)^{-1/2} \\cdot \\frac{d}{dx}(x^2 + 1)$',
+                                    '<strong>答案: $y\' = \\frac{1}{2}(x^2 + 1)^{-1/2} \\cdot (2x) = \\frac{x}{\\sqrt{x^2 + 1}}$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求 $y = \\frac{1}{(x^4 + 3)^2}$ 的導函數。',
+                                steps: [
+                                    '$\\text{改寫為負指數形式: } y = (x^4 + 3)^{-2}$',
+                                    '$\\text{公式: } y\' = -2(x^4 + 3)^{-3} \\cdot \\frac{d}{dx}(x^4 + 3)$',
+                                    '<strong>答案: $y\' = -2(x^4 + 3)^{-3} \\cdot (4x^3) = \\frac{-8x^3}{(x^4 + 3)^3}$</strong>'
+                                ]
+                            }
+                        ]
+                    }
+                },
+                integration: {
+                    substitution: {
+                        name: '代換積分法 (U-Substitution)',
+                        description: '微積分連鎖律的逆運算。透過變數變換，將複雜的積分轉換為基本公式的形式。',
+                        formula: '$$\\int f(g(x))g\'(x) \\, dx = \\int f(u) \\, du, \\quad \\text{其中 } u = g(x)$$',
+                        examples: [
+                            {
+                                question: '求不定積分 $\\int 2x \\cos(x^2) \\, dx$。',
+                                steps: [
+                                    '$\\text{令 } u = x^2$',
+                                    '$\\text{則 } du = 2x \\, dx$',
+                                    '$\\text{原式代換為: } \\int \\cos(u) \\, du$',
+                                    '$\\text{積分得: } \\sin(u) + C$',
+                                    '<strong>答案: $\\sin(x^2) + C$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求不定積分 $\\int x^2 e^{x^3} \\, dx$。',
+                                steps: [
+                                    '$\\text{令 } u = x^3$',
+                                    '$\\text{則 } du = 3x^2 \\, dx \\implies x^2 \\, dx = \\frac{1}{3} \\, du$',
+                                    '$\\text{原式代換為: } \\int e^u \\left( \\frac{1}{3} \\, du \\right) = \\frac{1}{3} \\int e^u \\, du$',
+                                    '<strong>答案: $\\frac{1}{3} e^{x^3} + C$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求不定積分 $\\int \\frac{\\ln x}{x} \\, dx$。',
+                                steps: [
+                                    '$\\text{令 } u = \\ln x$',
+                                    '$\\text{則 } du = \\frac{1}{x} \\, dx$',
+                                    '$\\text{原式代換為: } \\int u \\, du$',
+                                    '<strong>答案: $\\frac{1}{2} u^2 + C = \\frac{1}{2}(\\ln x)^2 + C$</strong>'
+                                ]
+                            }
+                        ]
+                    },
+                    byParts: {
+                        name: '分部積分法 (Integration by Parts)',
+                        description: '微分乘法規則的逆運算。適用於被積函數為兩個不同類型函數乘積的情況（如多項式乘以指數、對數或三角函數）。選擇 u 的口訣：LIATE (對數、反三角、代數/多項式、三角、指數)。',
+                        formula: '$$\\int u \\, dv = uv - \\int v \\, du$$',
+                        examples: [
+                            {
+                                question: '求不定積分 $\\int x \\cos x \\, dx$。',
+                                steps: [
+                                    '$\\text{選擇: } u = x \\implies du = dx$',
+                                    '$\\text{選擇: } dv = \\cos x \\, dx \\implies v = \\sin x$',
+                                    '$\\text{套用公式: } \\int x \\cos x \\, dx = (x)(\\sin x) - \\int (\\sin x) \\, dx$',
+                                    '<strong>答案: $x \\sin x - (-\\cos x) + C = x \\sin x + \\cos x + C$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求不定積分 $\\int \\ln x \\, dx$。',
+                                steps: [
+                                    '$\\text{選擇: } u = \\ln x \\implies du = \\frac{1}{x} \\, dx$',
+                                    '$\\text{選擇: } dv = dx \\implies v = x$',
+                                    '$\\text{套用公式: } \\int \\ln x \\, dx = (\\ln x)(x) - \\int (x) \\left(\\frac{1}{x} \\, dx\\right)$',
+                                    '<strong>答案: $x \\ln x - x + C$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求不定積分 $\\int x e^{2x} \\, dx$。',
+                                steps: [
+                                    '$\\text{選擇: } u = x \\implies du = dx$',
+                                    '$\\text{選擇: } dv = e^{2x} \\, dx \\implies v = \\frac{1}{2} e^{2x}$',
+                                    '$\\text{套用公式: } \\int x e^{2x} \\, dx = \\frac{1}{2} x e^{2x} - \\int \\frac{1}{2} e^{2x} \\, dx$',
+                                    '<strong>答案: $\\frac{1}{2} x e^{2x} - \\frac{1}{4} e^{2x} + C$</strong>'
+                                ]
+                            }
+                        ]
+                    },
+                    partialFractions: {
+                        name: '部分分式法 (Partial Fractions)',
+                        description: '用於有理函數（多項式相除）的積分。當分母可以因式分解時，將複雜的分式拆解為數個簡單分式的和。',
+                        formula: '$$\\frac{P(x)}{Q(x)} = \\frac{A}{x - a} + \\frac{B}{x - b} + \\dots$$',
+                        examples: [
+                            {
+                                question: '求不定積分 $\\int \\frac{1}{x^2 - 1} \\, dx$。',
+                                steps: [
+                                    '$\\text{分母因式分解: } x^2 - 1 = (x - 1)(x + 1)$',
+                                    '$\\text{設部分分式: } \\frac{1}{(x-1)(x+1)} = \\frac{A}{x-1} + \\frac{B}{x+1}$',
+                                    '$\\text{通分求係數: } 1 = A(x+1) + B(x-1) \\implies A = 1/2, B = -1/2$',
+                                    '$\\text{原式改寫為: } \\int \\left( \\frac{1/2}{x-1} - \\frac{1/2}{x+1} \\right) dx$',
+                                    '<strong>答案: $\\frac{1}{2} \\ln|x-1| - \\frac{1}{2} \\ln|x+1| + C = \\frac{1}{2} \\ln\\left|\\frac{x-1}{x+1}\\right| + C$</strong>'
+                                ]
+                            },
+                            {
+                                question: '求不定積分 $\\int \\frac{x - 9}{(x + 5)(x - 2)} \\, dx$。',
+                                steps: [
+                                    '$\\text{設部分分式: } \\frac{x-9}{(x+5)(x-2)} = \\frac{A}{x+5} + \\frac{B}{x-2}$',
+                                    '$\\text{求係數: } x - 9 = A(x-2) + B(x+5) \\implies A = 2, B = -1$',
+                                    '$\\text{原式代換為: } \\int \\left( \\frac{2}{x+5} - \\frac{1}{x-2} \\right) dx$',
+                                    '<strong>答案: $2\\ln|x+5| - \\ln|x-2| + C$</strong>'
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            
+            elements: {
+                diffTab: document.getElementById('diff-tab'),
+                intTab: document.getElementById('int-tab'),
+                diffContent: document.getElementById('differentiation-content'),
+                intContent: document.getElementById('integration-content'),
+                diffButtonsContainer: document.getElementById('diff-technique-buttons'),
+                diffDisplay: document.getElementById('diff-technique-display'),
+                intButtonsContainer: document.getElementById('int-technique-buttons'),
+                intDisplay: document.getElementById('int-technique-display')
+            },
+
+            state: {
+                currentView: 'differentiation'
+            },
+
+            init() {
+                this.elements.diffTab.addEventListener('click', () => this.switchView('differentiation'));
+                this.elements.intTab.addEventListener('click', () => this.switchView('integration'));
+                
+                this.elements.diffButtonsContainer.addEventListener('click', (e) => {
+                    const button = e.target.closest('.technique-btn');
+                    if (button) {
+                        const key = button.dataset.key;
+                        this.showTechnique('differentiation', key, this.elements.diffDisplay);
+                        this.updateActiveButton(button);
+                    }
+                });
+
+                this.elements.intButtonsContainer.addEventListener('click', (e) => {
+                    const button = e.target.closest('.technique-btn');
+                    if (button) {
+                        const key = button.dataset.key;
+                        this.showTechnique('integration', key, this.elements.intDisplay);
+                        this.updateActiveButton(button);
+                    }
+                });
+
+                this.render();
+            },
+
+            switchView(view) {
+                if (this.state.currentView !== view) {
+                    this.state.currentView = view;
+                    this.render();
+                }
+            },
+
+            showTechnique(type, key, displayElement) {
+                const technique = this.data[type][key];
+                if (!technique) return;
+                
+                const borderColor = type === 'differentiation' ? 'border-rose-200' : 'border-cyan-200';
+
+                const examplesHtml = technique.examples.map((ex, index) => {
+                    const stepsHtml = ex.steps.map((step, sIdx) => {
+                        const isLast = sIdx === ex.steps.length - 1;
+                        if (isLast) return '';
+                        return `<div class="p-3 my-1.5 rounded-xl bg-white border border-gray-100 text-gray-700 math-display">${step}</div>`;
+                    }).join('');
+                    
+                    const answerStep = ex.steps[ex.steps.length - 1];
+                    const answerHtml = `<div class="bg-amber-50/70 rounded-xl p-3.5 mt-3 border border-amber-300 text-amber-900 font-bold math-display">${answerStep}</div>`;
+                    const borderClass = index > 0 ? `mt-6 pt-6 border-t ${borderColor}` : '';
+                    
+                    return `
+                        <div class="${borderClass}">
+                             <div class="mb-3">
+                                <span class="font-bold text-lg text-gray-900 mr-2">例題 ${index + 1}：</span>
+                                <span class="text-gray-800 text-base math-display">${ex.question}</span>
+                            </div>
+                            <div class="space-y-1">${stepsHtml}</div>
+                            ${answerHtml}
+                        </div>
+                    `;
+                }).join('');
+
+                const mainHeaderColor = type === 'differentiation' ? 'text-rose-700' : 'text-cyan-800';
+                displayElement.innerHTML = `
+                    <h4 class="text-2xl font-black ${mainHeaderColor} mb-2">${technique.name}</h4>
+                    <p class="text-gray-600 mb-4 text-base leading-relaxed">${technique.description}</p>
+                    <div class="bg-white p-4 rounded-xl mb-6 text-center text-gray-800 border border-gray-200 shadow-sm text-lg math-display">${technique.formula}</div>
+                    <div class="space-y-6">${examplesHtml}</div>
+                `;
+                
+                if (window.MathJax) {
+                    window.MathJax.typesetPromise([displayElement]);
+                }
+            },
+            
+            updateActiveButton(activeButton) {
+                const container = activeButton.parentElement;
+                container.querySelectorAll('.technique-btn').forEach(btn => btn.classList.remove('active'));
+                activeButton.classList.add('active');
+            },
+
+            render() {
+                const isDiff = this.state.currentView === 'differentiation';
+
+                this.elements.diffContent.classList.toggle('hidden', !isDiff);
+                this.elements.intContent.classList.toggle('hidden', isDiff);
+                
+                if(isDiff){
+                    this.elements.diffTab.className = "px-8 py-3.5 font-bold text-xl rounded-t-2xl transition-all duration-200 bg-white text-rose-700 border-t-2 border-l-2 border-r-2 border-rose-200 shadow-md";
+                    this.elements.intTab.className = "px-8 py-3.5 font-bold text-xl rounded-t-2xl transition-all duration-200 bg-cyan-100/70 text-cyan-700 hover:bg-cyan-100";
+                } else {
+                    this.elements.diffTab.className = "px-8 py-3.5 font-bold text-xl rounded-t-2xl transition-all duration-200 bg-rose-100/70 text-rose-700 hover:bg-rose-100";
+                    this.elements.intTab.className = "px-8 py-3.5 font-bold text-xl rounded-t-2xl transition-all duration-200 bg-white text-cyan-800 border-t-2 border-l-2 border-r-2 border-cyan-200 shadow-md";
+                }
+
+                this.renderTechniqueButtons();
+            },
+
+            renderTechniqueButtons() {
+                const view = this.state.currentView;
+                const container = view === 'differentiation' ? this.elements.diffButtonsContainer : this.elements.intButtonsContainer;
+                const currentData = this.data[view];
+                
+                container.innerHTML = '';
+                
+                Object.keys(currentData).forEach(key => {
+                    const technique = currentData[key];
+                    const button = document.createElement('button');
+                    button.textContent = technique.name;
+                    button.className = `technique-btn w-full text-left p-3.5 rounded-xl border border-gray-200 bg-white text-base font-medium shadow-sm`;
+                    button.dataset.key = key;
+                    container.appendChild(button);
+                });
+
+                if (container.firstChild) {
+                    container.firstChild.click();
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+             CalculusApp.init();
+        });
+    </script>
+</body>
+</html>

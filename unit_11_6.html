@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 11.6 比值與根式審斂法 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle L = \\lim_{n \\to \\infty} \\left| \\frac{a_{n+1}}{a_n} \\right|"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>(1) 若 <Latex>{'L < 1'}</Latex>，級數絕對收斂 (收斂)； (2) 若 <Latex>{'L > 1'}</Latex> 或 <Latex>{'L = \\infty'}</Latex>，級數發散； (3) 若 <Latex>{'L = 1'}</Latex>，審斂法無效。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <Latex block>{"\\displaystyle L = \\lim_{n \\to \\infty} \\sqrt[n]{|a_n|}"}</Latex>
+                                <span className="mt-2 block text-gray-600">判定準則與比值審斂法相同：<Latex>{'L < 1'}</Latex> 絕對收斂、<Latex>{'L > 1'}</Latex> 發散、<Latex>{'L = 1'}</Latex> 無效。</span>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                                <Latex block>{"\\displaystyle \\sum |a_n| \\text{ 收斂} \\implies \\sum a_n \\text{ 收斂}"}</Latex>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "11.6",
+                unitTitle: "比值與根式審斂法",
+                unitSub: "The Ratio and Root Tests",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "比值與根式審斂法及絕對收斂",
+                part1Desc: (
+                    <span>
+                        比值審斂法與根式審斂法是針對含有「階乘 <Latex>{'n!'}</Latex>」或「<Latex>{'n'}</Latex> 次方冪次」級數的最有力工具。透過檢驗相鄰項之比值增長率或 <Latex>{'n'}</Latex> 次根極限，直接判定級數是否絕對收斂。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：與幾何級數的速率競賽",
+                analogyDesc: (
+                    <span>
+                        比值審斂法的本質是拿給定的級數在無窮遠處與「幾何級數」做比較。若後一項與前一項的比值極限 <Latex>{'L < 1'}</Latex>，代表項次衰減的速度比公比為 <Latex>{'L'}</Latex> 的幾何級數還要快，因此必定收斂；反之若 <Latex>{'L > 1'}</Latex>，項次不僅沒歸零反而膨脹，必發散。
+                    </span>
+                ),
+                part1Step1: "核心法則：比值審斂法 (The Ratio Test)",
+                part1Step1Desc: "對於級數，檢驗相鄰項絕對值之比值極限 L：",
+                part1Step2: "根式審斂法與絕對收斂 (Root Test & Absolute Convergence)",
+                part1Step2Desc: "適用於整體項次帶有 n 次方的特殊型態：",
+                theorem1Title: "根式審斂法 (The Root Test)",
+                theorem1Desc: "當通項易於開 n 次方時，檢驗極限 L：",
+                theorem2Title: "絕對收斂保證收斂 (Absolute Convergence Theorem)",
+                theorem2Desc: "若級數之絕對值所構成之級數收斂，則原級數必收斂。",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "11.6",
+                unitTitle: "The Ratio and Root Tests",
+                unitSub: "Ratio & Root Tests and Absolute Convergence",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Ratio and Root Tests, Absolute Convergence",
+                part1Desc: (
+                    <span>
+                        The Ratio and Root Tests are powerful tests especially designed for series containing factorials <Latex>{'n!'}</Latex> or <Latex>{'n'}</Latex>th powers. They test the asymptotic growth rate to determine absolute convergence.
+                    </span>
+                ),
+                analogyTitle: "Analogy: A Race against Geometric Series",
+                analogyDesc: (
+                    <span>
+                        Both tests compare the tail of the series to a geometric series. If the growth ratio limit satisfies <Latex>{'L < 1'}</Latex>, terms decay exponentially fast, ensuring convergence. If <Latex>{'L > 1'}</Latex>, terms explode and diverge.
+                    </span>
+                ),
+                part1Step1: "The Ratio Test",
+                part1Step1Desc: "Examine the ratio of successive terms as n approaches infinity:",
+                part1Step2: "Root Test and Absolute Convergence",
+                part1Step2Desc: "Ideal for general terms raised to the nth power:",
+                theorem1Title: "The Root Test",
+                theorem1Desc: "Take the nth root of the absolute value of the term:",
+                theorem2Title: "Absolute Convergence Implies Convergence",
+                theorem2Desc: "If the series of absolute values converges, the original series converges.",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "絕對收斂性判定 (Absolute Convergence)", source: "p.775 Example 1",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} (-1)^n \\frac{n^3}{3^n}",
+                    steps: [
+                        { t: "Step 1: 寫出相鄰項比值 (Ratio Setup)", d: (<span>計算相鄰兩項絕對值之比 <Latex>{'|a_{n+1} / a_n|'}</Latex> 並消除負號。</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = \\left| \\frac{(-1)^{n+1}(n+1)^3 / 3^{n+1}}{(-1)^n n^3 / 3^n} \\right| = \\frac{(n+1)^3}{3^{n+1}} \\cdot \\frac{3^n}{n^3}" },
+                        { t: "Step 2: 整理係數與多項式 (Simplify Terms)", d: (<span>將指數項與有理式項分開化簡。</span>), m: "\\displaystyle \\frac{(n+1)^3}{3^{n+1}} \\cdot \\frac{3^n}{n^3} = \\frac{1}{3} \\left( \\frac{n+1}{n} \\right)^3 = \\frac{1}{3} \\left(1 + \\frac{1}{n}\\right)^3" },
+                        { t: "Step 3: 取極限求 L (Evaluate Limit)", d: (<span>當 <Latex>{'n \\to \\infty'}</Latex> 時，<Latex>{'1/n \\to 0'}</Latex>。</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{1}{3}\\left(1 + \\frac{1}{n}\\right)^3 = \\frac{1}{3}(1)^3 = \\frac{1}{3}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>因 <Latex>{'L = 1/3 < 1'}</Latex>，由比值審斂法可知級數絕對收斂，因此亦收斂。</span>), m: "\\displaystyle L = \\frac{1}{3} < 1 \\implies \\sum_{n=1}^{\\infty} (-1)^n \\frac{n^3}{3^n} \\text{ 絕對收斂 (Absolutely Convergent)}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "階乘與指數級數 (Convergence with Factorials)", source: "p.776 Example 2",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{n^n}{n!}",
+                    steps: [
+                        { t: "Step 1: 比值展開 (Ratio Setup)", d: (<span>將第 <Latex>{'n+1'}</Latex> 項與第 <Latex>{'n'}</Latex> 項相除。</span>), m: "\\displaystyle \\frac{a_{n+1}}{a_n} = \\frac{(n+1)^{n+1}}{(n+1)!} \\cdot \\frac{n!}{n^n}" },
+                        { t: "Step 2: 階乘與冪次約分 (Factorial Cancellation)", d: (<span>利用 <Latex>{'(n+1)! = (n+1)n!'}</Latex> 以及 <Latex>{'(n+1)^{n+1} = (n+1)(n+1)^n'}</Latex> 約分。</span>), m: "\\displaystyle \\frac{a_{n+1}}{a_n} = \\frac{(n+1)(n+1)^n}{(n+1)n!} \\cdot \\frac{n!}{n^n} = \\left(\\frac{n+1}{n}\\right)^n = \\left(1 + \\frac{1}{n}\\right)^n" },
+                        { t: "Step 3: 取自然對數底極限 (Evaluate Limit)", d: (<span>此極限為歐拉常數 <Latex>{'e'}</Latex> 之標準定義。</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n = e \\approx 2.718" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>因極限 <Latex>{'L = e > 1'}</Latex>，由比值審斂法可知此級數發散。</span>), m: "\\displaystyle L = e > 1 \\implies \\sum_{n=1}^{\\infty} \\frac{n^n}{n!} \\text{ 發散 (Divergent)}" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "比值審斂法失效情況 (Inconclusive Ratio Test)", source: "p.776 Example 3",
+                    math: "\\displaystyle \\sum \\frac{1}{n} \\quad \\text{與} \\quad \\sum \\frac{1}{n^2}",
+                    steps: [
+                        { t: "Step 1: 檢驗調和級數 (Harmonic Series)", d: (<span>對調和級數套用比值審斂法。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\left|\\frac{a_{n+1}}{a_n}\\right| = \\lim_{n \\to \\infty} \\frac{1/(n+1)}{1/n} = \\lim_{n \\to \\infty} \\frac{n}{n+1} = 1" },
+                        { t: "Step 2: 檢驗 p-級數 (p-Series with p=2)", d: (<span>對 <Latex>{'p = 2'}</Latex> 之級數套用比值審斂法。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\left|\\frac{a_{n+1}}{a_n}\\right| = \\lim_{n \\to \\infty} \\frac{1/(n+1)^2}{1/n^2} = \\lim_{n \\to \\infty} \\left(\\frac{n}{n+1}\\right)^2 = 1^2 = 1" },
+                        { t: "Step 3: 比較分析 (Comparison Analysis)", d: (<span>兩者比值極限皆為 1，但已知調和級數發散，而 <Latex>{'p=2'}</Latex> 級數收斂。</span>), m: "\\displaystyle L = 1 \\implies \\text{審斂法無法判定 (Inconclusive)}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>當 <Latex>{'L = 1'}</Latex> 時比值審斂法失效，必須改用積分審斂法或 p-級數審斂法。</span>), m: "\\displaystyle \\text{當 } L=1 \\text{ 時，必須尋求其他審斂法}" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "根式審斂法應用 (The Root Test)", source: "p.777 Example 4",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left( \\frac{2n+3}{3n+2} \\right)^n",
+                    steps: [
+                        { t: "Step 1: 取 n 次方根 (Take nth Root)", d: (<span>通項為整體 n 次方，直接開 n 次方消除指數。</span>), m: "\\displaystyle \\sqrt[n]{|a_n|} = \\sqrt[n]{\\left(\\frac{2n+3}{3n+2}\\right)^n} = \\frac{2n+3}{3n+2}" },
+                        { t: "Step 2: 上下同除以最高次項 n (Divide by n)", d: (<span>分子分母同除以 <Latex>{'n'}</Latex> 化簡求極限。</span>), m: "\\displaystyle \\frac{2n+3}{3n+2} = \\frac{2 + 3/n}{3 + 2/n}" },
+                        { t: "Step 3: 計算極限 (Evaluate Limit)", d: (<span>當 <Latex>{'n \\to \\infty'}</Latex>，含 <Latex>{'1/n'}</Latex> 之項趨近 0。</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\sqrt[n]{|a_n|} = \\lim_{n \\to \\infty} \\frac{2 + 3/n}{3 + 2/n} = \\frac{2}{3}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>因極限 <Latex>{'L = 2/3 < 1'}</Latex>，由根式審斂法知該級數收斂。</span>), m: "\\displaystyle L = \\frac{2}{3} < 1 \\implies \\sum_{n=1}^{\\infty} \\left( \\frac{2n+3}{3n+2} \\right)^n \\text{ 收斂 (Convergent)}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "根式審斂法失效改發散檢定 (Root Test Inconclusive)", source: "p.777 Example 5",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left(\\frac{n}{n+1}\\right)^n",
+                    steps: [
+                        { t: "Step 1: 嘗試根式審斂法 (Try Root Test)", d: (<span>開 n 次根計算極限。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\sqrt[n]{|a_n|} = \\lim_{n \\to \\infty} \\frac{n}{n+1} = 1 \\implies \\text{根式審斂法無效}" },
+                        { t: "Step 2: 改用發散檢驗法 (Switch to Divergence Test)", d: (<span>直接檢驗級數通項 <Latex>{'a_n'}</Latex> 在無窮遠處的極限值。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = \\lim_{n \\to \\infty} \\left(\\frac{n}{n+1}\\right)^n = \\lim_{n \\to \\infty} \\left( \\frac{1}{1 + 1/n} \\right)^n" },
+                        { t: "Step 3: 計算通項極限 (Evaluate Limit)", d: (<span>分母極限為自然常數 <Latex>{'e'}</Latex>。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = \\frac{1}{\\lim_{n \\to \\infty} (1 + 1/n)^n} = \\frac{1}{e}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>因通項極限 <Latex>{'1/e \\neq 0'}</Latex>，由發散檢驗法知該級數發散。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = \\frac{1}{e} \\neq 0 \\implies \\sum_{n=1}^{\\infty} \\left(\\frac{n}{n+1}\\right)^n \\text{ 發散 (Divergent)}" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Absolute Convergence", source: "p.775 Example 1",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} (-1)^n \\frac{n^3}{3^n}",
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Compute ratio of absolute values of successive terms.</span>), m: "\\displaystyle \\left| \\frac{a_{n+1}}{a_n} \\right| = \\frac{(n+1)^3}{3^{n+1}} \\cdot \\frac{3^n}{n^3}" },
+                        { t: "Step 2: Simplify", d: (<span>Separate exponential and polynomial terms.</span>), m: "\\displaystyle \\frac{1}{3} \\left( \\frac{n+1}{n} \\right)^3 = \\frac{1}{3} \\left(1 + \\frac{1}{n}\\right)^3" },
+                        { t: "Step 3: Evaluate Limit", d: (<span>Take limit as n approaches infinity.</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{1}{3}\\left(1 + \\frac{1}{n}\\right)^3 = \\frac{1}{3}" },
+                        { t: "Step 4: Conclusion", d: (<span>Since <Latex>{'L = 1/3 < 1'}</Latex>, the series is absolutely convergent by the Ratio Test.</span>), m: "\\displaystyle L = \\frac{1}{3} < 1 \\implies \\text{Absolutely Convergent}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Series with Factorials", source: "p.776 Example 2",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{n^n}{n!}",
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Form the ratio of consecutive terms.</span>), m: "\\displaystyle \\frac{a_{n+1}}{a_n} = \\frac{(n+1)^{n+1}}{(n+1)!} \\cdot \\frac{n!}{n^n}" },
+                        { t: "Step 2: Cancellation", d: (<span>Cancel <Latex>{'(n+1)!'}</Latex> and expand <Latex>{'(n+1)^{n+1}'}</Latex>.</span>), m: "\\displaystyle \\frac{(n+1)(n+1)^n}{(n+1)n!} \\cdot \\frac{n!}{n^n} = \\left(1 + \\frac{1}{n}\\right)^n" },
+                        { t: "Step 3: Limit Evaluation", d: (<span>Recognize the definition of Euler's number e.</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n = e \\approx 2.718" },
+                        { t: "Step 4: Conclusion", d: (<span>Since <Latex>{'L = e > 1'}</Latex>, the series diverges by the Ratio Test.</span>), m: "\\displaystyle L = e > 1 \\implies \\text{Divergent}" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Inconclusive Ratio Test", source: "p.776 Example 3",
+                    math: "\\displaystyle \\sum \\frac{1}{n} \\quad \\text{and} \\quad \\sum \\frac{1}{n^2}",
+                    steps: [
+                        { t: "Step 1: Harmonic Series", d: (<span>Apply Ratio Test to the harmonic series.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{1/(n+1)}{1/n} = \\lim_{n \\to \\infty} \\frac{n}{n+1} = 1" },
+                        { t: "Step 2: p-Series", d: (<span>Apply Ratio Test to p-series with p=2.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{1/(n+1)^2}{1/n^2} = \\lim_{n \\to \\infty} \\left(\\frac{n}{n+1}\\right)^2 = 1" },
+                        { t: "Step 3: Inconclusive Limit", d: (<span>Both limits yield L=1, yet one diverges and the other converges.</span>), m: "\\displaystyle L = 1 \\implies \\text{Inconclusive}" },
+                        { t: "Step 4: Conclusion", d: (<span>When L=1, another test such as the Integral or p-series test is required.</span>), m: "\\displaystyle \\text{Another test must be used when } L=1" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Root Test", source: "p.777 Example 4",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left( \\frac{2n+3}{3n+2} \\right)^n",
+                    steps: [
+                        { t: "Step 1: Take nth Root", d: (<span>Eliminate exponent by taking nth root.</span>), m: "\\displaystyle \\sqrt[n]{|a_n|} = \\frac{2n+3}{3n+2} = \\frac{2 + 3/n}{3 + 2/n}" },
+                        { t: "Step 2: Take Limit", d: (<span>Evaluate limit as n approaches infinity.</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{2 + 3/n}{3 + 2/n} = \\frac{2}{3}" },
+                        { t: "Step 3: Conclusion", d: (<span>Since <Latex>{'L = 2/3 < 1'}</Latex>, the series converges by the Root Test.</span>), m: "\\displaystyle L = \\frac{2}{3} < 1 \\implies \\text{Convergent}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Test for Divergence Alternative", source: "p.777 Example 5",
+                    math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left(\\frac{n}{n+1}\\right)^n",
+                    steps: [
+                        { t: "Step 1: Root Test Check", d: (<span>Root test gives L=1 which is inconclusive.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\sqrt[n]{|a_n|} = 1 \\implies \\text{Inconclusive}" },
+                        { t: "Step 2: Test for Divergence", d: (<span>Directly compute the limit of the general term.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = \\lim_{n \\to \\infty} \\left(\\frac{1}{1 + 1/n}\\right)^n = \\frac{1}{e}" },
+                        { t: "Step 3: Conclusion", d: (<span>Since limit is 1/e which is non-zero, the series diverges.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = \\frac{1}{e} \\neq 0 \\implies \\text{Divergent}" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "比值審斂法 (交錯指數多項式)", math: "\\displaystyle \\sum_{n=1}^{\\infty} (-1)^n \\frac{n^2}{2^n}", 
+                    steps: [
+                        { t: "Step 1: 設立比值 (Ratio Setup)", d: (<span>計算相鄰兩項之絕對值比值。</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\frac{(n+1)^2}{2^{n+1}} \\cdot \\frac{2^n}{n^2} = \\frac{1}{2}\\left(\\frac{n+1}{n}\\right)^2" },
+                        { t: "Step 2: 化簡並取極限 (Evaluate Limit)", d: (<span>將多項式改寫為 <Latex>{'(1 + 1/n)^2'}</Latex> 並令 <Latex>{'n \\to \\infty'}</Latex>。</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{1}{2}\\left(1 + \\frac{1}{n}\\right)^2 = \\frac{1}{2}(1)^2 = \\frac{1}{2}" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>因 <Latex>{'L = 1/2 < 1'}</Latex>，由比值審斂法可知級數絕對收斂。</span>), m: "\\displaystyle L = \\frac{1}{2} < 1 \\implies \\sum_{n=1}^{\\infty} (-1)^n \\frac{n^2}{2^n} \\text{ 絕對收斂 (收斂)}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "比值審斂法 (階乘增長)", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{n!}{10^n}", 
+                    steps: [
+                        { t: "Step 1: 設立比值 (Ratio Setup)", d: (<span>相鄰項相比並整理階乘。</span>), m: "\\displaystyle \\frac{a_{n+1}}{a_n} = \\frac{(n+1)!}{10^{n+1}} \\cdot \\frac{10^n}{n!} = \\frac{(n+1)n!}{10 \\cdot 10^n} \\cdot \\frac{10^n}{n!}" },
+                        { t: "Step 2: 約分化簡 (Simplify)", d: (<span>階乘與指數約分後剩下線性式。</span>), m: "\\displaystyle \\frac{a_{n+1}}{a_n} = \\frac{n+1}{10}" },
+                        { t: "Step 3: 取極限 (Take Limit)", d: (<span>當 <Latex>{'n \\to \\infty'}</Latex> 時，比值趨近於無窮大。</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{n+1}{10} = \\infty" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>因 <Latex>{'L = \\infty > 1'}</Latex>，由比值審斂法知該級數發散。</span>), m: "\\displaystyle L = \\infty > 1 \\implies \\sum_{n=1}^{\\infty} \\frac{n!}{10^n} \\text{ 發散 (Divergent)}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "比值審斂法失效之 p-級數", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{1}{\\sqrt{n}} \\quad \\text{與} \\quad \\sum_{n=1}^{\\infty} \\frac{1}{n^3}", 
+                    steps: [
+                        { t: "Step 1: 比值審斂法檢定 (Ratio Test Limit)", d: (<span>計算兩級數之相鄰項比值極限。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\frac{1/\\sqrt{n+1}}{1/\\sqrt{n}} = 1, \\quad \\lim_{n \\to \\infty} \\frac{1/(n+1)^3}{1/n^3} = 1" },
+                        { t: "Step 2: 判定失效 (Inconclusive)", d: (<span>兩者比值極限皆為 <Latex>{'L = 1'}</Latex>，比值審斂法無法給予任何收斂結論。</span>), m: "\\displaystyle L = 1 \\implies \\text{比值審斂法無效}" },
+                        { t: "Step 3: 改用 p-級數判定 (Apply p-Series Test)", d: (<span>第一項為 <Latex>{'p = 1/2 \\le 1'}</Latex> 發散；第二項為 <Latex>{'p = 3 > 1'}</Latex> 收斂。</span>), m: "\\displaystyle \\sum \\frac{1}{n^{1/2}} \\text{ 發散}, \\quad \\sum \\frac{1}{n^3} \\text{ 收斂}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "根式審斂法 (Root Test)", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left( \\frac{3n+1}{4n-1} \\right)^n", 
+                    steps: [
+                        { t: "Step 1: 取 n 次根 (Take nth Root)", d: (<span>通項帶有 n 次方，開 n 次方消除外層指數。</span>), m: "\\displaystyle \\sqrt[n]{|a_n|} = \\frac{3n+1}{4n-1} = \\frac{3 + 1/n}{4 - 1/n}" },
+                        { t: "Step 2: 計算極限 (Evaluate Limit)", d: (<span>分子分母同除以 <Latex>{'n'}</Latex> 取極限。</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{3 + 1/n}{4 - 1/n} = \\frac{3}{4}" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>因極限 <Latex>{'L = 3/4 < 1'}</Latex>，由根式審斂法判定級數收斂。</span>), m: "\\displaystyle L = \\frac{3}{4} < 1 \\implies \\sum_{n=1}^{\\infty} \\left( \\frac{3n+1}{4n-1} \\right)^n \\text{ 收斂 (Convergent)}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "根式極限失效改發散檢定", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left( 1 + \\frac{2}{n} \\right)^n", 
+                    steps: [
+                        { t: "Step 1: 檢驗根式審斂法 (Test Root)", d: (<span>開 n 次根計算極限。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\sqrt[n]{|a_n|} = \\lim_{n \\to \\infty} \\left(1 + \\frac{2}{n}\\right) = 1 \\implies \\text{根式審斂法無效}" },
+                        { t: "Step 2: 使用發散檢驗法 (Test for Divergence)", d: (<span>直接計算通項在無窮遠之極限。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = \\lim_{n \\to \\infty} \\left(1 + \\frac{2}{n}\\right)^n = e^2" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>因通項極限 <Latex>{'e^2 \\approx 7.389 \\neq 0'}</Latex>，根據發散檢驗法，該級數必發散。</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = e^2 \\neq 0 \\implies \\sum_{n=1}^{\\infty} \\left(1 + \\frac{2}{n}\\right)^n \\text{ 發散 (Divergent)}" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Ratio Test (Alternating Exponential)", math: "\\displaystyle \\sum_{n=1}^{\\infty} (-1)^n \\frac{n^2}{2^n}", 
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Compute ratio of absolute values.</span>), m: "\\displaystyle \\left|\\frac{a_{n+1}}{a_n}\\right| = \\frac{1}{2}\\left(\\frac{n+1}{n}\\right)^2" },
+                        { t: "Step 2: Evaluate Limit", d: (<span>Take limit as n approaches infinity.</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{1}{2}\\left(1 + \\frac{1}{n}\\right)^2 = \\frac{1}{2}" },
+                        { t: "Step 3: Conclusion", d: (<span>Since <Latex>{'L = 1/2 < 1'}</Latex>, the series converges absolutely by the Ratio Test.</span>), m: "\\displaystyle L = \\frac{1}{2} < 1 \\implies \\text{Absolutely Convergent}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Ratio Test (Factorial)", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{n!}{10^n}", 
+                    steps: [
+                        { t: "Step 1: Ratio Setup", d: (<span>Form the ratio of consecutive terms.</span>), m: "\\displaystyle \\frac{a_{n+1}}{a_n} = \\frac{(n+1)!}{10^{n+1}} \\cdot \\frac{10^n}{n!} = \\frac{n+1}{10}" },
+                        { t: "Step 2: Evaluate Limit", d: (<span>Take the limit as n approaches infinity.</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{n+1}{10} = \\infty" },
+                        { t: "Step 3: Conclusion", d: (<span>Since <Latex>{'L = \\infty > 1'}</Latex>, the series diverges by the Ratio Test.</span>), m: "\\displaystyle L = \\infty > 1 \\implies \\text{Divergent}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Inconclusive Ratio Test on p-Series", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\frac{1}{\\sqrt{n}} \\quad \\text{and} \\quad \\sum_{n=1}^{\\infty} \\frac{1}{n^3}", 
+                    steps: [
+                        { t: "Step 1: Apply Ratio Test", d: (<span>Both ratios yield a limit of 1.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\left|\\frac{a_{n+1}}{a_n}\\right| = 1 \\implies \\text{Inconclusive}" },
+                        { t: "Step 2: Apply p-Series Test", d: (<span><Latex>{'p = 1/2 \\le 1'}</Latex> diverges, while <Latex>{'p = 3 > 1'}</Latex> converges.</span>), m: "\\displaystyle \\sum n^{-1/2} \\text{ Diverges}, \\quad \\sum n^{-3} \\text{ Converges}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "The Root Test", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left( \\frac{3n+1}{4n-1} \\right)^n", 
+                    steps: [
+                        { t: "Step 1: Take nth Root", d: (<span>Eliminate outer exponent n.</span>), m: "\\displaystyle \\sqrt[n]{|a_n|} = \\frac{3n+1}{4n-1} = \\frac{3 + 1/n}{4 - 1/n}" },
+                        { t: "Step 2: Evaluate Limit", d: (<span>Evaluate limit as n approaches infinity.</span>), m: "\\displaystyle L = \\lim_{n \\to \\infty} \\frac{3 + 1/n}{4 - 1/n} = \\frac{3}{4}" },
+                        { t: "Step 3: Conclusion", d: (<span>Since <Latex>{'L = 3/4 < 1'}</Latex>, the series converges by the Root Test.</span>), m: "\\displaystyle L = \\frac{3}{4} < 1 \\implies \\text{Convergent}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Test for Divergence Alternative", math: "\\displaystyle \\sum_{n=1}^{\\infty} \\left( 1 + \\frac{2}{n} \\right)^n", 
+                    steps: [
+                        { t: "Step 1: Check Root Test", d: (<span>Root test gives L=1 which is inconclusive.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\sqrt[n]{|a_n|} = 1 \\implies \\text{Inconclusive}" },
+                        { t: "Step 2: Test for Divergence", d: (<span>Compute the limit of the general term directly.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} \\left(1 + \\frac{2}{n}\\right)^n = e^2 \\approx 7.389" },
+                        { t: "Step 3: Conclusion", d: (<span>Since the term does not approach 0, the series diverges.</span>), m: "\\displaystyle \\lim_{n \\to \\infty} a_n = e^2 \\neq 0 \\implies \\text{Divergent}" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_11_6.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_11_6.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_11_6.py
+}

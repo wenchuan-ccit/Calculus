@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 8.2 旋轉體表面積 | Prof. Wu Wen-Chuan</title>
+    
+    <!-- 1. 核心樣式與庫載入 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            // 處理頁面內平滑滾動的函數
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false); // 手機版點擊後自動收起選單
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-lg">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">
+                                    {item}
+                                </button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">
+                                    {item}
+                                </button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{'\\displaystyle S = \\int 2\\pi r \\, ds'}</Latex>
+                            <div className="mt-2 text-lg text-gray-600">
+                                <Latex fontSize="0.95em">{t.radiusNote}</Latex>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <div className="font-bold mb-2">{t.case1}</div>
+                                <div className="pl-4">
+                                    <Latex fontSize="0.9em">{'r = y \\implies S = \\int 2\\pi y \\, ds'}</Latex>
+                                </div>
+                            </li>
+                            <li>
+                                <div className="font-bold mb-2">{t.case2}</div>
+                                <div className="pl-4">
+                                    <Latex fontSize="0.9em">{'r = x \\implies S = \\int 2\\pi x \\, ds'}</Latex>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white border-2 border-pink-300 py-4 px-6 rounded-2xl text-center shadow-sm">
+                        <div className="text-xl font-bold text-pink-700 mb-2">{t.dsTitle}</div>
+                        <div className="grid md:grid-cols-2 gap-4 text-lg">
+                            <div className="bg-pink-50 p-3 rounded-lg">
+                                <p className="mb-2 font-bold text-gray-600">dx 積分</p>
+                                <Latex block>{'\\displaystyle ds = \\sqrt{1 + \\left(\\frac{dy}{dx}\\right)^2} \\, dx'}</Latex>
+                            </div>
+                            <div className="bg-pink-50 p-3 rounded-lg">
+                                <p className="mb-2 font-bold text-gray-600">dy 積分</p>
+                                <Latex block>{'\\displaystyle ds = \\sqrt{1 + \\left(\\frac{dx}{dy}\\right)^2} \\, dy'}</Latex>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-blue-800 mb-3">{activeEx.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "8.2",
+                unitTitle: "旋轉體表面積",
+                unitSub: "Area of a Surface of Revolution",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "計算旋轉體的表面積",
+                part1Desc: (
+                    <span>
+                        本單元的目的是計算一條曲線繞特定軸旋轉後所形成的立體表面積。我們可以將曲線切成無窮多段極小的弧長 <Latex>{'ds'}</Latex>，每一段旋轉後形成一個「圓台帶 (Band)」。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：貼壁紙 (Wallpapering)",
+                analogyDesc: (
+                    <span>
+                        計算旋轉表面積就像是在「貼壁紙」。<Latex>{'ds'}</Latex> 是壁紙的一小段寬度，而 <Latex>{'2\\pi r'}</Latex> 則是這一小段壁紙繞一圈所需的長度（圓周長）。我們把每一圈需要的壁紙面積（<Latex>{'2\\pi r \\cdot ds'}</Latex>）加總（積分）起來，就是整個立體的表面積了。
+                    </span>
+                ),
+                part1Step1: "基本公式 (Formula Logic)",
+                part1Step1Desc: (
+                    <span>
+                        表面積 <Latex>{'S'}</Latex> 等於「周長」乘以「弧長」的積分。其中 <Latex>{'r'}</Latex> 是旋轉半徑。
+                    </span>
+                ),
+                radiusNote: "r = 到旋轉軸的距離",
+                part1Step2: "不同旋轉軸的情形",
+                part1Step2Desc: (
+                    <span>
+                        根據旋轉軸的不同，半徑 <Latex>{'r'}</Latex> 的表示方式也不同：
+                    </span>
+                ),
+                case1: "繞 x 軸旋轉:",
+                case2: "繞 y 軸旋轉:",
+                dsTitle: "弧長元素 ds 的替換",
+                dsDesc: "根據積分變數的不同，ds 有兩種寫法：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "8.2",
+                unitTitle: "Surface Area",
+                unitSub: "Area of a Surface of Revolution",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Calculating Surface Area of Revolution",
+                part1Desc: (
+                    <span>
+                        The goal is to calculate the surface area of a solid formed by rotating a curve about an axis. We slice the curve into infinitesimal arc lengths <Latex>{'ds'}</Latex>, forming "bands".
+                    </span>
+                ),
+                analogyTitle: "Analogy: Wallpapering",
+                analogyDesc: (
+                    <span>
+                        Think of it as applying wallpaper. <Latex>{'ds'}</Latex> is the width of a thin strip of wallpaper, and <Latex>{'2\\pi r'}</Latex> is the length needed to wrap around the solid once. Summing up (integrating) the area of all these strips (<Latex>{'2\\pi r \\cdot ds'}</Latex>) gives the total surface area.
+                    </span>
+                ),
+                part1Step1: "Basic Formula Logic",
+                part1Step1Desc: (
+                    <span>
+                        Surface Area <Latex>{'S'}</Latex> is the integral of "Circumference" times "Arc Length". <Latex>{'r'}</Latex> is the radius of rotation.
+                    </span>
+                ),
+                radiusNote: "r = distance to axis of rotation",
+                part1Step2: "Rotation Axes",
+                part1Step2Desc: (
+                    <span>
+                        The radius <Latex>{'r'}</Latex> depends on the axis of rotation:
+                    </span>
+                ),
+                case1: "Rotate about x-axis:",
+                case2: "Rotate about y-axis:",
+                dsTitle: "Substituting ds",
+                dsDesc: "Two ways to write ds:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "繞 x 軸旋轉 (P.571)",
+                    math: "\\displaystyle y = \\sqrt{4-x^2}, \\quad -1 \\le x \\le 1 \\quad (\\text{x-axis})",
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>計算 <Latex>{'dy/dx'}</Latex>。</span>), m: "\\displaystyle \\frac{dy}{dx} = \\frac{1}{2}(4-x^2)^{-1/2}(-2x) = \\frac{-x}{\\sqrt{4-x^2}}" },
+                        { t: "Step 2: 計算弧長項 (Calculate ds)", d: (<span>計算 <Latex>{'1+(y\')^2'}</Latex> 並化簡。</span>), m: "\\displaystyle 1 + \\left(\\frac{-x}{\\sqrt{4-x^2}}\\right)^2 = 1 + \\frac{x^2}{4-x^2} = \\frac{4-x^2+x^2}{4-x^2} = \\frac{4}{4-x^2}" },
+                        { t: "Step 3: 設定積分 (Setup Integral)", d: (<span>繞 x 軸旋轉，半徑 <Latex>{'r=y=\\sqrt{4-x^2}'}</Latex>。</span>), m: "\\displaystyle S = \\int_{-1}^1 2\\pi y \\, ds = \\int_{-1}^1 2\\pi \\sqrt{4-x^2} \\cdot \\sqrt{\\frac{4}{4-x^2}} \\, dx" },
+                        { t: "Step 4: 化簡 (Simplify)", d: (<span>根號項相乘消去。</span>), m: "\\displaystyle S = \\int_{-1}^1 2\\pi \\sqrt{4-x^2} \\cdot \\frac{2}{\\sqrt{4-x^2}} \\, dx = \\int_{-1}^1 4\\pi \\, dx" },
+                        { t: "Step 5: 計算結果 (Result)", d: (<span>常數函數積分。 <br/><img src="https://drive.google.com/thumbnail?id=1Jm6DQr91YV2TVX72k4i3asauAtCoWMa_&sz=w1000" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle [4\\pi x]_{-1}^1 = 4\\pi(1 - (-1)) = 8\\pi" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "關於 y 的函數繞 x 軸 (P.571)",
+                    math: "\\displaystyle x = \\frac{2}{3}y^{3/2}, \\quad 0 \\le y \\le 3 \\quad (\\text{x-axis})",
+                    steps: [
+                        { t: "Step 1: 求導數 (Differentiate)", d: (<span>函數為 <Latex>{'x=g(y)'}</Latex>，求 <Latex>{'dx/dy'}</Latex>。</span>), m: "\\displaystyle \\frac{dx}{dy} = \\frac{2}{3} \\cdot \\frac{3}{2}y^{1/2} = \\sqrt{y}" },
+                        { t: "Step 2: 計算 ds", d: (<span>計算 <Latex>{'\\sqrt{1+(x\')^2}'}</Latex>。</span>), m: "\\displaystyle ds = \\sqrt{1 + (\\sqrt{y})^2} \\, dy = \\sqrt{1+y} \\, dy" },
+                        { t: "Step 3: 設定積分 (Setup Integral)", d: (<span>繞 x 軸旋轉，半徑 <Latex>{'r=y'}</Latex> (注意：不是 x)。</span>), m: "\\displaystyle S = \\int_0^3 2\\pi y \\sqrt{1+y} \\, dy" },
+                        { t: "Step 4: 變數代換 (u-Substitution)", d: (<span>令 <Latex>{'u=1+y'}</Latex>，則 <Latex>{'y=u-1, dy=du'}</Latex>。換界：<Latex>{'1 \\to 4'}</Latex>。</span>), m: "\\displaystyle S = 2\\pi \\int_1^4 (u-1)\\sqrt{u} \\, du = 2\\pi \\int_1^4 (u^{3/2} - u^{1/2}) \\, du" },
+                        { t: "Step 5: 計算結果 (Result)", d: (<span>積分並代入數值。 <br/><img src="https://drive.google.com/thumbnail?id=1owmaS_kigkp98Z6TRHAyXbg3_wnxXW-O&sz=w1000" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle 2\\pi \\left[ \\frac{2}{5}u^{5/2} - \\frac{2}{3}u^{3/2} \\right]_1^4 = \\frac{232\\pi}{15}" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "繞 y 軸旋轉 (P.572)",
+                    math: "\\displaystyle y = x^2, \\quad 1 \\le x \\le 2 \\quad (\\text{y-axis})",
+                    steps: [
+                        { t: "Step 1: 選擇變數 (Select Variable)", d: (<span>給定 <Latex>{'y=x^2'}</Latex>，使用 <Latex>{'x'}</Latex> 積分較方便。求 <Latex>{'dy/dx'}</Latex>。</span>), m: "\\displaystyle \\frac{dy}{dx} = 2x" },
+                        { t: "Step 2: 設定積分 (Setup Integral)", d: (<span>繞 y 軸旋轉，半徑 <Latex>{'r=x'}</Latex>。</span>), m: "\\displaystyle S = \\int_1^2 2\\pi x \\sqrt{1 + (2x)^2} \\, dx = \\int_1^2 2\\pi x \\sqrt{1 + 4x^2} \\, dx" },
+                        { t: "Step 3: 變數代換 (u-Substitution)", d: (<span>令 <Latex>{'u=1+4x^2'}</Latex>，<Latex>{'du=8x dx \\Rightarrow x dx = du/8'}</Latex>。換界：<Latex>{'5 \\to 17'}</Latex>。</span>), m: "\\displaystyle S = 2\\pi \\int_5^{17} \\sqrt{u} \\cdot \\frac{1}{8} du = \\frac{\\pi}{4} \\int_5^{17} u^{1/2} du" },
+                        { t: "Step 4: 計算結果 (Result)", d: (<span>積分 <Latex>{'u^{1/2}'}</Latex>。 <br/><img src="https://drive.google.com/thumbnail?id=1kgsz9nEWB0IQt6cvQAT8RbgneUkpZgpI&sz=w1000" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\frac{\\pi}{4} \\left[ \\frac{2}{3}u^{3/2} \\right]_5^{17} = \\frac{\\pi}{6}(17\\sqrt{17} - 5\\sqrt{5})" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Rotate about x-axis (P.571)",
+                    math: "\\displaystyle y = \\sqrt{4-x^2}, \\quad -1 \\le x \\le 1",
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Find <Latex>{'dy/dx'}</Latex>.</span>), m: "\\displaystyle y' = \\frac{-x}{\\sqrt{4-x^2}}" },
+                        { t: "Step 2: Calculate ds term", d: (<span>Simplify <Latex>{'1+(y\')^2'}</Latex>.</span>), m: "\\displaystyle 1 + \\frac{x^2}{4-x^2} = \\frac{4}{4-x^2}" },
+                        { t: "Step 3: Setup Integral", d: (<span>Radius <Latex>{'r=y'}</Latex>.</span>), m: "\\displaystyle S = \\int_{-1}^1 2\\pi \\sqrt{4-x^2} \\cdot \\sqrt{\\frac{4}{4-x^2}} \\, dx" },
+                        { t: "Step 4: Simplify", d: (<span>Terms cancel out.</span>), m: "\\displaystyle S = \\int_{-1}^1 4\\pi \\, dx" },
+                        { t: "Step 5: Result", d: (<span>Integrate constant. <br/><img src="https://drive.google.com/thumbnail?id=1Jm6DQr91YV2TVX72k4i3asauAtCoWMa_&sz=w1000" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle [4\\pi x]_{-1}^1 = 8\\pi" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Function of y about x-axis (P.571)",
+                    math: "\\displaystyle x = \\frac{2}{3}y^{3/2}, \\quad 0 \\le y \\le 3",
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Find <Latex>{'dx/dy'}</Latex>.</span>), m: "\\displaystyle x' = \\sqrt{y}" },
+                        { t: "Step 2: Calculate ds", d: (<span><Latex>{'ds = \\sqrt{1+(x\')^2} dy'}</Latex>.</span>), m: "\\displaystyle ds = \\sqrt{1+y} \\, dy" },
+                        { t: "Step 3: Setup Integral", d: (<span>Radius <Latex>{'r=y'}</Latex> (distance to x-axis).</span>), m: "\\displaystyle S = \\int_0^3 2\\pi y \\sqrt{1+y} \\, dy" },
+                        { t: "Step 4: u-Substitution", d: (<span><Latex>{'u=1+y'}</Latex>.</span>), m: "\\displaystyle S = 2\\pi \\int_1^4 (u-1)\\sqrt{u} \\, du" },
+                        { t: "Step 5: Result", d: (<span>Integrate power functions. <br/><img src="https://drive.google.com/thumbnail?id=1owmaS_kigkp98Z6TRHAyXbg3_wnxXW-O&sz=w1000" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\frac{232\\pi}{15}" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Rotate about y-axis (P.572)",
+                    math: "\\displaystyle y = x^2, \\quad 1 \\le x \\le 2",
+                    steps: [
+                        { t: "Step 1: Select Variable", d: (<span>Use x. Find <Latex>{'dy/dx'}</Latex>.</span>), m: "\\displaystyle y' = 2x" },
+                        { t: "Step 2: Setup Integral", d: (<span>Radius <Latex>{'r=x'}</Latex> (distance to y-axis).</span>), m: "\\displaystyle S = \\int_1^2 2\\pi x \\sqrt{1+4x^2} \\, dx" },
+                        { t: "Step 3: u-Substitution", d: (<span><Latex>{'u=1+4x^2'}</Latex>.</span>), m: "\\displaystyle S = \\frac{\\pi}{4} \\int_5^{17} u^{1/2} du" },
+                        { t: "Step 4: Result", d: (<span>Final answer. <br/><img src="https://drive.google.com/thumbnail?id=1kgsz9nEWB0IQt6cvQAT8RbgneUkpZgpI&sz=w1000" width="300" style={{display: "block", margin: "8px auto"}}/>  </span>), m: "\\displaystyle \\frac{\\pi}{6}(17\\sqrt{17} - 5\\sqrt{5})" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "練習題 1 (Ex 1 變形)", math: "\\displaystyle y = \\sqrt{9-x^2}, \\quad -2 \\le x \\le 2 \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: 求導數", d: (<span>計算 <Latex>{'y\''}</Latex>。</span>), m: "\\displaystyle y' = \\frac{-x}{\\sqrt{9-x^2}}" },
+                        { t: "Step 2: 計算 1+(y')^2", d: (<span>通分化簡。</span>), m: "\\displaystyle 1 + \\frac{x^2}{9-x^2} = \\frac{9}{9-x^2}" },
+                        { t: "Step 3: 代入公式", d: (<span>半徑 <Latex>{'r=y=\\sqrt{9-x^2}'}</Latex>。</span>), m: "\\displaystyle S = \\int_{-2}^2 2\\pi \\sqrt{9-x^2} \\cdot \\frac{3}{\\sqrt{9-x^2}} \\, dx" },
+                        { t: "Step 4: 積分", d: (<span>被積函數化簡為常數 <Latex>{'6\\pi'}</Latex>。</span>), m: "\\displaystyle \\int_{-2}^2 6\\pi \\, dx = [6\\pi x]_{-2}^2 = 24\\pi" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "練習題 2 (Ex 2 變形)", math: "\\displaystyle x = \\frac{1}{3}y^3, \\quad 0 \\le y \\le 1 \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: 求導數", d: (<span><Latex>{'x\' = y^2'}</Latex>。</span>), m: "\\displaystyle \\frac{dx}{dy} = y^2" },
+                        { t: "Step 2: 計算 ds", d: (<span><Latex>{'ds = \\sqrt{1+(y^2)^2} dy'}</Latex>。</span>), m: "\\displaystyle ds = \\sqrt{1+y^4} \\, dy" },
+                        { t: "Step 3: 設定積分", d: (<span>繞 x 軸，半徑 <Latex>{'r=y'}</Latex>。</span>), m: "\\displaystyle S = \\int_0^1 2\\pi y \\sqrt{1+y^4} \\, dy" },
+                        { t: "Step 4: 積分", d: (<span>代換 <Latex>{'u=1+y^4, du=4y^3 dy'}</Latex> (註：此題若用 u 代換需有 y^3，此處僅 setup)。</span>), m: "\\displaystyle \\text{Let } u=y^2, du=2y dy \\implies S = \\pi \\int_0^1 \\sqrt{1+u^2} du" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "練習題 3 (繞 y 軸)", math: "\\displaystyle y = \\frac{1}{2}x^2, \\quad 0 \\le x \\le \\sqrt{3} \\quad (\\text{y-axis})", 
+                    steps: [
+                        { t: "Step 1: 求導數", d: (<span><Latex>{'y\' = x'}</Latex>。</span>), m: "\\displaystyle \\frac{dy}{dx} = x" },
+                        { t: "Step 2: 計算 ds", d: (<span><Latex>{'ds = \\sqrt{1+x^2} dx'}</Latex>。</span>), m: "\\displaystyle ds = \\sqrt{1+x^2} \\, dx" },
+                        { t: "Step 3: 設定積分", d: (<span>繞 y 軸，半徑 <Latex>{'r=x'}</Latex>。</span>), m: "\\displaystyle S = \\int_0^{\\sqrt{3}} 2\\pi x \\sqrt{1+x^2} \\, dx" },
+                        { t: "Step 4: 積分", d: (<span>代換 <Latex>{'u=1+x^2'}</Latex>。</span>), m: "\\displaystyle \\pi \\int_1^4 u^{1/2} du = \\frac{2\\pi}{3} [u^{3/2}]_1^4 = \\frac{14\\pi}{3}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "練習題 4 (設定式)", math: "\\displaystyle y = \\sin x, \\quad 0 \\le x \\le \\pi \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: 求導數", d: (<span><Latex>{'y\' = \\cos x'}</Latex>。</span>), m: "\\displaystyle \\frac{dy}{dx} = \\cos x" },
+                        { t: "Step 2: 計算 ds", d: (<span>畢氏定理形式。</span>), m: "\\displaystyle ds = \\sqrt{1+\\cos^2 x} \\, dx" },
+                        { t: "Step 3: 設定積分", d: (<span>繞 x 軸，半徑 <Latex>{'r=y=\\sin x'}</Latex>。</span>), m: "\\displaystyle S = \\int_0^\\pi 2\\pi \\sin x \\sqrt{1+\\cos^2 x} \\, dx" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "練習題 5 (直線檢驗)", math: "\\displaystyle y = x, \\quad 0 \\le x \\le 1 \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: 求導數", d: (<span>斜率為 1。</span>), m: "\\displaystyle y' = 1" },
+                        { t: "Step 2: 計算 ds", d: (<span>常數。</span>), m: "\\displaystyle ds = \\sqrt{1+1^2} dx = \\sqrt{2} dx" },
+                        { t: "Step 3: 設定積分", d: (<span>半徑 <Latex>{'r=x'}</Latex>。</span>), m: "\\displaystyle S = \\int_0^1 2\\pi x \\sqrt{2} \\, dx" },
+                        { t: "Step 4: 積分", d: (<span>多項式積分。</span>), m: "\\displaystyle 2\\sqrt{2}\\pi [\\frac{1}{2}x^2]_0^1 = \\sqrt{2}\\pi" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Practice 1 (Ref Ex 1)", math: "\\displaystyle y = \\sqrt{9-x^2}, \\quad -2 \\le x \\le 2 \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Find y'.</span>), m: "\\displaystyle y' = \\frac{-x}{\\sqrt{9-x^2}}" },
+                        { t: "Step 2: Calculate ds term", d: (<span>Simplify.</span>), m: "\\displaystyle 1 + (y')^2 = \\frac{9}{9-x^2}" },
+                        { t: "Step 3: Setup", d: (<span>Radius <Latex>{'r=y'}</Latex>.</span>), m: "\\displaystyle S = \\int_{-2}^2 2\\pi \\sqrt{9-x^2} \\frac{3}{\\sqrt{9-x^2}} \\, dx" },
+                        { t: "Step 4: Integrate", d: (<span>Constant integral.</span>), m: "\\displaystyle 24\\pi" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Practice 2 (Ref Ex 2)", math: "\\displaystyle x = \\frac{1}{3}y^3, \\quad 0 \\le y \\le 1 \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Find x'.</span>), m: "\\displaystyle x' = y^2" },
+                        { t: "Step 2: Calculate ds", d: (<span><Latex>{'ds = \\sqrt{1+y^4} dy'}</Latex>.</span>), m: "\\displaystyle ds = \\sqrt{1+y^4} \\, dy" },
+                        { t: "Step 3: Setup", d: (<span>Radius <Latex>{'r=y'}</Latex> (distance to x-axis).</span>), m: "\\displaystyle S = \\int_0^1 2\\pi y \\sqrt{1+y^4} \\, dy" },
+                        { t: "Step 4: Integrate", d: (<span>Use u-substitution <Latex>{'u=y^2'}</Latex>.</span>), m: "\\displaystyle \\pi \\int_0^1 \\sqrt{1+u^2} du" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Practice 3 (y-axis)", math: "\\displaystyle y = \\frac{1}{2}x^2, \\quad 0 \\le x \\le \\sqrt{3} \\quad (\\text{y-axis})", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Find y'.</span>), m: "\\displaystyle y' = x" },
+                        { t: "Step 2: Calculate ds", d: (<span><Latex>{'ds = \\sqrt{1+x^2} dx'}</Latex>.</span>), m: "\\displaystyle ds = \\sqrt{1+x^2} \\, dx" },
+                        { t: "Step 3: Setup", d: (<span>Radius <Latex>{'r=x'}</Latex>.</span>), m: "\\displaystyle S = \\int_0^{\\sqrt{3}} 2\\pi x \\sqrt{1+x^2} \\, dx" },
+                        { t: "Step 4: Integrate", d: (<span>u-substitution <Latex>{'u=1+x^2'}</Latex>.</span>), m: "\\displaystyle \\frac{14\\pi}{3}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Practice 4 (Setup Only)", math: "\\displaystyle y = \\sin x, \\quad 0 \\le x \\le \\pi \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>y' = cos x.</span>), m: "\\displaystyle y' = \\cos x" },
+                        { t: "Step 2: Calculate ds", d: (<span>Pythagoras.</span>), m: "\\displaystyle ds = \\sqrt{1+\\cos^2 x} \\, dx" },
+                        { t: "Step 3: Setup", d: (<span>Radius <Latex>{'r=\\sin x'}</Latex>.</span>), m: "\\displaystyle S = \\int_0^\\pi 2\\pi \\sin x \\sqrt{1+\\cos^2 x} \\, dx" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Practice 5 (Line Check)", math: "\\displaystyle y = x, \\quad 0 \\le x \\le 1 \\quad (\\text{x-axis})", 
+                    steps: [
+                        { t: "Step 1: Differentiate", d: (<span>Slope 1.</span>), m: "\\displaystyle y' = 1" },
+                        { t: "Step 2: Calculate ds", d: (<span>Constant.</span>), m: "\\displaystyle ds = \\sqrt{2} \\, dx" },
+                        { t: "Step 3: Setup", d: (<span>Radius <Latex>{'r=x'}</Latex>.</span>), m: "\\displaystyle S = \\int_0^1 2\\pi x \\sqrt{2} \\, dx" },
+                        { t: "Step 4: Integrate", d: (<span>Area of Cone surface.</span>), m: "\\displaystyle \\sqrt{2}\\pi" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 14.2 極限與連續性 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle \\lim_{(x, y) \\to (a, b)} f(x, y) = L"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>不論 <Latex>{'(x, y)'}</Latex> 沿著何種連續路徑趨近 <Latex>{'(a, b)'}</Latex>，極限值皆必須恆等於 <Latex>{'L'}</Latex>。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <Latex block>{"\\displaystyle f(x, y) \\to L_1 \\, (C_1) \\neq L_2 \\, (C_2) \\implies \\lim_{(x, y) \\to (a, b)} f(x, y) \\text{ 不存在 (DNE)}"}</Latex>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                                <Latex block>{"\\displaystyle \\lim_{(x, y) \\to (a, b)} f(x, y) = f(a, b)"}</Latex>
+                                <span className="mt-2 block text-gray-600">多項式與有理函數在其定義域內皆為連續函數，可直接代入求極限。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                            {step.img && (
+                                                <div className="mt-4 flex justify-center">
+                                                    <img src={step.img} alt="課本圖形" className="rounded-xl shadow-md max-w-full md:max-w-md border border-blue-200" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "14.2",
+                unitTitle: "極限與連續性",
+                unitSub: "Limits and Continuity",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "多變數極限定義與雙路徑檢定法",
+                part1Desc: (
+                    <span>
+                        在單變數微積分中，趨近點只有「由左」與「由右」兩種方向；而在二元微積分中，點 <Latex>{'(x, y)'}</Latex> 可沿著平面上的「任意無限多種連續路徑」（直線、拋物線、螺旋線等）趨近目標點。因此，多變數極限的存在條件極為嚴苛。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：四面八方奔赴山谷",
+                analogyDesc: (
+                    <span>
+                        想像全校學生要從四面八方會合至廣場的中心舞台。極限存在的條件是：不論哪一支隊伍從何種小徑、何種曲折方向走來，抵達舞台中心時的海拔高度都必須完全一致。只要發現有一條小徑測得的高度不同，整個會合高度（極限）便宣告不存在。
+                    </span>
+                ),
+                part1Step1: "二元函數極限定義",
+                part1Step1Desc: "點 (x, y) 逼近點 (a, b) 時之極限形式：",
+                part1Step2: "雙路徑檢定法與連續性判別",
+                part1Step2Desc: "判定極限不存在與連續性成立的判定準則：",
+                theorem1Title: "雙路徑檢定法 (Two-Path Test for Nonexistence)",
+                theorem1Desc: "若沿著兩條不同路徑趨近時極限值相異，則極限不存在：",
+                theorem2Title: "連續性定義與代入法 (Continuity at a Point)",
+                theorem2Desc: "若極限值恰好等於該點之定義函數值，則稱該函數在此點連續：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "14.2",
+                unitTitle: "Limits and Continuity",
+                unitSub: "Multivariable Limits and Path Testing",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Limits of Functions of Several Variables",
+                part1Desc: (
+                    <span>
+                        Unlike single-variable calculus with only two directions of approach, in two dimensions a point can approach (a, b) along infinitely many continuous paths. A limit exists if and only if all paths yield the exact same value.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Meeting at the Mountain Plaza",
+                analogyDesc: (
+                    <span>
+                        Imagine travelers converging on a mountain plaza from all possible directions. For a common destination height to exist, all incoming trails must lead to the identical elevation. Finding even one path with a different elevation proves the limit does not exist.
+                    </span>
+                ),
+                part1Step1: "Definition of Multivariable Limit",
+                part1Step1Desc: "The formal limit concept as (x,y) approaches (a,b):",
+                part1Step2: "Two-Path Test & Continuity",
+                part1Step2Desc: "Criteria for showing nonexistence and continuity:",
+                theorem1Title: "Two-Path Test for Nonexistence",
+                theorem1Desc: "If different paths produce different limits, the limit does not exist:",
+                theorem2Title: "Continuity Definition",
+                theorem2Desc: "A function is continuous if the limit equals the function value:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "證明極限不存在 (座標軸路徑)", source: "p.953 Example 1",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^2 - y^2}{x^2 + y^2}",
+                    steps: [
+                        { t: "Step 1: 沿著 x 軸趨近 (y = 0)", d: (<span>在 x 軸上令 y = 0 且 x 趨近於 0。</span>), m: "\\displaystyle f(x, 0) = \\frac{x^2 - 0}{x^2 + 0} = \\frac{x^2}{x^2} = 1 \\implies \\lim_{x \\to 0} f(x, 0) = 1" },
+                        { t: "Step 2: 沿著 y 軸趨近 (x = 0)", d: (<span>在 y 軸上令 x = 0 且 y 趨近於 0。</span>), m: "\\displaystyle f(0, y) = \\frac{0 - y^2}{0 + y^2} = \\frac{-y^2}{y^2} = -1 \\implies \\lim_{y \\to 0} f(0, y) = -1" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>兩條不同路徑得出相異極限值，故極限不存在。</span>), m: "\\displaystyle 1 \\neq -1 \\implies \\lim_{(x,y)\\to(0,0)} \\frac{x^2-y^2}{x^2+y^2} \\text{ 不存在 (Does Not Exist)}", img: "https://drive.google.com/thumbnail?id=1M-i8Go95Jp4gHvRjg37lqZ2m3mhLA6Bj&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "證明極限不存在 (直線斜率路徑)", source: "p.954 Example 2",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{xy}{x^2 + y^2}",
+                    steps: [
+                        { t: "Step 1: 檢驗座標軸路徑 (Coordinate Axes)", d: (<span>沿 x 軸或 y 軸趨近時極限皆為 0。</span>), m: "\\displaystyle f(x, 0) = 0 \\implies 0, \\quad f(0, y) = 0 \\implies 0" },
+                        { t: "Step 2: 沿直線族 y = mx 趨近 (Along Line y = mx)", d: (<span>代入 y = mx 分析極限對斜率之相依性。</span>), m: "\\displaystyle f(x, mx) = \\frac{x(mx)}{x^2 + (mx)^2} = \\frac{m x^2}{(1+m^2)x^2} = \\frac{m}{1+m^2}" },
+                        { t: "Step 3: 取特定直線 y = x (Line y = x)", d: (<span>當 m = 1 時，極限值為 1/2。</span>), m: "\\displaystyle m = 1 \\implies \\lim_{x \\to 0} f(x, x) = \\frac{1}{1+1^2} = \\frac{1}{2}" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>座標軸路徑極限為 0，但 y = x 路徑極限為 1/2，故極限不存在。</span>), m: "\\displaystyle 0 \\neq \\frac{1}{2} \\implies \\lim_{(x,y)\\to(0,0)} \\frac{xy}{x^2+y^2} \\text{ 不存在 (DNE)}", img: "https://drive.google.com/thumbnail?id=1LgAwKGudg2XbwrUPe_etk-fT1rFQ-aeY&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "直接代入求極限 (多項式函數)", source: "p.956 Example 4",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(1,2)} (x^2y^3 - x^3y^2 + 3x + 2y)",
+                    steps: [
+                        { t: "Step 1: 判斷連續性 (Check Continuity)", d: (<span>二元多項式函數在其整個定義域內皆連續。</span>), m: "\\displaystyle f(x,y) \\text{ 為多項式} \\implies \\text{在全平面處處連續}" },
+                        { t: "Step 2: 直接代入座標點 (Direct Substitution)", d: (<span>將 x = 1, y = 2 直接代入原式。</span>), m: "\\displaystyle 1^2(2^3) - 1^3(2^2) + 3(1) + 2(2) = 1(8) - 1(4) + 3 + 4" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>完成數值加減。</span>), m: "\\displaystyle 8 - 4 + 3 + 4 = 11" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "直接代入求極限 (有理函數)", source: "p.956 Example 5",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(-2,3)} \\frac{x^2y + 1}{x^3y^2 - 2x}",
+                    steps: [
+                        { t: "Step 1: 檢驗分母是否為零 (Check Denominator)", d: (<span>將 x = -2, y = 3 代入分母。</span>), m: "\\displaystyle (-2)^3(3^2) - 2(-2) = -8(9) + 4 = -72 + 4 = -68 \\neq 0" },
+                        { t: "Step 2: 直接代入求值 (Direct Substitution)", d: (<span>分母不為 0，有理函數在該點連續。</span>), m: "\\displaystyle \\lim_{(x,y)\\to(-2,3)} \\frac{x^2y+1}{x^3y^2-2x} = \\frac{(-2)^2(3)+1}{-68} = \\frac{4(3)+1}{-68}" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>化簡分數。</span>), m: "\\displaystyle \\frac{13}{-68} = -\\frac{13}{68}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "夾擠定理求極限 (Squeeze Theorem)", source: "p.956 Example 6",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{3x^2y}{x^2 + y^2}",
+                    steps: [
+                        { t: "Step 1: 建立不等式界限 (Establish Inequality)", d: (<span>利用 <Latex>{'x^2 \\le x^2 + y^2'}</Latex> 的非負性質。</span>), m: "\\displaystyle \\frac{x^2}{x^2+y^2} \\le 1 \\quad (\\text{當 } (x,y) \\neq (0,0))" },
+                        { t: "Step 2: 放大函數絕對值 (Bound the Absolute Value)", d: (<span>將有理式拆解出受控項。</span>), m: "\\displaystyle |f(x,y)| = \\left| \\frac{3x^2y}{x^2+y^2} \\right| = 3|y| \\left( \\frac{x^2}{x^2+y^2} \\right) \\le 3|y|" },
+                        { t: "Step 3: 計算夾擠邊界之極限 (Evaluate Bound Limit)", d: (<span>當 <Latex>{'(x,y) \\to (0,0)'}</Latex> 時，<Latex>{'3|y| \\to 0'}</Latex>。</span>), m: "\\displaystyle 0 \\le |f(x,y)| \\le 3|y|, \\quad \\lim_{(x,y)\\to(0,0)} 3|y| = 0" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>由夾擠定理證明極限存在且等於 0。</span>), m: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{3x^2y}{x^2+y^2} = 0" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Limit DNE (Coordinate Axes)", source: "p.953 Example 1",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^2 - y^2}{x^2 + y^2}",
+                    steps: [
+                        { t: "Step 1: Along the x-axis (y = 0)", d: (<span>Evaluate approaching along the x-axis.</span>), m: "\\displaystyle f(x, 0) = \\frac{x^2}{x^2} = 1 \\implies \\lim_{x \\to 0} f(x, 0) = 1" },
+                        { t: "Step 2: Along the y-axis (x = 0)", d: (<span>Evaluate approaching along the y-axis.</span>), m: "\\displaystyle f(0, y) = \\frac{-y^2}{y^2} = -1 \\implies \\lim_{y \\to 0} f(0, y) = -1" },
+                        { t: "Step 3: Conclusion", d: (<span>Different limits on different paths indicate nonexistence.</span>), m: "\\displaystyle 1 \\neq -1 \\implies \\text{Limit Does Not Exist (DNE)}", img: "https://drive.google.com/thumbnail?id=1M-i8Go95Jp4gHvRjg37lqZ2m3mhLA6Bj&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Limit DNE (Linear Slopes)", source: "p.954 Example 2",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{xy}{x^2 + y^2}",
+                    steps: [
+                        { t: "Step 1: Along Coordinate Axes", d: (<span>Both axes yield limit 0.</span>), m: "\\displaystyle f(x, 0) = 0, \\quad f(0, y) = 0" },
+                        { t: "Step 2: Along Line y = mx", d: (<span>Substitute y = mx to observe slope dependence.</span>), m: "\\displaystyle f(x, mx) = \\frac{m x^2}{(1+m^2)x^2} = \\frac{m}{1+m^2}" },
+                        { t: "Step 3: Along Line y = x", d: (<span>For m = 1, the limit is 1/2.</span>), m: "\\displaystyle m = 1 \\implies \\lim_{x \\to 0} f(x, x) = \\frac{1}{2}" },
+                        { t: "Step 4: Conclusion", d: (<span>Values differ across paths, so limit does not exist.</span>), m: "\\displaystyle 0 \\neq \\frac{1}{2} \\implies \\text{Limit Does Not Exist}", img: "https://drive.google.com/thumbnail?id=1LgAwKGudg2XbwrUPe_etk-fT1rFQ-aeY&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Direct Substitution (Polynomial)", source: "p.956 Example 4",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(1,2)} (x^2y^3 - x^3y^2 + 3x + 2y)",
+                    steps: [
+                        { t: "Step 1: Polynomial Continuity", d: (<span>Polynomials are continuous everywhere.</span>), m: "\\displaystyle f(x,y) \\text{ is continuous everywhere}" },
+                        { t: "Step 2: Direct Substitution", d: (<span>Substitute x = 1 and y = 2.</span>), m: "\\displaystyle 1^2(2^3) - 1^3(2^2) + 3(1) + 2(2) = 8 - 4 + 3 + 4 = 11" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Direct Substitution (Rational)", source: "p.956 Example 5",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(-2,3)} \\frac{x^2y + 1}{x^3y^2 - 2x}",
+                    steps: [
+                        { t: "Step 1: Denominator Check", d: (<span>Verify the denominator is not zero.</span>), m: "\\displaystyle (-2)^3(3^2) - 2(-2) = -68 \\neq 0" },
+                        { t: "Step 2: Direct Evaluation", d: (<span>Substitute directly into the rational function.</span>), m: "\\displaystyle \\frac{(-2)^2(3)+1}{-68} = -\\frac{13}{68}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Squeeze Theorem", source: "p.956 Example 6",
+                    math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{3x^2y}{x^2 + y^2}",
+                    steps: [
+                        { t: "Step 1: Inequality Setup", d: (<span>Notice that <Latex>{'x^2 / (x^2+y^2) \\le 1'}</Latex>.</span>), m: "\\displaystyle \\frac{x^2}{x^2+y^2} \\le 1" },
+                        { t: "Step 2: Absolute Value Bound", d: (<span>Bound the absolute value by 3|y|.</span>), m: "\\displaystyle 0 \\le |f(x,y)| \\le 3|y|" },
+                        { t: "Step 3: Conclusion", d: (<span>By the Squeeze Theorem, the limit is 0.</span>), m: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{3x^2y}{x^2+y^2} = 0" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "雙路徑檢定法 (軸向路徑)", math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^4 - 4y^2}{x^4 + 2y^2}", 
+                    steps: [
+                        { t: "Step 1: 沿 x 軸趨近 (y = 0)", d: (<span>令 y = 0 且 x 趨近於 0。</span>), m: "\\displaystyle f(x, 0) = \\frac{x^4 - 0}{x^4 + 0} = 1 \\implies \\lim_{x \\to 0} f(x, 0) = 1" },
+                        { t: "Step 2: 沿 y 軸趨近 (x = 0)", d: (<span>令 x = 0 且 y 趨近於 0。</span>), m: "\\displaystyle f(0, y) = \\frac{-4y^2}{2y^2} = -2 \\implies \\lim_{y \\to 0} f(0, y) = -2" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>不同路徑極限值相異，極限不存在。</span>), m: "\\displaystyle 1 \\neq -2 \\implies \\text{極限不存在 (Does Not Exist)}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "直線族路徑檢定法 (y = mx)", math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^2 - y^2}{x^2 + 2y^2}", 
+                    steps: [
+                        { t: "Step 1: 代入直線族方程式 (Substitute y = mx)", d: (<span>將 y = mx 代入二元有理式。</span>), m: "\\displaystyle f(x, mx) = \\frac{x^2 - m^2 x^2}{x^2 + 2m^2 x^2} = \\frac{1 - m^2}{1 + 2m^2}" },
+                        { t: "Step 2: 分析極限對斜率之依賴 (Slope Dependence)", d: (<span>極限值直接取決於逼近路徑之斜率 m。</span>), m: "\\displaystyle m = 0 \\implies 1, \\quad m = 1 \\implies 0" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>因極限值依路徑斜率而異，故極限不存在。</span>), m: "\\displaystyle \\text{極限不存在 (Does Not Exist)}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "多項式函數直接代入求值", math: "\\displaystyle \\lim_{(x,y)\\to(2,-1)} (2x^3y - 3xy^2 + 5x - 4y)", 
+                    steps: [
+                        { t: "Step 1: 連續性分析 (Continuity Analysis)", d: (<span>多項式函數在二維平面處處連續，可直接代入。</span>), m: "\\displaystyle f(x,y) \\text{ 為連續函數}" },
+                        { t: "Step 2: 代入計算 (Substitute Coordinates)", d: (<span>將 x = 2, y = -1 代入。</span>), m: "\\displaystyle 2(2)^3(-1) - 3(2)(-1)^2 + 5(2) - 4(-1) = -16 - 6 + 10 + 4" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>求得極限數值。</span>), m: "\\displaystyle -22 + 14 = -8" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "有理函數定義域內連續求值", math: "\\displaystyle \\lim_{(x,y)\\to(1,3)} \\frac{x^2y - 2xy + 3}{x^2 + y^2 - 4}", 
+                    steps: [
+                        { t: "Step 1: 檢驗分母極限 (Denominator Evaluation)", d: (<span>將 (1, 3) 代入分母確認是否為 0。</span>), m: "\\displaystyle 1^2 + 3^2 - 4 = 1 + 9 - 4 = 6 \\neq 0" },
+                        { t: "Step 2: 分子代入計算 (Numerator Evaluation)", d: (<span>將 (1, 3) 代入分子。</span>), m: "\\displaystyle 1^2(3) - 2(1)(3) + 3 = 3 - 6 + 3 = 0" },
+                        { t: "Step 3: 結論 (Conclusion)", d: (<span>有理函數在分母非零處連續。</span>), m: "\\displaystyle \\frac{0}{6} = 0" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "極座標夾擠定理求極限", math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^3 + y^3}{x^2 + y^2}", 
+                    steps: [
+                        { t: "Step 1: 轉換為極座標 (Polar Coordinates)", d: (<span>令 <Latex>{'x = r\\cos\\theta, y = r\\sin\\theta'}</Latex>。</span>), m: "\\displaystyle \\frac{r^3\\cos^3\\theta + r^3\\sin^3\\theta}{r^2} = r(\\cos^3\\theta + \\sin^3\\theta)" },
+                        { t: "Step 2: 建立絕對值界限 (Absolute Bound)", d: (<span>正弦與餘弦之立方和小於等於 2。</span>), m: "\\displaystyle |r(\\cos^3\\theta + \\sin^3\\theta)| \\le r(|\\cos^3\\theta| + |\\sin^3\\theta|) \\le 2r" },
+                        { t: "Step 3: 夾擠定理結論 (Conclusion by Squeeze)", d: (<span>當 <Latex>{'(x,y) \\to (0,0)'}</Latex> 時，<Latex>{'r \\to 0'}</Latex>。</span>), m: "\\displaystyle 0 \\le \\lim_{r \\to 0^+} 2r = 0 \\implies \\lim_{(x,y)\\to(0,0)} \\frac{x^3+y^3}{x^2+y^2} = 0" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Two-Path Test (Coordinate Axes)", math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^4 - 4y^2}{x^4 + 2y^2}", 
+                    steps: [
+                        { t: "Step 1: Along the x-axis (y = 0)", d: (<span>Let y = 0 and x approach 0.</span>), m: "\\displaystyle f(x, 0) = \\frac{x^4}{x^4} = 1 \\implies \\lim_{x \\to 0} f(x, 0) = 1" },
+                        { t: "Step 2: Along the y-axis (x = 0)", d: (<span>Let x = 0 and y approach 0.</span>), m: "\\displaystyle f(0, y) = \\frac{-4y^2}{2y^2} = -2 \\implies \\lim_{y \\to 0} f(0, y) = -2" },
+                        { t: "Step 3: Conclusion", d: (<span>Different limits mean the limit does not exist.</span>), m: "\\displaystyle 1 \\neq -2 \\implies \\text{Limit Does Not Exist (DNE)}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Two-Path Test (Linear Slopes)", math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^2 - y^2}{x^2 + 2y^2}", 
+                    steps: [
+                        { t: "Step 1: Substitute y = mx", d: (<span>Approach along lines with slope m.</span>), m: "\\displaystyle f(x, mx) = \\frac{1 - m^2}{1 + 2m^2}" },
+                        { t: "Step 2: Slope Dependence", d: (<span>Different slopes yield different values.</span>), m: "\\displaystyle m = 0 \\implies 1, \\quad m = 1 \\implies 0" },
+                        { t: "Step 3: Conclusion", d: (<span>The limit does not exist.</span>), m: "\\displaystyle \\text{Limit Does Not Exist}" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Direct Substitution for Polynomial", math: "\\displaystyle \\lim_{(x,y)\\to(2,-1)} (2x^3y - 3xy^2 + 5x - 4y)", 
+                    steps: [
+                        { t: "Step 1: Continuity", d: (<span>Polynomials are continuous everywhere.</span>), m: "\\displaystyle f(x,y) \\text{ is continuous}" },
+                        { t: "Step 2: Direct Substitution", d: (<span>Substitute x = 2 and y = -1.</span>), m: "\\displaystyle 2(8)(-1) - 3(2)(1) + 10 + 4 = -8" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Rational Function at Continuous Point", math: "\\displaystyle \\lim_{(x,y)\\to(1,3)} \\frac{x^2y - 2xy + 3}{x^2 + y^2 - 4}", 
+                    steps: [
+                        { t: "Step 1: Denominator Check", d: (<span>Verify denominator is not zero.</span>), m: "\\displaystyle 1 + 9 - 4 = 6 \\neq 0" },
+                        { t: "Step 2: Direct Substitution", d: (<span>Evaluate numerator and denominator.</span>), m: "\\displaystyle \\frac{3 - 6 + 3}{6} = 0" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Squeeze Theorem with Polar Coordinates", math: "\\displaystyle \\lim_{(x,y)\\to(0,0)} \\frac{x^3 + y^3}{x^2 + y^2}", 
+                    steps: [
+                        { t: "Step 1: Polar Transformation", d: (<span>Substitute <Latex>{'x = r\\cos\\theta, y = r\\sin\\theta'}</Latex>.</span>), m: "\\displaystyle \\frac{r^3(\\cos^3\\theta + \\sin^3\\theta)}{r^2} = r(\\cos^3\\theta + \\sin^3\\theta)" },
+                        { t: "Step 2: Absolute Bound", d: (<span>Bound trig factor by 2.</span>), m: "\\displaystyle |r(\\cos^3\\theta + \\sin^3\\theta)| \\le 2r" },
+                        { t: "Step 3: Conclusion", d: (<span>By the Squeeze Theorem, the limit is 0.</span>), m: "\\displaystyle \\lim_{r \\to 0^+} 2r = 0 \\implies \\text{Limit} = 0" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_14_2.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_14_2.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_14_2.py
+node validate_14_2.js
+python3 check_14_2_math.py
+}
+}

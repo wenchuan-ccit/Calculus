@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 14.1 多變數函數 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle z = f(x, y), \\quad (x, y) \\in D \\subset \\mathbb{R}^2"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>自變數為二維平面上的點座標 <Latex>{'(x, y)'}</Latex>，應變數 <Latex>{'z'}</Latex> 代表空間中的高度數值。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <Latex block>{"\\displaystyle S = \\{ (x, y, z) \\in \\mathbb{R}^3 \\mid z = f(x, y), \\, (x, y) \\in D \\}"}</Latex>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                                <Latex block>{"\\displaystyle f(x, y) = k \\quad (k \\in \\text{Range}(f))"}</Latex>
+                                <span className="mt-2 block text-gray-600">等高線密集處表示曲面地勢陡峭；等高線稀疏處表示坡度平緩。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                            {step.img && (
+                                                <div className="mt-4 flex justify-center">
+                                                    <img src={step.img} alt="課本圖形" className="rounded-xl shadow-md max-w-full md:max-w-md border border-blue-200" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "14.1",
+                unitTitle: "多變數函數",
+                unitSub: "Functions of Several Variables",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "二元函數、定義域、值域與等高線",
+                part1Desc: (
+                    <span>
+                        自然界與工程問題中的物理量，絕大多數取決於兩個或更多的獨立變數（如氣溫取決於經緯度、產量取決於勞力與資本）。本章將單變數函數拓展至空間多變數函數，研究其定義域幾何結構、三維曲面繪製與平面等高線圖。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：地形高程與登山地圖",
+                analogyDesc: (
+                    <span>
+                        將二維平面 <Latex>{'(x, y)'}</Latex> 視為地面上的經緯度位置，函數值 <Latex>{'z = f(x, y)'}</Latex> 就是該位置的地表海拔高度。整個函數的圖形就是一座連綿起伏的山脈曲面；而我們平時使用的登山等高線圖，正是將相同海拔的水平切片投影在地面上所繪出的「等高線 (Level Curves)」。
+                    </span>
+                ),
+                part1Step1: "多變數函數與定義域限制",
+                part1Step1Desc: "二元實數函數之標準形式：",
+                part1Step2: "三維空間圖形與等高線輪廓圖",
+                part1Step2Desc: "從空間曲面到平面地圖的幾何對應：",
+                theorem1Title: "空間曲面圖形 (Graph of a Function of Two Variables)",
+                theorem1Desc: "滿足方程式之所有立體點集合，通常構成光滑連續之曲面：",
+                theorem2Title: "等高線與輪廓圖 (Level Curves & Contour Maps)",
+                theorem2Desc: "以平行於 xy-平面的水平面 z = k 切割曲面所得之交線投影：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "14.1",
+                unitTitle: "Functions of Several Variables",
+                unitSub: "Domain, Range, Graphs and Contour Maps",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Functions of Two Variables and Level Curves",
+                part1Desc: (
+                    <span>
+                        Most natural and engineering quantities depend on multiple independent variables. This section extends calculus from single variable to multivariable functions, focusing on domain, 3D surface graphs, and contour maps.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Mountain Elevation and Topographic Maps",
+                analogyDesc: (
+                    <span>
+                        Think of the <Latex>{'(x, y)'}</Latex> coordinate as longitude and latitude on the ground, and <Latex>{'z = f(x, y)'}</Latex> as the elevation above sea level. The graph forms a 3D mountain landscape, while level curves represent the 2D contour lines on a topographic map.
+                    </span>
+                ),
+                part1Step1: "Definition and Domain Constraints",
+                part1Step1Desc: "Standard definition of a function of two variables:",
+                part1Step2: "Surfaces and Level Curves",
+                part1Step2Desc: "Geometric visualization in 3D and 2D projections:",
+                theorem1Title: "Surface Graphs in 3D",
+                theorem1Desc: "The set of points (x, y, z) satisfying z = f(x, y):",
+                theorem2Title: "Level Curves and Contour Maps",
+                theorem2Desc: "Traces of the surface sliced by horizontal planes z = k:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "求函數值與定義域 (Evaluate & Domain)", source: "p.934 Example 1",
+                    math: "\\displaystyle (a) \\, f(x,y)=\\frac{\\sqrt{x+y+1}}{x-1}, \\quad (b) \\, f(x,y)=x\\ln(y^2-x)",
+                    steps: [
+                        { t: "Step 1: 計算 (a) 函數值 f(3,2)", d: (<span>將 x = 3, y = 2 代入函數 (a)。</span>), m: "\\displaystyle f(3,2) = \\frac{\\sqrt{3+2+1}}{3-1} = \\frac{\\sqrt{6}}{2}" },
+                        { t: "Step 2: 分析 (a) 定義域限制 (Domain for a)", d: (<span>根號內需非負且分母不能為 0。</span>), m: "\\displaystyle x+y+1 \\ge 0 \\implies x+y \\ge -1, \\quad x-1 \\neq 0 \\implies x \\neq 1", img: "https://drive.google.com/thumbnail?id=14PWzkKMgd2l0YAoJp-AEEwsAIuyDAeAP&sz=w1000" },
+                        { t: "Step 3: 計算 (b) 函數值 f(3,2)", d: (<span>將 x = 3, y = 2 代入函數 (b)。</span>), m: "\\displaystyle f(3,2) = 3\\ln(2^2-3) = 3\\ln(1) = 0" },
+                        { t: "Step 4: 分析 (b) 定義域限制 (Domain for b)", d: (<span>對數函數真數必須大於 0。</span>), m: "\\displaystyle y^2 - x > 0 \\implies x < y^2, \\quad D = \\{ (x, y) \\mid x < y^2 \\}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "求定義域與值域 (Domain & Range)", source: "p.935 Example 2",
+                    math: "\\displaystyle g(x,y) = \\sqrt{9 - x^2 - y^2}",
+                    steps: [
+                        { t: "Step 1: 判斷定義域不等式 (Domain Inequality)", d: (<span>根號內部數值必須大於等於 0。</span>), m: "\\displaystyle 9 - x^2 - y^2 \\ge 0 \\implies x^2 + y^2 \\le 9" },
+                        { t: "Step 2: 定義域幾何意義 (Geometric Shape)", d: (<span>此為以原點為中心、半徑為 3 之封閉圓盤。</span>), m: "\\displaystyle D = \\{ (x, y) \\mid x^2 + y^2 \\le 9 \\}", img: "https://drive.google.com/thumbnail?id=16wNf2xL3CQLy7_PKKJ44AQyW5OwJd04R&sz=w1000" },
+                        { t: "Step 3: 求解函數值域 (Find Range)", d: (<span>平方根非負且圓盤半徑最大為 3。</span>), m: "\\displaystyle z = \\sqrt{9-(x^2+y^2)} \\ge 0, \\quad x^2+y^2 \\ge 0 \\implies z \\le \\sqrt{9} = 3" },
+                        { t: "Step 4: 結論 (Conclusion)", d: (<span>值域落於 0 到 3 之間。</span>), m: "\\displaystyle \\text{值域為 } [0, 3]" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "繪製函數圖形－平面 (Sketching Plane)", source: "p.937 Example 5",
+                    math: "\\displaystyle f(x,y) = 6 - 3x - 2y",
+                    steps: [
+                        { t: "Step 1: 轉換為空間幾何方程式 (Rewrite Equation)", d: (<span>令 z = f(x,y) 改寫為平面標準式。</span>), m: "\\displaystyle z = 6 - 3x - 2y \\implies 3x + 2y + z = 6" },
+                        { t: "Step 2: 求解三軸截距 (Find Intercepts)", d: (<span>分別令另外兩變數為 0。</span>), m: "\\displaystyle x\\text{-截距: } (2, 0, 0), \\quad y\\text{-截距: } (0, 3, 0), \\quad z\\text{-截距: } (0, 0, 6)" },
+                        { t: "Step 3: 繪製第一卦限曲面 (Sketch in First Octant)", d: (<span>連接三點構成位於第一卦限的傾斜平面。</span>), m: "\\displaystyle \\text{第一卦限的三角形平面圖形}", img: "https://drive.google.com/thumbnail?id=19F0FsKZ7eR-hkFSsQG_Svu0FC-PrlJqa&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "繪製函數圖形－半球面 (Hemisphere)", source: "p.937 Example 6",
+                    math: "\\displaystyle g(x,y) = \\sqrt{9 - x^2 - y^2}",
+                    steps: [
+                        { t: "Step 1: 兩邊平方分析曲面族 (Square Both Sides)", d: (<span>令 z = g(x,y) 兩邊平方移項。</span>), m: "\\displaystyle z = \\sqrt{9 - x^2 - y^2} \\implies z^2 = 9 - x^2 - y^2 \\implies x^2 + y^2 + z^2 = 9" },
+                        { t: "Step 2: 結合非負條件 (Apply z >= 0)", d: (<span>由於 z 來自非負平方根，圖形僅保留上半部。</span>), m: "\\displaystyle x^2 + y^2 + z^2 = 9, \\quad z \\ge 0" },
+                        { t: "Step 3: 結論與圖形 (Conclusion & Surface)", d: (<span>以原點為中心、半徑為 3 的上半球面。</span>), m: "\\displaystyle \\text{上半球面 (Upper Hemisphere, Radius } 3\\text{)}", img: "https://drive.google.com/thumbnail?id=1POb3-JmDQ5vU9-y72r9YfWyQ-ka7RZ41&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "繪製等高線－線性 (Linear Level Curves)", source: "p.942 Example 10",
+                    math: "\\displaystyle f(x,y) = 6 - 3x - 2y, \\quad k = -6, 0, 6, 12",
+                    steps: [
+                        { t: "Step 1: 設立等高線方程式 (Level Curve Equation)", d: (<span>令函數值等於常數 k。</span>), m: "\\displaystyle 6 - 3x - 2y = k \\implies 3x + 2y = 6 - k" },
+                        { t: "Step 2: 代入各 k 值 (Substitute k Values)", d: (<span>分別計算各條直線。</span>), m: "\\displaystyle k=-6: 3x+2y=12, \\, k=0: 3x+2y=6, \\, k=6: 3x+2y=0, \\, k=12: 3x+2y=-6" },
+                        { t: "Step 3: 幾何特徵結論 (Geometric Structure)", d: (<span>這是一組斜率為 -3/2 的等距平行直線族。</span>), m: "\\displaystyle \\text{斜率為 } -\\frac{3}{2} \\text{ 的一組平行線族}", img: "https://drive.google.com/thumbnail?id=1umtS4_dO6lyrHfYFWobvfSysTiB9f-ek&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "繪製等高線－同心圓 (Concentric Circles)", source: "p.942 Example 11",
+                    math: "\\displaystyle g(x,y) = \\sqrt{9 - x^2 - y^2}, \\quad k = 0, 1, 2, 3",
+                    steps: [
+                        { t: "Step 1: 設立等高線方程式 (Level Curve Equation)", d: (<span>令開根號表達式等於常數 k。</span>), m: "\\displaystyle \\sqrt{9 - x^2 - y^2} = k \\implies x^2 + y^2 = 9 - k^2 \\quad (0 \\le k \\le 3)" },
+                        { t: "Step 2: 計算對應半徑 (Evaluate Radii)", d: (<span>逐一計算各水平切片之圓半徑。</span>), m: "\\displaystyle k=0: x^2+y^2=9 (r=3), \\, k=1: x^2+y^2=8 (r=\\sqrt{8}), \\, k=2: x^2+y^2=5 (r=\\sqrt{5}), \\, k=3: x^2+y^2=0" },
+                        { t: "Step 3: 幾何特徵結論 (Geometric Structure)", d: (<span>以原點為中心的同心圓族，在山頂 k=3 處縮為單點。</span>), m: "\\displaystyle \\text{中心在原點之同心圓族 (Concentric Circles)}", img: "https://drive.google.com/thumbnail?id=1Mkb1-gL9vHKyiGc5RPsBrKPzcxVDP7GC&sz=w1000" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Evaluate & Find Domain", source: "p.934 Example 1",
+                    math: "\\displaystyle (a) \\, f(x,y)=\\frac{\\sqrt{x+y+1}}{x-1}, \\quad (b) \\, f(x,y)=x\\ln(y^2-x)",
+                    steps: [
+                        { t: "Step 1: Evaluate (a) at (3,2)", d: (<span>Substitute x = 3, y = 2 into function (a).</span>), m: "\\displaystyle f(3,2) = \\frac{\\sqrt{3+2+1}}{3-1} = \\frac{\\sqrt{6}}{2}" },
+                        { t: "Step 2: Domain for (a)", d: (<span>Non-negative radical and non-zero denominator.</span>), m: "\\displaystyle D = \\{ (x, y) \\mid x+y \\ge -1, \\, x \\neq 1 \\}", img: "https://drive.google.com/thumbnail?id=14PWzkKMgd2l0YAoJp-AEEwsAIuyDAeAP&sz=w1000" },
+                        { t: "Step 3: Evaluate (b) at (3,2)", d: (<span>Substitute x = 3, y = 2 into function (b).</span>), m: "\\displaystyle f(3,2) = 3\\ln(2^2-3) = 0" },
+                        { t: "Step 4: Domain for (b)", d: (<span>Argument of logarithm must be positive.</span>), m: "\\displaystyle D = \\{ (x, y) \\mid x < y^2 \\}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Find Domain and Range", source: "p.935 Example 2",
+                    math: "\\displaystyle g(x,y) = \\sqrt{9 - x^2 - y^2}",
+                    steps: [
+                        { t: "Step 1: Domain Restriction", d: (<span>Expression inside square root must be non-negative.</span>), m: "\\displaystyle 9 - x^2 - y^2 \\ge 0 \\implies x^2 + y^2 \\le 9" },
+                        { t: "Step 2: Geometric Region", d: (<span>Circular disk of radius 3 centered at the origin.</span>), m: "\\displaystyle D = \\{ (x, y) \\mid x^2 + y^2 \\le 9 \\}", img: "https://drive.google.com/thumbnail?id=16wNf2xL3CQLy7_PKKJ44AQyW5OwJd04R&sz=w1000" },
+                        { t: "Step 3: Range Determination", d: (<span>Radical is non-negative and bounded above by 3.</span>), m: "\\displaystyle 0 \\le z \\le 3 \\implies \\text{Range: } [0, 3]" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Sketching Surface (Plane)", source: "p.937 Example 5",
+                    math: "\\displaystyle f(x,y) = 6 - 3x - 2y",
+                    steps: [
+                        { t: "Step 1: Standard Plane Equation", d: (<span>Set z = f(x,y) and rearrange terms.</span>), m: "\\displaystyle 3x + 2y + z = 6" },
+                        { t: "Step 2: Axis Intercepts", d: (<span>Set other variables to zero to find intercepts.</span>), m: "\\displaystyle (2,0,0), \\quad (0,3,0), \\quad (0,0,6)" },
+                        { t: "Step 3: Graph in First Octant", d: (<span>Join intercepts to form a triangular plane.</span>), m: "\\displaystyle \\text{Triangular plane in the first octant}", img: "https://drive.google.com/thumbnail?id=19F0FsKZ7eR-hkFSsQG_Svu0FC-PrlJqa&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Sketching Surface (Hemisphere)", source: "p.937 Example 6",
+                    math: "\\displaystyle g(x,y) = \\sqrt{9 - x^2 - y^2}",
+                    steps: [
+                        { t: "Step 1: Algebraic Surface", d: (<span>Square both sides and group terms.</span>), m: "\\displaystyle x^2 + y^2 + z^2 = 9, \\quad z \\ge 0" },
+                        { t: "Step 2: Geometric Nature", d: (<span>Upper half of a sphere centered at origin.</span>), m: "\\displaystyle \\text{Upper hemisphere of radius } 3", img: "https://drive.google.com/thumbnail?id=1POb3-JmDQ5vU9-y72r9YfWyQ-ka7RZ41&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Level Curves (Linear)", source: "p.942 Example 10",
+                    math: "\\displaystyle f(x,y) = 6 - 3x - 2y, \\quad k = -6, 0, 6, 12",
+                    steps: [
+                        { t: "Step 1: Equation Formulation", d: (<span>Set f(x,y) equal to constant k.</span>), m: "\\displaystyle 3x + 2y = 6 - k" },
+                        { t: "Step 2: Family of Lines", d: (<span>Parallel lines with constant slope -3/2.</span>), m: "\\displaystyle \\text{Parallel lines with slope } -\\frac{3}{2}", img: "https://drive.google.com/thumbnail?id=1umtS4_dO6lyrHfYFWobvfSysTiB9f-ek&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "Level Curves (Concentric Circles)", source: "p.942 Example 11",
+                    math: "\\displaystyle g(x,y) = \\sqrt{9 - x^2 - y^2}, \\quad k = 0, 1, 2, 3",
+                    steps: [
+                        { t: "Step 1: Equation Formulation", d: (<span>Set radical equal to k and square.</span>), m: "\\displaystyle x^2 + y^2 = 9 - k^2 \\quad (0 \\le k \\le 3)" },
+                        { t: "Step 2: Concentric Circles", d: (<span>Radii are 3, sqrt(8), sqrt(5), and 0 (origin).</span>), m: "\\displaystyle \\text{Concentric circles centered at origin}", img: "https://drive.google.com/thumbnail?id=1Mkb1-gL9vHKyiGc5RPsBrKPzcxVDP7GC&sz=w1000" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "函數求值與分母根號限制", math: "\\displaystyle f(x,y) = \\frac{\\sqrt{x-y+2}}{y-3}", 
+                    steps: [
+                        { t: "Step 1: 求點 (4, 1) 處之函數值", d: (<span>將 x = 4, y = 1 代入原式。</span>), m: "\\displaystyle f(4,1) = \\frac{\\sqrt{4-1+2}}{1-3} = \\frac{\\sqrt{5}}{-2} = -\\frac{\\sqrt{5}}{2}" },
+                        { t: "Step 2: 分析定義域條件 (Domain Conditions)", d: (<span>根式內部需非負，分母不得為零。</span>), m: "\\displaystyle x - y + 2 \\ge 0 \\implies y \\le x + 2, \\quad y - 3 \\neq 0 \\implies y \\neq 3" },
+                        { t: "Step 3: 定義域結論 (Conclusion)", d: (<span>直線 y = x+2 及其下方半平面，扣除水平線 y = 3。</span>), m: "\\displaystyle D = \\{ (x, y) \\mid y \\le x + 2, \\, y \\neq 3 \\}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "根號二次曲面定義域與值域", math: "\\displaystyle g(x,y) = \\sqrt{16 - x^2 - y^2}", 
+                    steps: [
+                        { t: "Step 1: 求解定義域 (Find Domain)", d: (<span>根號內部式子非負。</span>), m: "\\displaystyle 16 - x^2 - y^2 \\ge 0 \\implies x^2 + y^2 \\le 16" },
+                        { t: "Step 2: 定義域幾何圖形 (Geometric Region)", d: (<span>原點為中心、半徑為 4 的圓盤。</span>), m: "\\displaystyle D = \\{ (x, y) \\mid x^2 + y^2 \\le 16 \\}" },
+                        { t: "Step 3: 求解值域 (Find Range)", d: (<span>當 (x,y)=(0,0) 時取最大值 4；在圓邊界上取最小值 0。</span>), m: "\\displaystyle 0 \\le z \\le \\sqrt{16} = 4 \\implies \\text{值域為 } [0, 4]" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "平面圖形截距分析", math: "\\displaystyle z = 12 - 4x - 3y", 
+                    steps: [
+                        { t: "Step 1: 移項為空間平面標準式 (Plane Equation)", d: (<span>整理為 Ax + By + Cz = D 形式。</span>), m: "\\displaystyle 4x + 3y + z = 12" },
+                        { t: "Step 2: 求出三個座標軸之截距 (Find Intercepts)", d: (<span>分別令其他兩變數為 0。</span>), m: "\\displaystyle x\\text{-截距: } (3, 0, 0), \\, y\\text{-截距: } (0, 4, 0), \\, z\\text{-截距: } (0, 0, 12)" },
+                        { t: "Step 3: 幾何結論 (Conclusion)", d: (<span>由三點界定出第一卦限中的三角形傾斜平面。</span>), m: "\\displaystyle \\text{第一卦限截距三角形平面}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "半球面立體圖形判定", math: "\\displaystyle z = \\sqrt{25 - x^2 - y^2}", 
+                    steps: [
+                        { t: "Step 1: 兩邊平方推導幾何關係 (Square Both Sides)", d: (<span>平方後移項得標準球面方程式。</span>), m: "\\displaystyle z^2 = 25 - x^2 - y^2 \\implies x^2 + y^2 + z^2 = 25" },
+                        { t: "Step 2: 考量根號數值正負 (Analyze Sign of z)", d: (<span>由於 z 恆非負，代表只取上半部。</span>), m: "\\displaystyle z \\ge 0" },
+                        { t: "Step 3: 幾何結論 (Conclusion)", d: (<span>以 (0,0,0) 為球心、半徑 R = 5 的上半球面。</span>), m: "\\displaystyle \\text{半徑為 } 5 \\text{ 的上半球面 (Upper Hemisphere)}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "線性函數等高線圖", math: "\\displaystyle f(x,y) = 2x - y, \\quad k = -2, 0, 2, 4", 
+                    steps: [
+                        { t: "Step 1: 建立等高線方程式 (Formulate Level Curves)", d: (<span>令函數值等於常數 k。</span>), m: "\\displaystyle 2x - y = k \\implies y = 2x - k" },
+                        { t: "Step 2: 列出各 k 值之直線 (Equations for k)", d: (<span>分別代入各給定常數。</span>), m: "\\displaystyle k=-2: y=2x+2, \\, k=0: y=2x, \\, k=2: y=2x-2, \\, k=4: y=2x-4" },
+                        { t: "Step 3: 幾何結論 (Conclusion)", d: (<span>斜率皆為 2 的一組平行直線族。</span>), m: "\\displaystyle \\text{斜率為 } 2 \\text{ 的平行線族}" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "旋轉拋物面等高線圖", math: "\\displaystyle f(x,y) = x^2 + y^2, \\quad k = 0, 1, 4, 9", 
+                    steps: [
+                        { t: "Step 1: 建立等高線方程式 (Formulate Level Curves)", d: (<span>令函數值等於常數 k。</span>), m: "\\displaystyle x^2 + y^2 = k \\quad (k \\ge 0)" },
+                        { t: "Step 2: 計算各圓半徑 (Compute Radii)", d: (<span>開根號求出半徑 r。</span>), m: "\\displaystyle k=0: (0,0) \\text{ 點}, \\, k=1: r=1, \\, k=4: r=2, \\, k=9: r=3" },
+                        { t: "Step 3: 幾何結論 (Conclusion)", d: (<span>中心在原點的同心圓族，反映旋轉拋物面的碗狀形態。</span>), m: "\\displaystyle \\text{原點同心圓族 (反映旋轉拋物面 Paraboloid)}" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Evaluation & Domain Restrictions", math: "\\displaystyle f(x,y) = \\frac{\\sqrt{x-y+2}}{y-3}", 
+                    steps: [
+                        { t: "Step 1: Evaluate at (4,1)", d: (<span>Substitute x = 4, y = 1.</span>), m: "\\displaystyle f(4,1) = -\\frac{\\sqrt{5}}{2}" },
+                        { t: "Step 2: Domain Inequality", d: (<span>Radical is non-negative and denominator is non-zero.</span>), m: "\\displaystyle y \\le x + 2, \\quad y \\neq 3" },
+                        { t: "Step 3: Conclusion", d: (<span>Half plane below y = x + 2 excluding line y = 3.</span>), m: "\\displaystyle D = \\{ (x, y) \\mid y \\le x + 2, \\, y \\neq 3 \\}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Domain and Range of Quadratic Radical", math: "\\displaystyle g(x,y) = \\sqrt{16 - x^2 - y^2}", 
+                    steps: [
+                        { t: "Step 1: Domain Condition", d: (<span>Quantity under radical is non-negative.</span>), m: "\\displaystyle x^2 + y^2 \\le 16" },
+                        { t: "Step 2: Range Determination", d: (<span>Bounds between 0 and 4.</span>), m: "\\displaystyle \\text{Range: } [0, 4]" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Plane Intercepts Analysis", math: "\\displaystyle z = 12 - 4x - 3y", 
+                    steps: [
+                        { t: "Step 1: Standard Form", d: (<span>Rearrange as linear plane.</span>), m: "\\displaystyle 4x + 3y + z = 12" },
+                        { t: "Step 2: Find Intercepts", d: (<span>Set other coordinates to zero.</span>), m: "\\displaystyle (3,0,0), \\, (0,4,0), \\, (0,0,12)" },
+                        { t: "Step 3: Conclusion", d: (<span>Triangular plane in the first octant.</span>), m: "\\displaystyle \\text{Triangular plane in first octant}" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "Hemisphere Surface Identification", math: "\\displaystyle z = \\sqrt{25 - x^2 - y^2}", 
+                    steps: [
+                        { t: "Step 1: Square Both Sides", d: (<span>Derive standard sphere equation.</span>), m: "\\displaystyle x^2 + y^2 + z^2 = 25, \\quad z \\ge 0" },
+                        { t: "Step 2: Conclusion", d: (<span>Upper hemisphere of radius 5 centered at origin.</span>), m: "\\displaystyle \\text{Upper hemisphere of radius } 5" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Level Curves of Linear Function", math: "\\displaystyle f(x,y) = 2x - y, \\quad k = -2, 0, 2, 4", 
+                    steps: [
+                        { t: "Step 1: Set Level Equations", d: (<span>Set 2x - y = k.</span>), m: "\\displaystyle y = 2x - k" },
+                        { t: "Step 2: Conclusion", d: (<span>Parallel lines with slope 2.</span>), m: "\\displaystyle \\text{Parallel lines with slope } 2" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "Level Curves of Paraboloid", math: "\\displaystyle f(x,y) = x^2 + y^2, \\quad k = 0, 1, 4, 9", 
+                    steps: [
+                        { t: "Step 1: Equation Formulation", d: (<span>Set x^2 + y^2 = k.</span>), m: "\\displaystyle x^2 + y^2 = k \\quad (k \\ge 0)" },
+                        { t: "Step 2: Conclusion", d: (<span>Concentric circles reflecting a circular paraboloid.</span>), m: "\\displaystyle \\text{Concentric circles (circular paraboloid)}" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_14_1.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_14_1.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_14_1.py
+node validate_14_1.js
+python3 check_14_1_math.py
+}
+}

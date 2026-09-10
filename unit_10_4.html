@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 10.4 極坐標微積分 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle A = \\int_{a}^{b} \\frac{1}{2} r^2 \\, d\\theta"}</Latex>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step2Desc}</div>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.arcLengthTitle}</span> 
+                                <Latex block>{"\\displaystyle L = \\int_{a}^{b} \\sqrt{r^2 + \\left(\\frac{dr}{d\\theta}\\right)^2} \\, d\\theta"}</Latex>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-blue-800 mb-3">{activeEx.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "10.4",
+                unitTitle: "極坐標微積分",
+                unitSub: "Areas and Lengths in Polar Coordinates",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "極坐標的面積與弧長",
+                part1Desc: (
+                    <span>
+                        在直角坐標中，我們計算曲線下的「矩形」面積；但在極坐標中，我們計算的是由原點輻射出的「扇形」面積。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：切披薩 (Cutting a Pizza)",
+                analogyDesc: (
+                    <span>
+                        計算極坐標面積就像是在切一塊邊緣不規則的披薩。我們將披薩切成無窮多個極細的扇形，每個小扇形的面積大約是 <Latex>{'\\frac{1}{2}r^2 d\\theta'}</Latex>。把這些微小的扇形加總（積分），就得到了整塊披薩的面積。
+                    </span>
+                ),
+                part1Step1: "極坐標面積 (Area)",
+                part1Step1Desc: "計算被極坐標曲線所包圍的面積公式：",
+                part1Step2: "極坐標弧長 (Arc Length)",
+                part1Step2Desc: "計算極坐標曲線長度的公式：",
+                areaTitle: "面積 (Area):",
+                arcLengthTitle: "弧長 (Arc Length):",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "10.4",
+                unitTitle: "Calculus in Polar Coordinates",
+                unitSub: "Areas and Lengths in Polar Coordinates",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Area and Arc Length in Polar Form",
+                part1Desc: (
+                    <span>
+                        In Cartesian coordinates, we find area using rectangles. In polar coordinates, we find area using "sectors" radiating from the origin.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Cutting a Pizza",
+                analogyDesc: (
+                    <span>
+                        Finding polar area is like slicing a pizza with an irregular crust. We cut it into infinitely many thin sectors, each with an area of about <Latex>{'\\frac{1}{2}r^2 d\\theta'}</Latex>. Summing these (integration) gives the total area.
+                    </span>
+                ),
+                part1Step1: "Polar Area",
+                part1Step1Desc: "Formula for the area bounded by a polar curve:",
+                part1Step2: "Polar Arc Length",
+                part1Step2Desc: "Formula for the length of a polar curve:",
+                areaTitle: "Area:",
+                arcLengthTitle: "Arc Length:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "玫瑰線的一個葉片面積",
+                    math: "\\displaystyle r = \\cos 2\\theta",
+                    steps: [
+                        { t: "Step 1: 尋找邊界 (Find Limits)", d: (<span>葉片從原點出發再回到原點，令 <Latex>{'r=0'}</Latex> 解出 <Latex>{'\\theta'}</Latex>。</span>), m: "\\displaystyle \\cos 2\\theta = 0 \\implies 2\\theta = -\\frac{\\pi}{2}, \\frac{\\pi}{2} \\implies \\theta = -\\frac{\\pi}{4}, \\frac{\\pi}{4}" },
+                        { t: "Step 2: 建立積分式 (Setup Integral)", d: (<span>代入極坐標面積公式 <Latex>{'A = \\int \\frac{1}{2} r^2 d\\theta'}</Latex>。</span>), m: "\\displaystyle A = \\int_{-\\pi/4}^{\\pi/4} \\frac{1}{2} (\\cos 2\\theta)^2 d\\theta = \\frac{1}{2} \\int_{-\\pi/4}^{\\pi/4} \\cos^2 2\\theta \\, d\\theta" },
+                        { t: "Step 3: 半角公式 (Half-Angle Identity)", d: (<span>利用 <Latex>{'\\cos^2 x = (1+\\cos 2x)/2'}</Latex> 降次。</span>), m: "\\displaystyle \\frac{1}{2} \\int_{-\\pi/4}^{\\pi/4} \\frac{1 + \\cos 4\\theta}{2} \\, d\\theta = \\frac{1}{4} \\int_{-\\pi/4}^{\\pi/4} (1 + \\cos 4\\theta) \\, d\\theta" },
+                        { t: "Step 4: 積分與計算 (Integrate)", d: (<span>進行積分並代入上下限。 <br/><img src='https://drive.google.com/thumbnail?id=1J6avwP6iFHFVnYpVgGjBEfLvwDJMDx63&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle \\frac{1}{4} \\left[ \\theta + \\frac{\\sin 4\\theta}{4} \\right]_{-\\pi/4}^{\\pi/4} = \\frac{1}{4} \\left( \\frac{\\pi}{4} - (-\\frac{\\pi}{4}) \\right) = \\frac{\\pi}{8}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "兩曲線間的面積",
+                    math: "\\displaystyle \\text{Inside } r = 3\\sin\\theta \\text{ and outside } r = 1+\\sin\\theta",
+                    steps: [
+                        { t: "Step 1: 尋找交點 (Intersection)", d: (<span>令兩式相等解 <Latex>{'\\theta'}</Latex>。</span>), m: "\\displaystyle 3\\sin\\theta = 1+\\sin\\theta \\implies 2\\sin\\theta = 1 \\implies \\theta = \\frac{\\pi}{6}, \\frac{5\\pi}{6}" },
+                        { t: "Step 2: 建立積分式 (Setup Integral)", d: (<span>外曲線平方減去內曲線平方的積分。</span>), m: "\\displaystyle A = \\frac{1}{2} \\int_{\\pi/6}^{5\\pi/6} \\left( (3\\sin\\theta)^2 - (1+\\sin\\theta)^2 \\right) d\\theta" },
+                        { t: "Step 3: 展開與化簡 (Expand & Simplify)", d: (<span>展開括號。</span>), m: "\\displaystyle A = \\frac{1}{2} \\int_{\\pi/6}^{5\\pi/6} (9\\sin^2\\theta - 1 - 2\\sin\\theta - \\sin^2\\theta) d\\theta = \\frac{1}{2} \\int_{\\pi/6}^{5\\pi/6} (8\\sin^2\\theta - 2\\sin\\theta - 1) d\\theta" },
+                        { t: "Step 4: 積分與計算 (Result)", d: (<span>利用半角公式轉換 <Latex>{'\\sin^2\\theta'}</Latex> 後積分。 <br/><img src='https://drive.google.com/thumbnail?id=16vArj75rc6T_TFm49oS3zKoYk8nJns7X&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle A = \\pi" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "心形線的弧長",
+                    math: "\\displaystyle r = 1 + \\sin\\theta, \\quad 0 \\le \\theta \\le 2\\pi",
+                    steps: [
+                        { t: "Step 1: 計算導數 (Derivative)", d: (<span>計算 <Latex>{'dr/d\\theta'}</Latex>。</span>), m: "\\displaystyle \\frac{dr}{d\\theta} = \\cos\\theta" },
+                        { t: "Step 2: 平方和 (Sum of Squares)", d: (<span>計算 <Latex>{'r^2 + (dr/d\\theta)^2'}</Latex>。</span>), m: "\\displaystyle (1+\\sin\\theta)^2 + \\cos^2\\theta = 1 + 2\\sin\\theta + \\sin^2\\theta + \\cos^2\\theta = 2 + 2\\sin\\theta" },
+                        { t: "Step 3: 建立積分式 (Setup Integral)", d: (<span>代入弧長公式。</span>), m: "\\displaystyle L = \\int_0^{2\\pi} \\sqrt{2 + 2\\sin\\theta} \\, d\\theta" },
+                        { t: "Step 4: 計算結果 (Result)", d: (<span>此積分可藉由共軛乘法或半角轉換求得。 <br/><img src='https://drive.google.com/thumbnail?id=1CN46gyRoo8ujT4Byk6WByjA46SazpDCm&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle L = 8" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "對數螺線的弧長",
+                    math: "\\displaystyle r = e^{\\theta}, \\quad 0 \\le \\theta \\le 2\\pi",
+                    steps: [
+                        { t: "Step 1: 計算導數 (Derivative)", d: (<span>計算 <Latex>{'dr/d\\theta'}</Latex>。</span>), m: "\\displaystyle \\frac{dr}{d\\theta} = e^{\\theta}" },
+                        { t: "Step 2: 計算根號項 (Arc Length Element)", d: (<span>計算 <Latex>{'\\sqrt{r^2 + (r\')^2}'}</Latex>。</span>), m: "\\displaystyle \\sqrt{(e^{\\theta})^2 + (e^{\\theta})^2} = \\sqrt{2e^{2\\theta}} = \\sqrt{2} e^{\\theta}" },
+                        { t: "Step 3: 建立積分式 (Setup Integral)", d: (<span>代入公式。</span>), m: "\\displaystyle L = \\int_0^{2\\pi} \\sqrt{2} e^{\\theta} \\, d\\theta" },
+                        { t: "Step 4: 積分與計算 (Result)", d: (<span>指數積分不變。 <br/><img src='https://drive.google.com/thumbnail?id=18mku3BGdZMuOGHDem0cNUydhvZ-0Eu8i&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle \\sqrt{2} [e^{\\theta}]_0^{2\\pi} = \\sqrt{2}(e^{2\\pi} - 1)" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Area of a Rose Leaf",
+                    math: "\\displaystyle r = \\cos 2\\theta",
+                    steps: [
+                        { t: "Step 1: Find Limits", d: (<span>Solve for <Latex>{'r=0'}</Latex> to find where the leaf starts and ends.</span>), m: "\\displaystyle 2\\theta = \\pm \\pi/2 \\implies \\theta = -\\pi/4, \\pi/4" },
+                        { t: "Step 2: Setup Integral", d: (<span>Use <Latex>{'A = \\int \\frac{1}{2} r^2 d\\theta'}</Latex>.</span>), m: "\\displaystyle A = \\frac{1}{2} \\int_{-\\pi/4}^{\\pi/4} \\cos^2 2\\theta \\, d\\theta" },
+                        { t: "Step 3: Identity", d: (<span>Use half-angle formula.</span>), m: "\\displaystyle \\frac{1}{4} \\int_{-\\pi/4}^{\\pi/4} (1 + \\cos 4\\theta) \\, d\\theta" },
+                        { t: "Step 4: Result", d: (<span>Integrate and evaluate. <br/><img src='https://drive.google.com/thumbnail?id=1J6avwP6iFHFVnYpVgGjBEfLvwDJMDx63&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle \\frac{\\pi}{8}" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Area Between Curves",
+                    math: "\\displaystyle \\text{Inside } r = 3\\sin\\theta \\text{ and outside } r = 1+\\sin\\theta",
+                    steps: [
+                        { t: "Step 1: Intersection", d: (<span>Set equations equal.</span>), m: "\\displaystyle 3\\sin\\theta = 1+\\sin\\theta \\implies \\sin\\theta = 1/2 \\implies \\theta = \\pi/6, 5\\pi/6" },
+                        { t: "Step 2: Setup Integral", d: (<span>Outer radius squared minus inner radius squared.</span>), m: "\\displaystyle A = \\frac{1}{2} \\int_{\\pi/6}^{5\\pi/6} \\left( (3\\sin\\theta)^2 - (1+\\sin\\theta)^2 \\right) d\\theta" },
+                        { t: "Step 3: Simplify", d: (<span>Expand terms.</span>), m: "\\displaystyle \\frac{1}{2} \\int_{\\pi/6}^{5\\pi/6} (8\\sin^2\\theta - 2\\sin\\theta - 1) d\\theta" },
+                        { t: "Step 4: Result", d: (<span>Final evaluation. <br/><img src='https://drive.google.com/thumbnail?id=16vArj75rc6T_TFm49oS3zKoYk8nJns7X&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle \\pi" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Arc Length of Cardioid",
+                    math: "\\displaystyle r = 1 + \\sin\\theta",
+                    steps: [
+                        { t: "Step 1: Derivative", d: (<span>Find <Latex>{'dr/d\\theta'}</Latex>.</span>), m: "\\displaystyle r' = \\cos\\theta" },
+                        { t: "Step 2: Sum of Squares", d: (<span>Calculate <Latex>{'r^2 + (r\')^2'}</Latex>.</span>), m: "\\displaystyle 1 + 2\\sin\\theta + \\sin^2\\theta + \\cos^2\\theta = 2 + 2\\sin\\theta" },
+                        { t: "Step 3: Integral", d: (<span>Arc length formula.</span>), m: "\\displaystyle L = \\int_0^{2\\pi} \\sqrt{2 + 2\\sin\\theta} \\, d\\theta" },
+                        { t: "Step 4: Result", d: (<span>Evaluate. <br/><img src='https://drive.google.com/thumbnail?id=1CN46gyRoo8ujT4Byk6WByjA46SazpDCm&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle 8" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Arc Length of Logarithmic Spiral",
+                    math: "\\displaystyle r = e^{\\theta}, \\quad 0 \\le \\theta \\le 2\\pi",
+                    steps: [
+                        { t: "Step 1: Derivative", d: (<span>Find <Latex>{'dr/d\\theta'}</Latex>.</span>), m: "\\displaystyle r' = e^{\\theta}" },
+                        { t: "Step 2: Arc Length Element", d: (<span>Calculate <Latex>{'\\sqrt{r^2 + (r\')^2}'}</Latex>.</span>), m: "\\displaystyle \\sqrt{e^{2\\theta} + e^{2\\theta}} = \\sqrt{2} e^{\\theta}" },
+                        { t: "Step 3: Setup", d: (<span>Integral.</span>), m: "\\displaystyle L = \\int_0^{2\\pi} \\sqrt{2} e^{\\theta} \\, d\\theta" },
+                        { t: "Step 4: Result", d: (<span>Evaluate. <br/><img src='https://drive.google.com/thumbnail?id=18mku3BGdZMuOGHDem0cNUydhvZ-0Eu8i&sz=w1000' width='300' style={{display: 'block', margin: '8px auto'}}/> </span>), m: "\\displaystyle \\sqrt{2}(e^{2\\pi} - 1)" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "極坐標面積練習", math: "\\displaystyle r = \\sqrt{\\theta}, \\quad 0 \\le \\theta \\le \\pi", 
+                    steps: [
+                        { t: "Step 1: 公式 (Formula)", d: (<span>代入面積公式。</span>), m: "\\displaystyle A = \\int_0^\\pi \\frac{1}{2} r^2 \\, d\\theta" },
+                        { t: "Step 2: 建立 (Setup)", d: (<span>將 <Latex>{'r'}</Latex> 代入並平方。</span>), m: "\\displaystyle A = \\int_0^\\pi \\frac{1}{2} (\\sqrt{\\theta})^2 \\, d\\theta = \\frac{1}{2} \\int_0^\\pi \\theta \\, d\\theta" },
+                        { t: "Step 3: 計算 (Evaluate)", d: (<span>積分並代入。</span>), m: "\\displaystyle \\frac{1}{2} \\left[ \\frac{1}{2} \\theta^2 \\right]_0^\\pi = \\frac{\\pi^2}{4}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "極坐標弧長練習", math: "\\displaystyle r = 2\\cos\\theta, \\quad 0 \\le \\theta \\le \\pi", 
+                    steps: [
+                        { t: "Step 1: 導數 (Derivative)", d: (<span>計算 <Latex>{'r\''}</Latex>。</span>), m: "\\displaystyle \\frac{dr}{d\\theta} = -2\\sin\\theta" },
+                        { t: "Step 2: 根號項 (Element)", d: (<span>計算 <Latex>{'r^2 + (r\')^2'}</Latex>。</span>), m: "\\displaystyle 4\\cos^2\\theta + 4\\sin^2\\theta = 4" },
+                        { t: "Step 3: 積分 (Integrate)", d: (<span>求弧長。</span>), m: "\\displaystyle L = \\int_0^\\pi \\sqrt{4} \\, d\\theta = \\int_0^\\pi 2 \\, d\\theta = 2\\pi" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Area Practice", math: "\\displaystyle r = \\sqrt{\\theta}, \\quad 0 \\le \\theta \\le \\pi", 
+                    steps: [
+                        { t: "Step 1: Formula", d: (<span>Use area formula.</span>), m: "\\displaystyle A = \\int_0^\\pi \\frac{1}{2} r^2 \\, d\\theta" },
+                        { t: "Step 2: Setup", d: (<span>Square r.</span>), m: "\\displaystyle \\frac{1}{2} \\int_0^\\pi \\theta \\, d\\theta" },
+                        { t: "Step 3: Evaluate", d: (<span>Integrate.</span>), m: "\\displaystyle \\frac{\\pi^2}{4}" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Arc Length Practice", math: "\\displaystyle r = 2\\cos\\theta, \\quad 0 \\le \\theta \\le \\pi", 
+                    steps: [
+                        { t: "Step 1: Derivative", d: (<span>Find r'.</span>), m: "\\displaystyle r' = -2\\sin\\theta" },
+                        { t: "Step 2: Element", d: (<span>Calculate <Latex>{'r^2 + (r\')^2'}</Latex>.</span>), m: "\\displaystyle 4\\cos^2\\theta + 4\\sin^2\\theta = 4" },
+                        { t: "Step 3: Integrate", d: (<span>Find length.</span>), m: "\\displaystyle L = \\int_0^\\pi 2 \\, d\\theta = 2\\pi" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

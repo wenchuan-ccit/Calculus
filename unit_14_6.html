@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!-- 關鍵修復：強制所有連結都在上層視窗跳轉，避開 iframe 限制 -->
+    <base target="_top">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微積分 (2) - 14.6 方向導數與梯度向量 | Prof. Wu Wen-Chuan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdf2f8; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+        .math-display { overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Latex = ({ children, block = false, fontSize = '0.9em' }) => {
+            const spanRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && spanRef.current) {
+                    try {
+                        const content = typeof children === 'string' ? children : '';
+                        window.katex.render(content, spanRef.current, {
+                            throwOnError: false,
+                            displayMode: block,
+                        });
+                    } catch (e) {
+                        console.warn("KaTeX render error", e);
+                        if (spanRef.current) spanRef.current.innerText = String(children);
+                    }
+                }
+            }, [children, block]);
+
+            return <span ref={spanRef} style={{ margin: '0 4px', display: block ? 'block' : 'inline-block', fontSize: fontSize }} />;
+        };
+
+        const Navbar = ({ t, isMenuOpen, setIsMenuOpen, toggleLang }) => {
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                setIsMenuOpen(false);
+            };
+
+            return (
+                <nav className="sticky top-0 z-50 w-full bg-white/90 px-6 py-4 shadow-md backdrop-blur-md transition-all">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div className="flex flex-col">
+                            <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl">
+                                {t.title}
+                            </h1>
+                            <span className="text-base font-medium text-gray-500 md:text-xl">
+                                {t.teacher}
+                            </span>
+                        </div>
+
+                        <div className="hidden items-center gap-6 md:flex">
+                            <a href="index.html" className="text-xl font-black text-pink-600 hover:text-pink-700 transition-colors border-b-2 border-transparent hover:border-pink-600 pb-1">
+                                🏠 回主選單
+                            </a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="text-xl font-bold text-gray-600 hover:text-pink-500 transition-colors cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={toggleLang}
+                                className="flex items-center gap-2 rounded-full bg-purple-100 px-5 py-2 text-lg font-bold text-purple-700 transition-all hover:bg-purple-200 hover:shadow-md active:scale-95"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+
+                        <button 
+                            className="rounded-full bg-gray-100 p-2 text-gray-600 md:hidden hover:bg-gray-200"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 md:hidden">
+                            <a href={`${APP_URL}?page=index`} className="px-2 py-1 text-lg font-black text-pink-600">🏠 回主選單</a>
+                            {t.menu.map((item, i) => (
+                                <button key={i} onClick={(e) => handleScroll(e, `part${i+1}`)} className="px-2 py-1 text-lg font-bold text-gray-600 text-left cursor-pointer">{item}</button>
+                            ))}
+                            <button 
+                                onClick={() => { toggleLang(); setIsMenuOpen(false); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-100 py-3 font-bold text-purple-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {t.langBtn}
+                            </button>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const UnitHeader = ({ t }) => (
+            <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+                <h2 className="mb-2 text-4xl font-black text-black md:text-5xl">
+                    <span className="mr-3 text-black">{t.unitId}</span>
+                    {t.unitTitle}
+                </h2>
+                <p className="text-2xl font-bold text-gray-500">{t.unitSub}</p>
+            </div>
+        );
+
+        const Part1 = ({ t }) => (
+            <section id="part1" className="scroll-mt-32 rounded-[2rem] bg-pink-100 p-8 shadow-lg shadow-pink-100/50 md:p-12 transition-all hover:shadow-xl">
+                <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-pink-700 md:text-3xl">{t.part1Title}</h2>
+                </div>
+                
+                <div className="space-y-8 rounded-3xl bg-white/60 p-6 md:p-8">
+                    <h3 className="text-2xl font-bold text-gray-800">{t.part1Topic}</h3>
+                    <div className="text-xl leading-relaxed text-gray-700">{t.part1Desc}</div>
+
+                    <div className="bg-purple-50 py-4 px-6 rounded-2xl border-l-8 border-purple-400">
+                        <h4 className="font-bold text-purple-800 text-xl mb-2 flex items-center gap-2">
+                            <span>💡</span> {t.analogyTitle}
+                        </h4>
+                        <div className="text-xl text-gray-700 leading-relaxed">
+                            {t.analogyDesc}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-pink-50 py-4 px-6 rounded-2xl border-l-8 border-pink-400">
+                        <h4 className="font-bold text-pink-800 text-xl mb-2">{t.part1Step1}</h4>
+                        <div className="text-xl text-gray-700 mb-4">{t.part1Step1Desc}</div>
+                        <div className="text-center my-4 math-display bg-white/50 p-4 rounded-xl">
+                            <Latex block>{"\\displaystyle D_{\\mathbf{u}}f(x, y) = \\nabla f(x, y) \\cdot \\mathbf{u} = |\\nabla f|\\cos\\theta"}</Latex>
+                            <div className="mt-2 text-lg text-gray-700">
+                                <span>其中 <Latex>{'\\mathbf{u}'}</Latex> 必須為單位向量（長度為 1），<Latex>{'\\theta'}</Latex> 為梯度與方向向量之夾角。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border-l-8 border-pink-400 shadow-sm">
+                        <h4 className="font-bold text-pink-800 text-xl mb-4">{t.part1Step2}</h4>
+                        <ul className="space-y-6 text-lg text-gray-700">
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem1Title}</span> 
+                                <span className="mb-2 block">{t.theorem1Desc}</span>
+                                <Latex block>{"\\displaystyle \\max D_{\\mathbf{u}}f = |\\nabla f| \\quad (\\text{當 } \\mathbf{u} \\text{ 與 } \\nabla f \\text{ 同向})"}</Latex>
+                            </li>
+                            <li>
+                                <span className="font-bold block mb-1">{t.theorem2Title}</span> 
+                                <span className="mb-2 block">{t.theorem2Desc}</span>
+                                <Latex block>{"\\displaystyle \\nabla F(x_0, y_0, z_0) \\cdot \\langle x - x_0, y - y_0, z - z_0 \\rangle = 0"}</Latex>
+                                <span className="mt-2 block text-gray-600">梯度向量恆正交於過該點的等高線或等位面，因此是建構切平面方程式的最佳法向量。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Part2 = ({ t, activeExList, activeExampleId, setActiveExampleId }) => {
+            const activeEx = activeExList.find(e => e.id === activeExampleId) || activeExList[0];
+            return (
+                <section id="part2" className="scroll-mt-32 rounded-[2rem] bg-blue-100 p-8 shadow-lg shadow-blue-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-700 md:text-3xl">{t.part2Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activeExList.map((ex) => (
+                            <button
+                                key={ex.id}
+                                onClick={() => setActiveExampleId(ex.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activeExampleId === ex.id
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                                        : "bg-white text-blue-600 hover:bg-blue-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnLabel} {ex.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-8">
+                        <div key={activeEx.id} className="rounded-3xl bg-white/60 p-6 md:p-8 shadow-inner">
+                            <div className="border-b-2 border-blue-200 pb-6 mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-2xl font-bold text-blue-800">{activeEx.title}</h3>
+                                    {activeEx.source && (
+                                        <span className="bg-blue-200 text-blue-900 font-semibold px-3 py-1 rounded-full text-sm">
+                                            {activeEx.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">{t.btnLabel} {activeEx.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-blue-600 shadow-md ring-1 ring-blue-100 math-display">
+                                        <Latex block fontSize="0.9em">{activeEx.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {activeEx.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-blue-200 transition-all hover:shadow-lg hover:ring-blue-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-blue-700">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-blue-50 p-4 text-center text-lg font-bold text-blue-900 rounded-xl math-display border border-blue-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                            {step.img && (
+                                                <div className="mt-4 flex justify-center">
+                                                    <img src={step.img} alt="方向導數與梯度圖形" className="rounded-xl shadow-md max-w-full md:max-w-md border border-blue-200" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Part3 = ({ t, activePracList, activePracticeId, setActivePracticeId }) => {
+            const activePrac = activePracList.find(p => p.id === activePracticeId) || activePracList[0];
+            return (
+                <section id="part3" className="scroll-mt-32 rounded-[2rem] bg-green-100 p-8 shadow-lg shadow-green-100/50 md:p-12 transition-all hover:shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-green-700 md:text-3xl">{t.part3Title}</h2>
+                    </div>
+
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {activePracList.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setActivePracticeId(p.id)}
+                                className={`rounded-full px-6 py-3 text-lg font-bold transition-all shadow-sm ${
+                                    activePracticeId === p.id
+                                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                                        : "bg-white text-green-600 hover:bg-green-50 hover:scale-105"
+                                }`}
+                            >
+                                {t.btnPracticeLabel} {p.id}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 rounded-3xl bg-white/60 p-6 md:p-8">
+                        <p className="mb-8 text-xl text-gray-700 font-medium">{t.part3Desc}</p>
+                        
+                        <div key={activePrac.id} className="rounded-3xl bg-white p-6 md:p-8 shadow-md border-2 border-green-300 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="border-b-2 border-green-100 pb-6 mb-6">
+                                <h3 className="text-2xl font-bold text-green-800 mb-3">{activePrac.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-lg font-bold text-gray-800">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg">{t.btnPracticeLabel} {activePrac.id}:</span>
+                                    <div className="rounded-xl bg-white px-6 py-3 text-green-700 shadow-md ring-1 ring-green-100 math-display">
+                                        <Latex block fontSize="0.9em">{activePrac.math}</Latex>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-6">
+                                {activePrac.steps.map((step, idx) => (
+                                    <div key={idx} className="group rounded-2xl bg-white p-6 ring-2 ring-green-200 transition-all hover:shadow-lg hover:ring-green-400">
+                                        <h4 className="mb-3 flex items-center gap-3 text-lg font-bold text-green-600">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm text-white font-black">
+                                                {idx + 1}
+                                            </span>
+                                            {step.t}
+                                        </h4>
+                                        <div className="mb-4 text-lg text-gray-600 pl-11">{step.d}</div>
+                                        <div className="bg-green-50 p-4 text-center text-lg font-bold text-green-800 rounded-xl math-display border border-green-100">
+                                            <Latex block fontSize="0.9em">{step.m}</Latex>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh');
+            const [katexLoaded, setKatexLoaded] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeExampleId, setActiveExampleId] = useState(1);
+            const [activePracticeId, setActivePracticeId] = useState(1);
+
+            useEffect(() => {
+                const checkKatex = setInterval(() => {
+                    if (window.katex) {
+                        setKatexLoaded(true);
+                        clearInterval(checkKatex);
+                    }
+                }, 100);
+                setTimeout(() => setKatexLoaded(true), 3000); 
+                return () => clearInterval(checkKatex);
+            }, []);
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+                setIsMenuOpen(false);
+            };
+
+            const t = DATA[lang];
+            const activeExList = EXAMPLES_DATA[lang];
+            const activePracList = PRACTICE_DATA[lang];
+
+            if (!katexLoaded) {
+                return (
+                    <div className="flex h-screen w-full items-center justify-center bg-yellow-50 text-xl font-bold text-gray-500">
+                        Loading Math Engine...
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-yellow-50 font-sans text-gray-800 selection:bg-pink-200">
+                    <Navbar t={t} isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} toggleLang={toggleLang} />
+                    <main className="mx-auto mt-16 flex max-w-6xl flex-col gap-16 px-4 pb-20">
+                        <UnitHeader t={t} />
+                        <Part1 t={t} />
+                        <Part2 t={t} activeExList={activeExList} activeExampleId={activeExampleId} setActiveExampleId={setActiveExampleId} />
+                        <Part3 t={t} activePracList={activePracList} activePracticeId={activePracticeId} setActivePracticeId={setActivePracticeId} />
+                    </main>
+                    <footer className="mt-12 bg-white py-12 text-center text-gray-400 border-t border-gray-100">
+                        <p className="text-lg">© 2026 Calculus (2) Course. Prof. Wu Wen-Chuan.</p>
+                        <p className="mt-2 text-sm">Designed for Student Success</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 4. 資料定義 (Data)
+        // ==========================================
+
+        const DATA = {
+            zh: {
+                title: "微積分 (2)",
+                teacher: "授課老師: 吳文銓 (Prof. Wu Wen-Chuan)",
+                menu: ["核心概念", "範例說明", "動手練習"],
+                langBtn: "English",
+                unitId: "14.6",
+                unitTitle: "方向導數與梯度向量",
+                unitSub: "Directional Derivatives and the Gradient Vector",
+                part1Title: "第一部分：核心概念",
+                part1Topic: "任意方向變化率、梯度向量與最速上升方向",
+                part1Desc: (
+                    <span>
+                        一般偏導數僅能衡量沿著座標軸正方向的變化率，而「方向導數」將此限制解放至二維或三維空間中的「任意指向」。核心媒介正是「梯度向量 <Latex>{'\\nabla f'}</Latex>」——它指向函數上升最陡峭的方向，其量值即為最大上升率。
+                    </span>
+                ),
+                analogyTitle: "觀念類比：迷霧中的指南針與最陡坡道",
+                analogyDesc: (
+                    <span>
+                        想像你受困於大霧瀰漫的山坡上，四周伸手不見五指。此時你腳下的梯度向量 <Latex>{'\\nabla f'}</Latex> 就像一根魔法指針，精確指向「正上方最陡峭的攻頂路徑」，指針的長度代表攻頂坡度。若你選擇沿著與指針垂直的方向（等高線）行走，高度將完全不變（方向導數為 0）；若背對指針向下走，則是下山最快的路線。
+                    </span>
+                ),
+                part1Step1: "方向導數之點積定理",
+                part1Step1Desc: "函數沿單位向量 u 之方向導數可由梯度點積求得：",
+                part1Step2: "梯度的極值性與正交幾何性質",
+                part1Step2Desc: "最佳化理論與曲面切平面的核心準則：",
+                theorem1Title: "最大變化率定理 (Maximum Rate of Change)",
+                theorem1Desc: "方向導數在與梯度向量同向時取得最大值：",
+                theorem2Title: "等位面正交性與切平面法向量",
+                theorem2Desc: "梯度向量恆正交於過該點之等位面 F(x, y, z) = k：",
+                part2Title: "第二部分：範例說明",
+                part3Title: "第三部分：動手練習",
+                part3Desc: "請嘗試解決以下題目，並參考詳細步驟核對：",
+                btnLabel: "例題",
+                btnPracticeLabel: "練習題"
+            },
+            en: {
+                title: "Calculus (2)",
+                teacher: "Instructor: Prof. Wu Wen-Chuan",
+                menu: ["Concepts", "Examples", "Practice"],
+                langBtn: "繁體中文",
+                unitId: "14.6",
+                unitTitle: "Directional Derivatives and Gradient",
+                unitSub: "Directional Rates of Change & The Gradient Vector",
+                part1Title: "Part 1: Core Concepts",
+                part1Topic: "Directional Derivatives and the Gradient Vector",
+                part1Desc: (
+                    <span>
+                        While standard partial derivatives quantify rates of change strictly parallel to coordinate axes, the directional derivative generalizes this to any arbitrary direction via the gradient vector.
+                    </span>
+                ),
+                analogyTitle: "Analogy: Compass on a Foggy Mountainside",
+                analogyDesc: (
+                    <span>
+                        In heavy fog on a mountain, the gradient vector serves as a directional guide pointing directly toward the steepest upward ascent. Walking perpendicular to the gradient traverses along level contours with zero height change.
+                    </span>
+                ),
+                part1Step1: "Directional Derivative via Dot Product",
+                part1Step1Desc: "Rate of change along unit vector u given by the gradient:",
+                part1Step2: "Maximization & Orthogonality Properties",
+                part1Step2Desc: "Key geometric principles for optimization and tangent planes:",
+                theorem1Title: "Maximum Rate of Change",
+                theorem1Desc: "Maximized in the direction of the gradient vector:",
+                theorem2Title: "Orthogonality to Level Sets & Tangent Normal",
+                theorem2Desc: "Gradient is orthogonal to level surfaces F(x, y, z) = k:",
+                part2Title: "Part 2: Examples",
+                part3Title: "Part 3: Practice",
+                part3Desc: "Solve the problems and check the detailed steps below:",
+                btnLabel: "Ex",
+                btnPracticeLabel: "Q"
+            }
+        };
+
+        const EXAMPLES_DATA = {
+            zh: [
+                {
+                    id: 1, label: "Ex 1", title: "計算指定角度之方向導數", source: "p.997 Example 2",
+                    math: "\\displaystyle f(x,y) = x^3 - 3xy + 4y^2, \\quad \\theta = \\pi/6",
+                    steps: [
+                        { t: "Step 1: 計算一階偏導函數", d: (<span>分別對 x 與 y 求偏導。</span>), m: "\\displaystyle f_x(x,y) = 3x^2 - 3y, \\quad f_y(x,y) = -3x + 8y" },
+                        { t: "Step 2: 建立角度方向之單位向量 u", d: (<span>利用三角函數構造單位向量。</span>), m: "\\displaystyle \\mathbf{u} = \\langle \\cos(\\pi/6), \\sin(\\pi/6) \\rangle = \\left\\langle \\frac{\\sqrt{3}}{2}, \\frac{1}{2} \\right\\rangle" },
+                        { t: "Step 3: 套用方向導數公式展開", d: (<span>D_u f = f_x a + f_y b。</span>), m: "\\displaystyle D_{\\mathbf{u}}f(x,y) = (3x^2-3y)\\frac{\\sqrt{3}}{2} + (-3x+8y)\\frac{1}{2}" },
+                        { t: "Step 4: 整理最終代數式", d: (<span>提出公因數化簡。</span>), m: "\\displaystyle D_{\\mathbf{u}}f(x,y) = \\frac{1}{2}\\left[3\\sqrt{3}x^2 - 3\\sqrt{3}y - 3x + 8y\\right]", img: "https://drive.google.com/thumbnail?id=1GXguO2R9n0OFj28Lj-aOySZREel0HNoU&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "計算梯度向量與點代入", source: "p.998 Example 3",
+                    math: "\\displaystyle f(x,y) = \\sin x + e^{xy}, \\quad (0, 1)",
+                    steps: [
+                        { t: "Step 1: 求偏導函數成分", d: (<span>分別求 f_x 與 f_y。</span>), m: "\\displaystyle f_x = \\cos x + y e^{xy}, \\quad f_y = x e^{xy}" },
+                        { t: "Step 2: 構造梯度向量一般式", d: (<span>組合成二維梯度向量。</span>), m: "\\displaystyle \\nabla f(x,y) = \\langle \\cos x + y e^{xy}, \\, x e^{xy} \\rangle" },
+                        { t: "Step 3: 代入點 (0, 1) 求數值", d: (<span>代入 x = 0, y = 1。</span>), m: "\\displaystyle \\nabla f(0,1) = \\langle \\cos 0 + 1 e^0, \\, 0 e^0 \\rangle = \\langle 1+1, 0 \\rangle = \\langle 2, 0 \\rangle" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "沿指定向量 v 方向的方向導數", source: "p.998 Example 4",
+                    math: "\\displaystyle f(x,y) = x^2y^3 - 4y, \\quad (2, -1), \\quad \\mathbf{v} = 2\\mathbf{i} + 5\\mathbf{j}",
+                    steps: [
+                        { t: "Step 1: 計算點 (2, -1) 處之梯度向量", d: (<span>求偏導並代入座標。</span>), m: "\\displaystyle \\nabla f = \\langle 2xy^3, \\, 3x^2y^2-4 \\rangle \\implies \\nabla f(2,-1) = \\langle -4, 8 \\rangle" },
+                        { t: "Step 2: 將非單位方向向量 v 正規化", d: (<span>除以向量長度求單位向量 u。</span>), m: "\\displaystyle |\\mathbf{v}| = \\sqrt{2^2+5^2} = \\sqrt{29} \\implies \\mathbf{u} = \\left\\langle \\frac{2}{\\sqrt{29}}, \\frac{5}{\\sqrt{29}} \\right\\rangle" },
+                        { t: "Step 3: 計算梯度與單位向量之點積", d: (<span>D_u f = grad f dot u。</span>), m: "\\displaystyle D_{\\mathbf{u}}f(2,-1) = \\langle -4, 8 \\rangle \\cdot \\left\\langle \\frac{2}{\\sqrt{29}}, \\frac{5}{\\sqrt{29}} \\right\\rangle = \\frac{-8 + 40}{\\sqrt{29}} = \\frac{32}{\\sqrt{29}}", img: "https://drive.google.com/thumbnail?id=1xnttKWdcB3YW6C3jg-BmCtzrW3KGdTgU&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "三元函數梯度與空間方向導數", source: "p.999 Example 5",
+                    math: "\\displaystyle f(x,y,z) = x\\sin(yz), \\quad (1, 3, 0), \\quad \\mathbf{v} = \\mathbf{i} + 2\\mathbf{j} - \\mathbf{k}",
+                    steps: [
+                        { t: "Step 1: 求三元函數梯度向量一般式", d: (<span>分別對 x, y, z 求偏導。</span>), m: "\\displaystyle \\nabla f(x,y,z) = \\langle \\sin(yz), \\, xz\\cos(yz), \\, xy\\cos(yz) \\rangle" },
+                        { t: "Step 2: 代入點 (1, 3, 0) 求梯度值", d: (<span>代入座標得梯度向量。</span>), m: "\\displaystyle \\nabla f(1,3,0) = \\langle \\sin 0, \\, 0, \\, 3\\cos 0 \\rangle = \\langle 0, 0, 3 \\rangle" },
+                        { t: "Step 3: 將空間方向向量 v 正規化", d: (<span>求三維單位向量。</span>), m: "\\displaystyle |\\mathbf{v}| = \\sqrt{1^2+2^2+(-1)^2} = \\sqrt{6} \\implies \\mathbf{u} = \\left\\langle \\frac{1}{\\sqrt{6}}, \\frac{2}{\\sqrt{6}}, \\frac{-1}{\\sqrt{6}} \\right\\rangle" },
+                        { t: "Step 4: 計算空間方向導數", d: (<span>兩向量點積求值。</span>), m: "\\displaystyle D_{\\mathbf{u}}f(1,3,0) = \\langle 0, 0, 3 \\rangle \\cdot \\left\\langle \\frac{1}{\\sqrt{6}}, \\frac{2}{\\sqrt{6}}, \\frac{-1}{\\sqrt{6}} \\right\\rangle = -\\frac{3}{\\sqrt{6}} = -\\frac{\\sqrt{6}}{2}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "最大變化率方向與極值計算", source: "p.1000 Example 6",
+                    math: "\\displaystyle f(x,y) = xe^y, \\quad P(2, 0) \\to Q(1/2, 2)",
+                    steps: [
+                        { t: "Step 1: 求點 P 處梯度與方向向量 PQ", d: (<span>計算梯度與連線向量。</span>), m: "\\displaystyle \\nabla f(2,0) = \\langle e^0, 2e^0 \\rangle = \\langle 1, 2 \\rangle, \\quad \\vec{PQ} = \\langle -1.5, 2 \\rangle" },
+                        { t: "Step 2: 求解沿 PQ 方向之變化率", d: (<span>正規化並做點積。</span>), m: "\\displaystyle |\\vec{PQ}| = 2.5 \\implies \\mathbf{u} = \\langle -0.6, 0.8 \\rangle \\implies D_{\\mathbf{u}}f = \\langle 1, 2 \\rangle \\cdot \\langle -0.6, 0.8 \\rangle = 1" },
+                        { t: "Step 3: 判定最大變化率之方向", d: (<span>最大變化率恆發生於梯度正方向。</span>), m: "\\displaystyle \\text{最大增加率方向為 } \\nabla f(2,0) = \\langle 1, 2 \\rangle" },
+                        { t: "Step 4: 計算最大變化率之數值", d: (<span>最大變化率值恰為梯度的模長。</span>), m: "\\displaystyle \\max D_{\\mathbf{u}}f = |\\nabla f(2,0)| = \\sqrt{1^2+2^2} = \\sqrt{5}", img: "https://drive.google.com/thumbnail?id=1Tn6fb0sGjutDDokeMF98pXbooFgY5Tse&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "利用梯度求等位曲面之切平面", source: "p.1002 Example 8",
+                    math: "\\displaystyle \\frac{x^2}{4} + y^2 + \\frac{z^2}{9} = 3, \\quad (-2, 1, -3)",
+                    steps: [
+                        { t: "Step 1: 定義等位面函數 F(x, y, z)", d: (<span>構造曲面函數。</span>), m: "\\displaystyle F(x,y,z) = \\frac{x^2}{4} + y^2 + \\frac{z^2}{9} = 3" },
+                        { t: "Step 2: 計算點處之法向量 (梯度向量)", d: (<span>梯度正交於等位面。</span>), m: "\\displaystyle \\nabla F = \\left\\langle \\frac{x}{2}, 2y, \\frac{2z}{9} \\right\\rangle \\implies \\nabla F(-2,1,-3) = \\left\\langle -1, 2, -\\frac{2}{3} \\right\\rangle" },
+                        { t: "Step 3: 代入點法式寫出切平面方程式", d: (<span>代入切點 (-2, 1, -3)。</span>), m: "\\displaystyle -1(x+2) + 2(y-1) - \\frac{2}{3}(z+3) = 0" },
+                        { t: "Step 4: 化簡整數係數標準式", d: (<span>全式同乘以 -3 並整理。</span>), m: "\\displaystyle 3(x+2) - 6(y-1) + 2(z+3) = 0 \\implies 3x - 6y + 2z + 18 = 0", img: "https://drive.google.com/thumbnail?id=1dM0-LQZQJWHgs4IL5DPMNW3rT2JNhudE&sz=w1000" }
+                    ]
+                }
+            ],
+            en: [
+                {
+                    id: 1, label: "Ex 1", title: "Directional Derivative at Given Angle", source: "p.997 Example 2",
+                    math: "\\displaystyle f(x,y) = x^3 - 3xy + 4y^2, \\quad \\theta = \\pi/6",
+                    steps: [
+                        { t: "Step 1: First Partials", d: (<span>f_x = 3x^2 - 3y, f_y = -3x + 8y.</span>), m: "\\displaystyle f_x = 3x^2 - 3y, \\quad f_y = -3x + 8y" },
+                        { t: "Step 2: Unit Vector u", d: (<span>u is the unit vector at angle pi/6.</span>), m: "\\displaystyle \\mathbf{u} = \\left\\langle \\frac{\\sqrt{3}}{2}, \\frac{1}{2} \\right\\rangle" },
+                        { t: "Step 3: Directional Derivative", d: (<span>D_u f = f_x cos(theta) + f_y sin(theta).</span>), m: "\\displaystyle D_{\\mathbf{u}}f = \\frac{1}{2}[3\\sqrt{3}x^2 - 3\\sqrt{3}y - 3x + 8y]", img: "https://drive.google.com/thumbnail?id=1GXguO2R9n0OFj28Lj-aOySZREel0HNoU&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 2, label: "Ex 2", title: "Gradient Vector and Point Evaluation", source: "p.998 Example 3",
+                    math: "\\displaystyle f(x,y) = \\sin x + e^{xy}, \\quad (0, 1)",
+                    steps: [
+                        { t: "Step 1: Compute Partials", d: (<span>f_x = cos x + y e^(xy), f_y = x e^(xy).</span>), m: "\\displaystyle \\nabla f(x,y) = \\langle \\cos x + y e^{xy}, \\, x e^{xy} \\rangle" },
+                        { t: "Step 2: Evaluate at (0, 1)", d: (<span>Substitute coordinates.</span>), m: "\\displaystyle \\nabla f(0,1) = \\langle 2, 0 \\rangle" }
+                    ]
+                },
+                {
+                    id: 3, label: "Ex 3", title: "Directional Derivative along Vector v", source: "p.998 Example 4",
+                    math: "\\displaystyle f(x,y) = x^2y^3 - 4y, \\quad (2, -1), \\quad \\mathbf{v} = 2\\mathbf{i} + 5\\mathbf{j}",
+                    steps: [
+                        { t: "Step 1: Gradient at (2,-1)", d: (<span><Latex>{"\\nabla f = \\langle -4, 8 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\nabla f(2,-1) = \\langle -4, 8 \\rangle" },
+                        { t: "Step 2: Normalize Vector v", d: (<span>|v| = sqrt(29).</span>), m: "\\displaystyle \\mathbf{u} = \\left\\langle \\frac{2}{\\sqrt{29}}, \\frac{5}{\\sqrt{29}} \\right\\rangle" },
+                        { t: "Step 3: Dot Product", d: (<span>Evaluate D_u f = grad f dot u.</span>), m: "\\displaystyle D_{\\mathbf{u}}f(2,-1) = \\frac{32}{\\sqrt{29}}", img: "https://drive.google.com/thumbnail?id=1xnttKWdcB3YW6C3jg-BmCtzrW3KGdTgU&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 4, label: "Ex 4", title: "Three Variables Gradient and Directional Derivative", source: "p.999 Example 5",
+                    math: "\\displaystyle f(x,y,z) = x\\sin(yz), \\quad (1, 3, 0), \\quad \\mathbf{v} = \\mathbf{i} + 2\\mathbf{j} - \\mathbf{k}",
+                    steps: [
+                        { t: "Step 1: Gradient Formula", d: (<span><Latex>{"\\nabla f = \\langle \\sin(yz), xz\\cos(yz), xy\\cos(yz) \\rangle"}</Latex>.</span>), m: "\\displaystyle \\nabla f = \\langle \\sin(yz), \\, xz\\cos(yz), \\, xy\\cos(yz) \\rangle" },
+                        { t: "Step 2: Evaluate at (1,3,0)", d: (<span><Latex>{"\\nabla f(1,3,0) = \\langle 0, 0, 3 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\nabla f(1,3,0) = \\langle 0, 0, 3 \\rangle" },
+                        { t: "Step 3: Directional Derivative", d: (<span><Latex>{"D_{\\mathbf{u}}f = \\langle 0, 0, 3 \\rangle \\cdot \\mathbf{u}"}</Latex>.</span>), m: "\\displaystyle D_{\\mathbf{u}}f(1,3,0) = -\\frac{\\sqrt{6}}{2}" }
+                    ]
+                },
+                {
+                    id: 5, label: "Ex 5", title: "Maximum Rate of Change", source: "p.1000 Example 6",
+                    math: "\\displaystyle f(x,y) = xe^y, \\quad P(2, 0) \\to Q(1/2, 2)",
+                    steps: [
+                        { t: "Step 1: Direction PQ", d: (<span><Latex>{"\\vec{PQ} = \\langle -1.5, 2 \\rangle, |\\vec{PQ}|=2.5, \\mathbf{u} = \\langle -0.6, 0.8 \\rangle"}</Latex>.</span>), m: "\\displaystyle D_{\\mathbf{u}}f = \\langle 1, 2 \\rangle \\cdot \\langle -0.6, 0.8 \\rangle = 1" },
+                        { t: "Step 2: Direction of Maximum Increase", d: (<span>Along gradient direction <Latex>{"\\langle 1, 2 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\text{Direction: } \\nabla f = \\langle 1, 2 \\rangle" },
+                        { t: "Step 3: Maximum Value", d: (<span>Magnitude of gradient.</span>), m: "\\displaystyle \\max D_{\\mathbf{u}}f = |\\nabla f| = \\sqrt{5}", img: "https://drive.google.com/thumbnail?id=1Tn6fb0sGjutDDokeMF98pXbooFgY5Tse&sz=w1000" }
+                    ]
+                },
+                {
+                    id: 6, label: "Ex 6", title: "Tangent Plane via Gradient", source: "p.1002 Example 8",
+                    math: "\\displaystyle \\frac{x^2}{4} + y^2 + \\frac{z^2}{9} = 3, \\quad (-2, 1, -3)",
+                    steps: [
+                        { t: "Step 1: Normal Vector", d: (<span><Latex>{"\\nabla F(-2,1,-3) = \\langle -1, 2, -2/3 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\mathbf{n} = \\left\\langle -1, 2, -\\frac{2}{3} \\right\\rangle" },
+                        { t: "Step 2: Tangent Plane Equation", d: (<span>Standard plane equation.</span>), m: "\\displaystyle 3x - 6y + 2z + 18 = 0", img: "https://drive.google.com/thumbnail?id=1dM0-LQZQJWHgs4IL5DPMNW3rT2JNhudE&sz=w1000" }
+                    ]
+                }
+            ]
+        };
+
+        const PRACTICE_DATA = {
+            zh: [
+                { 
+                    id: 1, label: "Q 1", title: "沿特定角度方向之方向導數", math: "\\displaystyle f(x,y) = x^2 y - 2xy^2, \\quad \\theta = \\pi/3", 
+                    steps: [
+                        { t: "Step 1: 計算一階偏導", d: (<span>分別求 f_x 與 f_y。</span>), m: "\\displaystyle f_x = 2xy - 2y^2, \\quad f_y = x^2 - 4xy" },
+                        { t: "Step 2: 建立單位向量 u", d: (<span>theta = pi/3。</span>), m: "\\displaystyle \\mathbf{u} = \\langle \\cos(\\pi/3), \\sin(\\pi/3) \\rangle = \\left\\langle \\frac{1}{2}, \\frac{\\sqrt{3}}{2} \\right\\rangle" },
+                        { t: "Step 3: 方向導數化簡", d: (<span>套用 D_u f = f_x a + f_y b。</span>), m: "\\displaystyle D_{\\mathbf{u}}f = (xy - y^2) + \\frac{\\sqrt{3}}{2}(x^2 - 4xy)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "二元函數之梯度向量與點代入", math: "\\displaystyle f(x,y) = \\cos(2x) + e^{3xy}, \\quad (0, 2)", 
+                    steps: [
+                        { t: "Step 1: 求偏導函數", d: (<span>分別對 x, y 微分。</span>), m: "\\displaystyle f_x = -2\\sin(2x) + 3ye^{3xy}, \\quad f_y = 3xe^{3xy}" },
+                        { t: "Step 2: 寫出梯度向量式", d: (<span>組合為梯度向量。</span>), m: "\\displaystyle \\nabla f(x,y) = \\langle -2\\sin(2x) + 3ye^{3xy}, \\, 3xe^{3xy} \\rangle" },
+                        { t: "Step 3: 代入點 (0, 2) 求值", d: (<span>代入座標化簡。</span>), m: "\\displaystyle \\nabla f(0, 2) = \\langle -2(0) + 3(2)e^0, \\, 3(0)e^0 \\rangle = \\langle 6, 0 \\rangle" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "沿向量 v 方向的方向導數", math: "\\displaystyle f(x,y) = 2x^2y - 3y^2, \\quad (1, 2), \\quad \\mathbf{v} = 3\\mathbf{i} + 4\\mathbf{j}", 
+                    steps: [
+                        { t: "Step 1: 計算點 (1, 2) 處之梯度", d: (<span>求偏導並代入座標。</span>), m: "\\displaystyle f_x(1,2) = 4(1)(2) = 8, \\quad f_y(1,2) = 2(1) - 6(2) = -10 \\implies \\nabla f(1,2) = \\langle 8, -10 \\rangle" },
+                        { t: "Step 2: 正規化方向向量 v", d: (<span>除以長度 5。</span>), m: "\\displaystyle |\\mathbf{v}| = \\sqrt{3^2+4^2} = 5 \\implies \\mathbf{u} = \\left\\langle \\frac{3}{5}, \\frac{4}{5} \\right\\rangle" },
+                        { t: "Step 3: 計算點積求方向導數", d: (<span>D_u f = grad f dot u。</span>), m: "\\displaystyle D_{\\mathbf{u}}f(1,2) = 8\\left(\\frac{3}{5}\\right) + (-10)\\left(\\frac{4}{5}\\right) = \\frac{24 - 40}{5} = -\\frac{16}{5} = -3.2" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "三元函數之梯度與空間方向導數", math: "\\displaystyle f(x,y,z) = x^2 y z^3, \\quad (2, 1, 1), \\quad \\mathbf{v} = \\langle 1, -2, 2 \\rangle", 
+                    steps: [
+                        { t: "Step 1: 計算 (2, 1, 1) 處之梯度", d: (<span>分別求三偏導。</span>), m: "\\displaystyle \\nabla f(2,1,1) = \\langle 2(2)(1)(1), \\, 2^2(1), \\, 3(2^2)(1)(1) \\rangle = \\langle 4, 4, 12 \\rangle" },
+                        { t: "Step 2: 正規化空間向量 v", d: (<span>長度為 3。</span>), m: "\\displaystyle |\\mathbf{v}| = \\sqrt{1+4+4} = 3 \\implies \\mathbf{u} = \\left\\langle \\frac{1}{3}, -\\frac{2}{3}, \\frac{2}{3} \\right\\rangle" },
+                        { t: "Step 3: 點積計算方向導數", d: (<span>各項相乘加總。</span>), m: "\\displaystyle D_{\\mathbf{u}}f = 4\\left(\\frac{1}{3}\\right) + 4\\left(-\\frac{2}{3}\\right) + 12\\left(\\frac{2}{3}\\right) = \\frac{4 - 8 + 24}{3} = \\frac{20}{3}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "最大變化率方向與大小", math: "\\displaystyle f(x,y) = y\\ln x, \\quad P(1, 3) \\to Q(4, 7)", 
+                    steps: [
+                        { t: "Step 1: 求梯度向量與沿 PQ 之變化率", d: (<span><Latex>{"\\nabla f(1,3) = \\langle 3, 0 \\rangle"}</Latex>，PQ 方向 <Latex>{"\\mathbf{u} = \\langle 0.6, 0.8 \\rangle"}</Latex>。</span>), m: "\\displaystyle \\nabla f(1,3) = \\langle 3, 0 \\rangle \\implies D_{\\mathbf{u}}f = \\langle 3, 0 \\rangle \\cdot \\langle 0.6, 0.8 \\rangle = 1.8" },
+                        { t: "Step 2: 最大變化率之方向與極值", d: (<span>梯度方向為最大上升方向，模長為最大值。</span>), m: "\\displaystyle \\text{最大變化率方向為 } \\langle 3, 0 \\rangle \\, (\\text{正 } x \\text{ 軸}); \\quad \\max D_{\\mathbf{u}}f = |\\nabla f| = 3" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "利用梯度求等位曲面切平面", math: "\\displaystyle 2x^2 + 3y^2 + z^2 = 9, \\quad (1, -1, 2)", 
+                    steps: [
+                        { t: "Step 1: 求曲面法向量 (梯度)", d: (<span>計算等位面函數之梯度。</span>), m: "\\displaystyle \\nabla F = \\langle 4x, 6y, 2z \\rangle \\implies \\mathbf{n} = \\nabla F(1,-1,2) = \\langle 4, -6, 4 \\rangle \\sim \\langle 2, -3, 2 \\rangle" },
+                        { t: "Step 2: 寫出切平面方程式", d: (<span>套用點法式展開。</span>), m: "\\displaystyle 2(x-1) - 3(y+1) + 2(z-2) = 0 \\implies 2x - 3y + 2z = 9" }
+                    ]
+                }
+            ],
+            en: [
+                { 
+                    id: 1, label: "Q 1", title: "Directional Derivative at Angle", math: "\\displaystyle f(x,y) = x^2 y - 2xy^2, \\quad \\theta = \\pi/3", 
+                    steps: [
+                        { t: "Step 1: Partials", d: (<span>f_x = 2xy - 2y^2, f_y = x^2 - 4xy.</span>), m: "\\displaystyle f_x = 2xy - 2y^2, \\quad f_y = x^2 - 4xy" },
+                        { t: "Step 2: Directional Derivative", d: (<span>Combine with unit vector.</span>), m: "\\displaystyle D_{\\mathbf{u}}f = (xy - y^2) + \\frac{\\sqrt{3}}{2}(x^2 - 4xy)" }
+                    ]
+                },
+                { 
+                    id: 2, label: "Q 2", title: "Gradient Vector Evaluation", math: "\\displaystyle f(x,y) = \\cos(2x) + e^{3xy}, \\quad (0, 2)", 
+                    steps: [
+                        { t: "Step 1: Gradient Formula", d: (<span>Compute components.</span>), m: "\\displaystyle \\nabla f(x,y) = \\langle -2\\sin(2x) + 3ye^{3xy}, \\, 3xe^{3xy} \\rangle" },
+                        { t: "Step 2: Evaluate at (0, 2)", d: (<span><Latex>{"\\nabla f(0, 2) = \\langle 6, 0 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\nabla f(0, 2) = \\langle 6, 0 \\rangle" }
+                    ]
+                },
+                { 
+                    id: 3, label: "Q 3", title: "Directional Derivative along Vector v", math: "\\displaystyle f(x,y) = 2x^2y - 3y^2, \\quad (1, 2), \\quad \\mathbf{v} = 3\\mathbf{i} + 4\\mathbf{j}", 
+                    steps: [
+                        { t: "Step 1: Gradient at (1,2)", d: (<span><Latex>{"\\nabla f(1,2) = \\langle 8, -10 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\nabla f(1,2) = \\langle 8, -10 \\rangle" },
+                        { t: "Step 2: Directional Derivative", d: (<span>Dot product with unit vector.</span>), m: "\\displaystyle D_{\\mathbf{u}}f = -\\frac{16}{5} = -3.2" }
+                    ]
+                },
+                { 
+                    id: 4, label: "Q 4", title: "3D Directional Derivative", math: "\\displaystyle f(x,y,z) = x^2 y z^3, \\quad (2, 1, 1), \\quad \\mathbf{v} = \\langle 1, -2, 2 \\rangle", 
+                    steps: [
+                        { t: "Step 1: 3D Gradient", d: (<span><Latex>{"\\nabla f(2,1,1) = \\langle 4, 4, 12 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\nabla f(2,1,1) = \\langle 4, 4, 12 \\rangle" },
+                        { t: "Step 2: Dot Product with u", d: (<span>D_u f = (4 - 8 + 24)/3 = 20/3.</span>), m: "\\displaystyle D_{\\mathbf{u}}f = \\frac{20}{3}" }
+                    ]
+                },
+                { 
+                    id: 5, label: "Q 5", title: "Maximum Rate of Change", math: "\\displaystyle f(x,y) = y\\ln x, \\quad P(1, 3) \\to Q(4, 7)", 
+                    steps: [
+                        { t: "Step 1: Direction Rate of Change", d: (<span>D_u f = 1.8 along PQ.</span>), m: "\\displaystyle D_{\\mathbf{u}}f = 1.8" },
+                        { t: "Step 2: Maximum Increase", d: (<span>Direction is <Latex>{"\\langle 3, 0 \\rangle"}</Latex>, maximum rate is 3.</span>), m: "\\displaystyle \\text{Direction: } \\langle 3, 0 \\rangle, \\quad \\text{Max rate: } 3" }
+                    ]
+                },
+                { 
+                    id: 6, label: "Q 6", title: "Tangent Plane via Gradient", math: "\\displaystyle 2x^2 + 3y^2 + z^2 = 9, \\quad (1, -1, 2)", 
+                    steps: [
+                        { t: "Step 1: Normal Vector", d: (<span><Latex>{"\\mathbf{n} = \\langle 4, -6, 4 \\rangle \\sim \\langle 2, -3, 2 \\rangle"}</Latex>.</span>), m: "\\displaystyle \\mathbf{n} = \\langle 2, -3, 2 \\rangle" },
+                        { t: "Step 2: Tangent Plane", d: (<span>2(x-1) - 3(y+1) + 2(z-2) = 0.</span>), m: "\\displaystyle 2x - 3y + 2z = 9" }
+                    ]
+                }
+            ]
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+"""
+
+with open('/working_dir/c_b99e827a4e09e9d0/unit_14_6.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Generated unit_14_6.html successfully! Size:", len(html_content))
+EOF
+python3 generate_unit_14_6.py
+node validate_14_6.js
+python3 check_14_6_math.py
+}
+}
